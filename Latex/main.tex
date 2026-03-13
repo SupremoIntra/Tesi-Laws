@@ -1,0 +1,73 @@
+\documentclass[a4paper,12pt]{report}
+
+% --- PREAMBOLO ---
+\usepackage[a4paper]{geometry}
+\usepackage{amssymb,amsmath,amsthm}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{epsfig}
+\usepackage[italian]{babel}
+\usepackage{setspace}
+\usepackage{tesi} % RICHIAMA IL TUO FILE tesi.sty
+\usepackage{wrapfig}
+\usepackage[hidelinks]{hyperref}
+\usepackage[export]{adjustbox}
+\usepackage{epigraph}
+\usepackage{blindtext}
+\usepackage{cite} % Per la gestione pulita della bibliografia
+
+% per le accentate
+\usepackage[utf8]{inputenc}
+
+\newtheorem{myteor}{Teorema}[section]
+\newenvironment{teor}{\begin{myteor}\sl}{\end{myteor}}
+
+% --- TITOLO E DATI (Comandi definiti in tesi.sty) ---
+\begin{document}
+\title{Sistemi d'Arma Autonomi Letali (LAWS): \\ Criticità etico-giuridiche e vulnerabilità algoritmiche}
+\author{Daniele Intra}
+\dept{Corso di Laurea Magistrale in Sicurezza dei Sistemi e delle Reti Informatiche} 
+\anno{2025-2026}
+\matricola{53665A}
+\relatore{Prof. Matteo Buffa}
+\correlatore{Prof. Massimo Walter Rivolta}
+
+% --- DEDICA E PREFAZIONE ---
+\beforepreface
+
+\prefacesection{Dedica}
+{\hfill \Large {\sl dedicato a \dots}}
+
+\prefacesection{Prefazione}
+Questa tesi esplora l'intersezione tra le normative umanitarie e le vulnerabilità intrinseche ai sistemi di visione artificiale impiegati in contesti bellici.
+
+\prefacesection{Ringraziamenti}
+Vorrei ringraziare...
+
+\afterpreface
+
+% --- CORPO DELLA TESI ---
+
+\chapter{Geopolitica, Dual-Use e Contesto Operativo}
+\label{cap1}
+La diplomazia internazionale fatica a gestire l'avanzamento tecnologico. Secondo Human Rights Watch \cite{wareham_2020}, le posizioni degli Stati divergono, come dimostrato anche dalle recenti sottomissioni dello Stato di Palestina \cite{palestine_2023}. Al contempo, le Nazioni Unite hanno confermato l'uso operativo di sistemi autonomi letali \cite{un_libya_2021}.
+
+\chapter{L'Illusione dell'Etica e la Tanatopolitica Algoritmica}
+\label{cap2}
+Il concetto di autonomia disarticola l'essere umano dalla macchina, introducendo dilemmi necro-etici \cite{buffa_2025}. L'esigenza di un controllo umano significativo rimane una problematica centrale lungo tutto il ciclo di vita del sistema \cite{bode_2025, christie_2024}. 
+
+\chapter{Analisi Sperimentale: Vulnerabilità e AI Security}
+\label{cap3}
+Nonostante la presunta affidabilità dei modelli, i rischi tecnici sono concreti \cite{podar_2025}. È necessario ripensare la supervisione umana alla luce delle intrinseche vulnerabilità delle reti neurali utilizzate nel targeting \cite{feldman_2024}.
+
+\chapter{Conclusioni: Il C.A.R.E. Kit e la Difesa dei Diritti Umani}
+\label{cap4}
+Per fronteggiare le sfide etiche emergenti \cite{helkala_2023}, è ipotizzabile lo sviluppo di contromisure fisiche basate sulle debolezze della Computer Vision. Tecniche come il camuffamento asimmetrico \cite{harvey_2010} e tessuti con pattern avversari \cite{wu_2020, hu_2022} offrono una linea di difesa per l'evasione dal tracciamento algoritmico.
+
+% --- BIBLIOGRAFIA ---
+
+\addcontentsline{toc}{chapter}{Bibliografia}
+\bibliographystyle{plain} 
+\bibliography{bibliografia}
+
+\end{document}
