@@ -13,12 +13,12 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
-*.pdf  # Opzionale: de-commenta se non vuoi pushare il PDF compilato su Git
+*.pdf
 
 # --- Python / YOLO ---
 __pycache__/
 *.pyc
 .venv/
 venv/
-*.pt   # Ignora i pesi del modello YOLO (sono troppo pesanti per Git)
-datasets/ # Non pushare le immagini di VisDrone!
+*.pt
+YOLO/Yolo-Weights/
