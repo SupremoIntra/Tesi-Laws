@@ -8,21 +8,20 @@
 \usepackage{epsfig}
 \usepackage[italian]{babel}
 \usepackage{setspace}
-\usepackage{tesi} % RICHIAMA IL TUO FILE tesi.sty
+\usepackage{tesi} 
 \usepackage{wrapfig}
 \usepackage[hidelinks]{hyperref}
 \usepackage[export]{adjustbox}
 \usepackage{epigraph}
 \usepackage{blindtext}
-\usepackage{cite} % Per la gestione pulita della bibliografia
+\usepackage{cite} 
 
-% per le accentate
 \usepackage[utf8]{inputenc}
 
 \newtheorem{myteor}{Teorema}[section]
 \newenvironment{teor}{\begin{myteor}\sl}{\end{myteor}}
 
-% --- TITOLO E DATI (Comandi definiti in tesi.sty) ---
+% --- TITOLO E DATI ---
 \begin{document}
 \title{Sistemi d'Arma Autonomi Letali: \\criticità nel trattamento dei dati sensibili e analisi sperimentale tra vulnerabilità algoritmiche e giuridiche}
 \author{Daniele Intra}
@@ -39,17 +38,27 @@
 {\hfill \Large {\sl dedicato a \dots}}
 
 \prefacesection{Prefazione}
-Questa tesi esplora l'intersezione tra le normative umanitarie e le vulnerabilità intrinseche ai sistemi di visione artificiale impiegati in contesti bellici.
+La presente tesi si propone di analizzare le criticità emergenti nell'ambito dei Sistemi d'Arma Autonomi Letali (LAWS), con particolare attenzione al trattamento dei dati sensibili e alle vulnerabilità algoritmiche e giuridiche. Attraverso un'analisi multidisciplinare, si intende esplorare le implicazioni geopolitiche, etiche e tecniche di tali sistemi, evidenziando le sfide e le opportunità che essi presentano nel contesto della sicurezza informatica e della difesa dei diritti umani.
 
 \prefacesection{Ringraziamenti}
-Vorrei ringraziare...
+
 
 \afterpreface
 
 % --- CORPO DELLA TESI ---
 
+\chapter{Introduzione}
+\begin{flushright}
+\begin{minipage}{0.6\textwidth}
+\epigraph{
+    ``How dangerous is the acquirement of knowledge and how much happier that man is who believes his native town to be the world, than he who aspires to become greater than his nature will allow.''
+}{\textit{Mary Shelley, Frankenstein (1818)}}
+\end{minipage}
+\end{flushright}
+
 \chapter{Geopolitica, Dual-Use e Contesto Operativo}
 \label{cap1}
+\section{Il fallimento diplomatico: "country positions"}
 La diplomazia internazionale fatica a gestire l'avanzamento tecnologico. Secondo Human Rights Watch \cite{wareham_2020}, le posizioni degli Stati divergono, come dimostrato anche dalle recenti sottomissioni dello Stato di Palestina \cite{palestine_2023}. Al contempo, le Nazioni Unite hanno confermato l'uso operativo di sistemi autonomi letali \cite{un_libya_2021}.
 
 \chapter{L'Illusione dell'Etica e la Tanatopolitica Algoritmica}
