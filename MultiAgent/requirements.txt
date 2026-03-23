@@ -1,0 +1,16 @@
+# LAWS-SIM v1.0 — dipendenze
+# Installa con: pip install -r requirements.txt
+
+# Core (obbligatori)
+numpy>=1.24
+
+# Raccomandati
+rich>=13.0          # terminal UI colorato
+matplotlib>=3.7     # grafici e plot
+faker>=19.0         # generazione profili sintetici
+
+# Opzionali (per estensioni future)
+# torch>=2.0        # patch ottimizzazione custom
+# ultralytics>=8.0  # YOLOv8 reale
+# art>=1.17         # IBM Adversarial Robustness Toolbox
+# mesa>=2.1         # simulazione multi-agente avanzata
