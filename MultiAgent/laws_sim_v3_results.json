@@ -1,0 +1,50 @@
+{
+  "Baseline (No Attack)": {
+    "precision": 1.0,
+    "recall": 0.8542,
+    "f1": 0.9214,
+    "fpr": 0.0,
+    "tp": 293,
+    "fp": 0,
+    "tn": 2010,
+    "fn": 50,
+    "clae_v2": null,
+    "cost_measurable": 0
+  },
+  "Adversarial Patch [Vision]": {
+    "precision": 1.0,
+    "recall": 0.4455,
+    "f1": 0.6164,
+    "fpr": 0.0,
+    "tp": 139,
+    "fp": 0,
+    "tn": 2053,
+    "fn": 173,
+    "clae_v2": 1.0892,
+    "cost_measurable": 0.28
+  },
+  "OSINT Poisoning": {
+    "precision": 1.0,
+    "recall": 0.2045,
+    "f1": 0.3396,
+    "fpr": 0.0,
+    "tp": 72,
+    "fp": 0,
+    "tn": 1839,
+    "fn": 280,
+    "clae_v2": 1.9392,
+    "cost_measurable": 0.3
+  },
+  "Cascading Attack [Multi-Layer]": {
+    "precision": 1.0,
+    "recall": 0.0274,
+    "f1": 0.0533,
+    "fpr": 0.0,
+    "tp": 11,
+    "fp": 0,
+    "tn": 1987,
+    "fn": 391,
+    "clae_v2": 1.7502,
+    "cost_measurable": 0.496
+  }
+}
