@@ -66,8 +66,8 @@ OSINT_FIELDS_POISONED = 3
 # =============================================================================
 # ADVERSARIAL PATCH OPTIMIZATION (EoT)
 # =============================================================================
-PATCH_H = 100
-PATCH_W = 80
+PATCH_H = 240
+PATCH_W = 240
 PATCH_LR = 0.03
 PATCH_STEPS = 80
 PATCH_EPS = 0.05
