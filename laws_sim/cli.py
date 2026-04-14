@@ -7,11 +7,13 @@ import argparse
 import json
 import sys
 
+from rich.table import Table
 from config import PATCH_STEPS, EOT_N_TRANSFORMS
 from metrics import AttackScenario, SimMetrics, clae_costs, compute_clae
 from simulator import LAWSSim
 from patch_optimizer import PatchOptimizer
 from utils import console, HAS_RICH, HAS_MPL, save_patch_plots
+
 
 try:
     import torch

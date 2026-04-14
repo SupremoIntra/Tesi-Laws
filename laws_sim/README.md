@@ -35,7 +35,7 @@ python -m laws_sim.cli --demo-patch foto.jpg
 
 **Da webcam:**
 ```python
-python -m laws_sim.cli --demo-patch webcam
+python -m laws_sim/cli.py --demo-patch webcam
 ```
 
 Opzione: `--patch-steps 100` (default 80).
@@ -43,7 +43,7 @@ Opzione: `--patch-steps 100` (default 80).
 ### Simulazione con patch pre‑ottimizzata
 
 ```python
-python -m laws_sim.cli --real-yolo --patch care_kit_patch.pt --steps 200
+python -m laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 200
 ```
 
 ## Opzioni CLI
