@@ -71,7 +71,7 @@ PATCH_H = 100                 # FIX: era 240 → patch enorme che copriva tutta 
 PATCH_W = 80                  # 100×80 px su immagine 640×640 = ~2.5% dell'immagine,
                                # realistico per un logo stampato su indumento , tipo A5, boh?!
 PATCH_LR = 0.03
-PATCH_STEPS = 80
+PATCH_STEPS = 1000
 PATCH_EPS = 0.05
 EOT_N_TRANSFORMS = 8
 PERSON_CLASS_ID = 0           # COCO classe 0 = "person"

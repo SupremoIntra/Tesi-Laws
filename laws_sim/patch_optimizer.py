@@ -95,7 +95,7 @@ def build_anchor_mask(patch_bbox: Tuple[int,int,int,int],
 # ══════════════════════════════════════════════════════════════════════
 
 class PatchOptimizer:
-    TV_WEIGHT = 0.005
+    TV_WEIGHT = 0.001
 
     def __init__(self, patch_h: int = PATCH_H, patch_w: int = PATCH_W,
                  model_path: str = "yolov8n.pt"):
@@ -170,10 +170,9 @@ class PatchOptimizer:
         t = TF.adjust_brightness(t, random.uniform(0.6, 1.4))
         t = TF.adjust_contrast(t,   random.uniform(0.7, 1.3))
 
-        if random.random() < 0.5:
-            t = TF.hflip(t)
+    
 
-        sigma = random.uniform(0, 1.5)
+        sigma = random.uniform(0, 1.0)
         if sigma > 0.3:
             t = TF.gaussian_blur(t, kernel_size=max(3, int(sigma*4)|1), sigma=sigma)
 
