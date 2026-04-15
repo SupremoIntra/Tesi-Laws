@@ -1,5 +1,5 @@
 """
-LAWS-SIM v3.0 — Configuration constants with scientific grounding.
+LAWS-SIM — Configuration constants with scientific grounding.
 
 References:
 - YOLOv8 outdoor confidence 99.1%: Sodhro, A.H. et al. (2025). "Real-time efficiency 
@@ -23,14 +23,17 @@ N_TARGETS = 3                 # number of threat targets
 N_CIVILIANS = 15              # number of civilians
 
 # Drone movement (realistic tactical UAS parameters)
-DRONE_CRUISE_SPEED_KMH = 61   # Threod EOS C VTOL cruise speed (https://www.threod.com/eos-c-vtol/)
-DRONE_MAX_SPEED_KMH = 90      # Threod EOS C VTOL max speed
-DRONE_ALTITUDE_M = 300        # typical operational altitude (HRVS radar tested up to 300m)
-DRONE_STEP_SIZE = 2           # discretized movement step (derived from speed / simulation tick)
+DRONE_CRUISE_SPEED_KMH = 61
+DRONE_MAX_SPEED_KMH = 90
+DRONE_ALTITUDE_M = 10         # FIX: era 300, che rendeva dist >= 300 > YOLO_MAX_RANGE=150
+                               # → nessuna entità mai visibile → tutti zero.
+                               # 10m è l'altitudine operativa tipica per detection ravvicinata.
+DRONE_STEP_SIZE = 2
 
-# Detection range constraints
-YOLO_MIN_RANGE = 15.0         # minimum detection range (close proximity)
-YOLO_MAX_RANGE = 150.0        # maximum detection range (sensor limits)
+# Detection range
+YOLO_MIN_RANGE = 15.0
+YOLO_MAX_RANGE = 150.0        # Con altitudine 10m, la distanza 3D è sqrt(x²+y²+100)
+                               # che scala correttamente col raggio 150m.
 
 # =============================================================================
 # FUSION & DECISION THRESHOLDS
@@ -41,7 +44,6 @@ FUSION_WEIGHTS = {
     "behavioral": 0.20
 }
 
-# Decision thresholds (calibrated to balance sensitivity and specificity)
 ENGAGEMENT_THRESHOLD = 0.58
 ALERT_THRESHOLD = 0.38
 TRACK_THRESHOLD = 0.22
@@ -49,11 +51,10 @@ TRACK_THRESHOLD = 0.22
 # =============================================================================
 # VISION AGENT (YOLOv8)
 # =============================================================================
-# Baseline confidence from real-world outdoor testing: 99.1% (Sodhro et al., 2025)
-BASELINE_CONFIDENCE = 0.991
-DETECTION_THRESHOLD = 0.50   # standard YOLO confidence threshold
+BASELINE_CONFIDENCE = 0.991   # Sodhro et al., 2025
+DETECTION_THRESHOLD = 0.50
 
-# Analytical model fallback parameters
+# Parametri modello analitico (fallback senza YOLO reale)
 PATCH_SUPPRESSION = 0.65
 PATCH_DIST_FALLOFF = 0.04
 
@@ -66,14 +67,16 @@ OSINT_FIELDS_POISONED = 3
 # =============================================================================
 # ADVERSARIAL PATCH OPTIMIZATION (EoT)
 # =============================================================================
-PATCH_H = 240
-PATCH_W = 240
+PATCH_H = 100                 # FIX: era 240 → patch enorme che copriva tutta la faccia.
+PATCH_W = 80                  # 100×80 px su immagine 640×640 = ~2.5% dell'immagine,
+                               # realistico per un logo stampato su indumento , tipo A5, boh?!
 PATCH_LR = 0.03
 PATCH_STEPS = 80
 PATCH_EPS = 0.05
-EOT_N_TRANSFORMS = 8        # number of EoT transforms per optimization step
-PERSON_CLASS_ID = 0         # COCO class ID for "person"
-IMG_SIZE = 640              # YOLOv8 input size
+EOT_N_TRANSFORMS = 8
+PERSON_CLASS_ID = 0           # COCO classe 0 = "person"
+IMG_SIZE = 640                # input size YOLOv8
 
-# Physical coverage ratio (patch area / bounding box area)
-PATCH_BBOX_COVERAGE = 0.28  # realistic for a wearable adversarial pattern
+# C_vision per CLAE: patch_area / bbox_area (aggiornato con nuove dimensioni)
+# Su un bbox medio di ~200×400px: (100×80)/(200×400) = 0.10
+PATCH_BBOX_COVERAGE = 0.10

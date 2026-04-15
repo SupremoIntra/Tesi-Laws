@@ -105,7 +105,7 @@ def main():
 
     patch_tensor = None
     if args.patch and HAS_TORCH:
-        patch_tensor = torch.load(args.patch)
+        patch_tensor = torch.load(args.patch, weights_only=False)
         console.print(f"[green]✓ Patch loaded: {args.patch} ({patch_tensor.shape})[/green]")
 
     console.print(f"[bold cyan]LAWS-SIM v3.0[/bold cyan]")
