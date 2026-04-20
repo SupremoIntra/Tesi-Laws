@@ -50,7 +50,7 @@ python -m laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 200
 
 | Opzione | Descrizione |
 |---------|-------------|
-| `--steps N` | Numero di step di simulazione (default 150) |
+| `--steps N` | Numero di step di simulazione (default 1000) |
 | `--seed N` | Seme random (default 42) |
 | `--verbose` | Log dettagliato per ogni step |
 | `--no-plot` | Disabilita generazione grafici |
@@ -94,10 +94,10 @@ laws_sim/
 
 ```bash
 # Genera patch dalla webcam
-python -m laws_sim.cli --demo-patch webcam --patch-steps 80
+python laws_sim/cli.py --demo-patch webcam --patch-steps 1000
 
 # Simula con YOLO reale e patch
-python -m laws_sim.cli --real-yolo --patch care_kit_patch.pt --steps 200
+python laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 1000
 
 # Leggi i risultati
 cat laws_sim_v3_results.json
