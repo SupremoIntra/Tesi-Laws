@@ -1,6 +1,6 @@
-# LAWS-SIM v3.0
+# LAWS-SIM
 
-Simulatore multi‑agente di un Lethal Autonomous Weapons System (LAWS) con YOLOv8 reale, attacco adversarial patch (EoT) e metrica proposta CLAE.
+Simulatore multi‑agente di un Lethal Autonomous Weapons System (LAWS) con YOLOv8, attacco adversarial patch (EoT), bayesian fusion, OSINT poisoning e metrica proposta CLAE.
 
 ## Installazione
 ```python
@@ -8,42 +8,42 @@ pip install torch torchvision ultralytics opencv-python rich matplotlib faker
 ```
 ## Comandi principali
 
-### Simulazione base (modello analitico)
+### Simulazione base (modello con dati fake)
 
 ```python
-python -m laws_sim.cli --steps 150
+python laws_sim/cli.py --steps 150
 ```
 
 ### Simulazione con YOLO reale
 
 ```python
-python -m laws_sim.cli --real-yolo --steps 200
+python laws_sim/cli.py --real-yolo --steps 200
 ```
 
-Se disponi di un dataset di immagini (es. VisDrone):
+Utilizzo con dataset reale VisDrone:
 
 ```python
-python -m laws_sim.cli --real-yolo --image-dir /path/to/frames --steps 200
+python laws_sim/cli.py --real-yolo --image-dir /path/to/frames --steps 200
 ```
 
-### Demo adversarial patch (standalone)
+### Generazione adversarial patch (standalone)
 
 **Da immagine:**
 ```python
-python -m laws_sim.cli --demo-patch foto.jpg
+python laws_sim/cli.py --demo-patch me.jpg
 ```
 
 **Da webcam:**
 ```python
-python -m laws_sim/cli.py --demo-patch webcam
+python laws_sim/cli.py --demo-patch webcam
 ```
 
-Opzione: `--patch-steps 100` (default 80).
+Opzione: `--patch-steps 1000` (default 1000).
 
 ### Simulazione con patch pre‑ottimizzata
 
 ```python
-python -m laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 200
+python laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 1000
 ```
 
 ## Opzioni CLI
@@ -63,9 +63,9 @@ python -m laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 200
 ## File generati
 
 - `laws_sim_v3_results.json` – metriche per ogni scenario (precision, recall, F1, CLAE).
-- `laws_sim_v3_results.png` – grafici comparativi.
+~~- laws_sim_v3_results.png` – grafici comparativi.~~
 - `care_kit_patch.pt` – tensore della patch ottimizzata (demo).
-- `patch_result.png` e `patch_loss.png` – visualizzazione della demo.
+- `patch_result.png` e `patch_loss.png` – visualizzazione della patch (singola e applicata all'img del dataset).
 
 ## Struttura del progetto
 
