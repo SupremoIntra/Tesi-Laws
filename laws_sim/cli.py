@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Command-line interface for LAWS-SIM.
+CLI - traduzione parametri da terminale
 """
 
 import argparse
@@ -21,44 +21,46 @@ try:
 except ImportError:
     HAS_TORCH = False
 
-
+# creo la patch -> la ottimizzo con EoT applicata su una img di test e poi mostro i risultati + salvo la patch.pt
 def run_demo_patch(image_path: str, model_path: str = "yolov8n.pt", steps: int = PATCH_STEPS):
-    """Run adversarial patch demo (standalone)."""
-    if not HAS_TORCH:
-        console.print("[red]Demo requires: pip install torch ultralytics[/red]")
+    """Demo della patch adversariale creata con EoT su una img"""
+    if not HAS_TORCH: #controllo che ci sia torch ecc
+        console.print("[red]Requisiti non soddisfatti, installa le seguenti librerie: pip install torch ultralytics[/red]")
         return
 
-    console.print(f"[bold cyan]Demo Adversarial Patch — EoT[/bold cyan]")
-    console.print(f"Image: [yellow]{image_path}[/yellow]")
-    console.print(f"Model: [yellow]{model_path}[/yellow]")
-    console.print(f"Optimization steps: [yellow]{steps}[/yellow]")
-    console.print(f"EoT transforms/step: [yellow]{EOT_N_TRANSFORMS}[/yellow]")
+    console.print(f"[bold cyan]Demo Patch EoT applicata su img (Adversarial Attack)[/bold cyan]")
+    console.print(f"Img usata: [yellow]{image_path}[/yellow]")
+    console.print(f"Modello di YOLO: [yellow]{model_path}[/yellow]")
+    console.print(f"Numero di steps di ottimizzazione: [yellow]{steps}[/yellow]")
+    console.print(f"Numero di steps di trasformazioni (EoT): [yellow]{EOT_N_TRANSFORMS}[/yellow]")
 
     optimizer = PatchOptimizer(model_path=model_path)
     result = optimizer.optimize(image_path, n_steps=steps, verbose=True)
 
     cov = result["patch_coverage"]
     delta_conf = result["conf_drop"]
+    #calcolo del CEAE reale come rapporto tra drop di confidence e copertura visiva (C_vision)
     clae_real = delta_conf / cov if cov > 0 else 0.0
 
-    console.print(f"\n[bold green]Summary[/bold green]")
-    console.print(f"Confidence before: [green]{result['conf_before']:.4f}[/green]")
-    console.print(f"Confidence after:  [red]{result['conf_after']:.4f}[/red]")
-    console.print(f"Drop: [bold yellow]{delta_conf:+.4f} ({delta_conf/max(result['conf_before'],1e-6)*100:.1f}%)[/bold yellow]")
-    console.print(f"C_vision (pixel ratio) = {cov:.4f} ({cov*100:.1f}% of bbox)")
-    console.print(f"CLAE = Δconf / C_vision = [bold cyan]{clae_real:.3f}[/bold cyan]")
+    console.print(f"\n[bold green]Recap Metriche Calcolate[/bold green]")
+    console.print(f"Confidence prima: [green]{result['conf_before']:.4f}[/green]")
+    console.print(f"Confidence dopo:  [red]{result['conf_after']:.4f}[/red]")
+    console.print(f"Drop misurato: [bold yellow]{delta_conf:+.4f} ({delta_conf/max(result['conf_before'],1e-6)*100:.1f}%)[/bold yellow]")
+    console.print(f"C_vision (percentuale della patch (in pixel) su bbox) = {cov:.4f} ({cov*100:.1f}% of bbox)")
+    console.print(f"CEAE = Δconf / C_vision = [bold cyan]{clae_real:.3f}[/bold cyan]")
 
-    if HAS_MPL:
+    if HAS_MPL: #controllo che ci sia matplotlib per mostrare la patch su png
         patch_arr = (result["patch"].permute(1, 2, 0).numpy() * 255).astype("uint8")
         result["patch_arr"] = patch_arr
         save_patch_plots(result, output_dir=".")
 
+    #salvo patch in formato .pt
     torch.save(result["patch"], "care_kit_patch.pt")
-    console.print("[green]✓ Patch saved → care_kit_patch.pt[/green]")
+    console.print("[green]✓ Patch salvata → care_kit_patch.pt[/green]")
 
 
 def print_results(results: dict, baseline: SimMetrics):
-    """Print simulation results table."""
+    """Stampo la tabella dei risultati e metriche dell'ambiente simulato."""
     costs = clae_costs()
     if not HAS_RICH:
         for sc, m in results.items():
@@ -67,8 +69,8 @@ def print_results(results: dict, baseline: SimMetrics):
         return
 
     table = Table(show_header=True, header_style="bold magenta",
-                  title="[bold cyan]LAWS-SIM v3 — Results[/bold cyan]")
-    for col in ["Scenario", "Precision", "Recall", "F1", "FPR", "CLAE v2"]:
+                  title="[bold cyan]LAWS-SIM Framework — RISULTATI[/bold cyan]")
+    for col in ["Scenario", "Precision", "Recall", "F1 (P+R)", "FPR (False Positive Rate)", "CEAE"]:
         table.add_column(col, justify="right" if col != "Scenario" else "left")
 
     for sc, m in results.items():
@@ -80,14 +82,14 @@ def print_results(results: dict, baseline: SimMetrics):
     console.print(table)
 
     c_v, c_o, c_c = costs["PATCH_ONLY"], costs["OSINT_POISON"], costs["CASCADING"]
-    console.print(f"[bold]CLAE v2 — measurable costs[/bold]")
-    console.print(f"C_vision = {c_v:.2f} (pixel ratio)")
-    console.print(f"C_osint = {c_o:.2f} (poisoned/total fields)")
+    console.print(f"[bold]CEAE — costi misurabili[/bold]")
+    console.print(f"C_vision = {c_v:.2f} (percentuale pixel patch su bbox)")
+    console.print(f"C_osint = {c_o:.2f} (campi avvelenati / campi totali)")
     console.print(f"C_cascade = {c_c:.4f} (union probability)")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="LAWS-SIM v3.0")
+    parser = argparse.ArgumentParser(description="LAWS-SIM")
     parser.add_argument("--steps", type=int, default=150)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--verbose", action="store_true")
@@ -106,14 +108,14 @@ def main():
     patch_tensor = None
     if args.patch and HAS_TORCH:
         patch_tensor = torch.load(args.patch, weights_only=False)
-        console.print(f"[green]✓ Patch loaded: {args.patch} ({patch_tensor.shape})[/green]")
+        console.print(f"[green]OK Patch caricata: {args.patch} ({patch_tensor.shape})[/green]")
 
-    console.print(f"[bold cyan]LAWS-SIM v3.0[/bold cyan]")
+    console.print(f"[bold cyan]LAWS-SIM[/bold cyan]")
     console.print(f"Steps={args.steps} Seed={args.seed} RealYOLO={'✓' if args.real_yolo else '✗'} Patch={'✓' if patch_tensor is not None else '✗'}")
 
     results = {}
     for sc in AttackScenario:
-        console.print(f"Simulating: {sc.value}…")
+        console.print(f"Simulazione in corso: {sc.value}…")
         sim = LAWSSim(sc, args.steps, args.seed,
                       real_mode=args.real_yolo,
                       image_dir=args.image_dir,
@@ -133,12 +135,12 @@ def main():
             "f1": round(m.f1, 4),
             "fpr": round(m.fpr, 4),
             "tp": m.tp, "fp": m.fp, "tn": m.tn, "fn": m.fn,
-            "clae_v2": round(clae, 4) if clae else None,
+            "CEAE": round(clae, 4) if clae else None,
             "cost_measurable": round(costs.get(sc.name) or 0, 4)
         }
-    with open("laws_sim_v3_results.json", "w") as f:
+    with open("laws_sim_results.json", "w") as f:
         json.dump(export, f, indent=2, ensure_ascii=False)
-    console.print("[green]✓ Export → laws_sim_v3_results.json[/green]")
+    console.print("[green]✓ Export → laws_sim_results.json[/green]")
 
 
 if __name__ == "__main__":
