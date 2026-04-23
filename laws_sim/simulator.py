@@ -51,9 +51,10 @@ class LAWSSim:
                 dist = self.env.dist_to_drone(entity)
                 civ_near = self.env.nearby_civilians(entity)
 
-                # OSINT analysis (poisoning if active)
+                # OSINT analysis (attacco di poisoning... se on)
                 osint_p = entity.osint_profile
                 if poison_on and entity.role == AgentRole.TARGET:
+                    #abbasso punteggi di minaccia del target per confondere la fusione
                     osint_p.social_score = max(0.0, osint_p.social_score - random.uniform(0.40, 0.60))
                     osint_p.geo_anomaly = max(0.0, osint_p.geo_anomaly - random.uniform(0.30, 0.55))
                     osint_p.network_centrality = max(0.0, osint_p.network_centrality - random.uniform(0.25, 0.45))
