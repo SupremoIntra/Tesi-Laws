@@ -55,6 +55,7 @@ class LAWSSim:
                 osint_p = entity.osint_profile
                 if poison_on and entity.role == AgentRole.TARGET:
                     #abbasso punteggi di minaccia del target per confondere la fusione
+                    #random.uniform -> numero casuale tra a e b (valori scelti per simulare... in entities ho i limiti di normali, es non negativo)
                     osint_p.social_score = max(0.0, osint_p.social_score - random.uniform(0.40, 0.60))
                     osint_p.geo_anomaly = max(0.0, osint_p.geo_anomaly - random.uniform(0.30, 0.55))
                     osint_p.network_centrality = max(0.0, osint_p.network_centrality - random.uniform(0.25, 0.45))
@@ -66,7 +67,7 @@ class LAWSSim:
                 )
                 decision = self.decision.decide(entity.id, fusion_r, civ_near)
 
-                # Update metrics
+                # Aggiorno le metriche 
                 is_threat = (entity.role == AgentRole.TARGET)
                 is_engaged = decision.action in ("ENGAGE", "ALERT")
                 if is_threat and is_engaged:
