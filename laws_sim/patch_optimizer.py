@@ -261,9 +261,11 @@ class PatchOptimizer:
             person_bbox = (cx-80, cy-120, cx+80, cy+120)
             print("  Persona non trovata → bbox centrale")
 
+        #FIX: stavo dividendo l'area della patch per l'area della patch...
         patch_bbox = get_chest_bbox(person_bbox, self.patch_w, self.patch_h, IMG_SIZE)
-        x1,y1,x2,y2 = patch_bbox
-        coverage     = (self.patch_h * self.patch_w) / max((x2-x1)*(y2-y1), 1)
+        px1, py1, px2, py2 = person_bbox  # Prendo i vertici della PERSONA
+        person_area = (px2 - px1) * (py2 - py1)
+        coverage = (self.patch_h * self.patch_w) / max(person_area, 1)
         print(f"  BBox persona: {person_bbox}")
         print(f"  BBox patch (petto): {patch_bbox}  coverage={coverage:.3f}")
 
