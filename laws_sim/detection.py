@@ -1,7 +1,7 @@
 """
-Vision agent with real YOLOv8 and analytical fallback.
+Agente Vision con YOLO per rilevamento di persone e oggetti, con supporto per modalità reale (su immagini VisDrone o webcam) e analitica (modello basato su distanza e patch).
 
-References:
+paper:
 - Sodhro, A.H. et al. (2025): YOLOv8 outdoor confidence 99.1%
   https://doi.org/10.1016/j.iot.2025.101707
 """
@@ -22,7 +22,7 @@ from config import (
 )
 from entities import SimEntity, AgentRole
 
-# Torch / YOLO imports
+# Gestione errori importazione YOLO
 try:
     import torch
     from ultralytics import YOLO as _YOLO
@@ -30,7 +30,7 @@ try:
 except ImportError:
     HAS_YOLO = False
 
-# OpenCV for webcam
+# Gestione errori importazione OpenCV
 try:
     import cv2
     HAS_CV2 = True
@@ -40,7 +40,7 @@ except ImportError:
 
 @dataclass
 class VisionDetection:
-    """Output of the vision module."""
+    """Output del modulo vision"""
     detected: bool
     confidence: float
     bbox: Tuple[int, int, int, int]
@@ -52,10 +52,10 @@ class VisionDetection:
 
 class VisionAgentReal:
     """
-    Vision agent with real YOLOv8 support.
+    Agente Vision con supporto YOLOv8 reale
 
-    In real mode, it uses YOLOv8 on actual images (VisDrone / webcam).
-    In analytical mode, it uses a physics-based model.
+    In modalità reale, utilizza YOLOv8 su immagini effettive (VisDrone / webcam)
+    In modalità analitica, utilizza un modello basato sulla fisica
     """
 
     DETECTION_THRESHOLD = DETECTION_THRESHOLD
@@ -76,7 +76,7 @@ class VisionAgentReal:
             self._load_model()
             if image_dir:
                 self._index_frames()
-
+    #carico YOLO 
     def _load_model(self):
         try:
             self._model = _YOLO(self.model_path)
@@ -101,14 +101,14 @@ class VisionAgentReal:
         return Image.open(f).convert("RGB").resize((IMG_SIZE, IMG_SIZE))
 
     def detect(self, entity: SimEntity, distance: float, patch_active: bool = False) -> VisionDetection:
-        """Main detection entry point."""
+        """Rivela una entità con YOLO"""
         self.det_count += 1
         if self.real_mode and self._frames:
             return self._detect_real_from_sim(entity, distance, patch_active)
         return self._detect_analytical(entity, distance, patch_active)
 
     def _detect_analytical(self, entity: SimEntity, distance: float, patch_active: bool) -> VisionDetection:
-        """Physics-based analytical model (fallback)."""
+        """Modello analitico basato sulla fisica (fallback)."""
         norm = distance / YOLO_MAX_RANGE
         base = float(np.clip(
             BASELINE_CONFIDENCE * math.exp(-1.5 * norm) + random.gauss(0, 0.04),
@@ -138,7 +138,7 @@ class VisionAgentReal:
         )
 
     def _detect_real_from_sim(self, entity: SimEntity, distance: float, patch_active: bool) -> VisionDetection:
-        """Real YOLOv8 detection on actual image frames."""
+        """Rilevamento reale su immagini simulate con supporto patch"""
         frame = self._next_frame()
         if frame is None:
             return self._detect_analytical(entity, distance, patch_active)
@@ -150,7 +150,7 @@ class VisionAgentReal:
         apply_p = patch_active and entity.care_kit_active and self.patch_tensor is not None
 
         if apply_p:
-            # Apply patch on a default central bounding box
+            # Applico la patch al centro dell'immagine (simulando l'effetto sulla persona) -> in un caso reale, la patch sarebbe posizionata in base alla posizione stimata della persona
             from patch_optimizer import PatchOptimizer
             cx, cy = IMG_SIZE // 2, IMG_SIZE // 2
             bbox_px = (cx - 50, cy - 80, cx + 50, cy + 80)

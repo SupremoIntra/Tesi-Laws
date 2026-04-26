@@ -1,5 +1,5 @@
 """
-Fusion and decision agents.
+Fusione bayesiana di segnali di visione, OSINT e comportamentali per valutare minacce e prendere decisioni operative con conformità al diritto internazionale umanitario (IHL).
 """
 
 import numpy as np
@@ -29,7 +29,7 @@ class Decision:
 
 
 class FusionAgent:
-    """Bayesian fusion of vision, OSINT, and behavioral signals."""
+    """Faccio la fusione bayesiana tra segnali vision (YOLO), OSINT e comportamentali (behavioral)"""
 
     PRIOR = 0.50
 
@@ -76,7 +76,7 @@ class FusionAgent:
 
 
 class DecisionAgent:
-    """Decision logic with IHL compliance checks."""
+    """Logica di decision in base al risultato della fusion e tenendo conto di limitazioni IHL(International Humanitarian Law)"""
 
     def __init__(self):
         self.log: List[Decision] = []

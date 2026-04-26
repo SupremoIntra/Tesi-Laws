@@ -1,5 +1,5 @@
 """
-LAWS-SIM core simulation loop.
+LAWS-SIM loop del simulator.
 """
 
 import random
@@ -13,7 +13,7 @@ from metrics import SimMetrics, AttackScenario
 
 
 class LAWSSim:
-    """Multi-agent LAWS simulator."""
+    """Multi-agent LAWS simulator"""
 
     def __init__(self, scenario: AttackScenario, steps: int, seed: int = 42,
                  real_mode: bool = False, image_dir: str = None,
@@ -24,7 +24,7 @@ class LAWSSim:
         self.scenario = scenario
         self.steps = steps
         self.env = Environment(grid_size=GRID_SIZE)
-        self.osint_agent = None  # (simplified, embedded in SimEntity)
+        self.osint_agent = None  # per ora OSINT è statico (SIMEntity), ma potrei implementare un agente che aggiorna i profili nel tempo)
         self.vision = VisionAgentReal(
             real_mode=real_mode,
             image_dir=image_dir,
@@ -35,7 +35,7 @@ class LAWSSim:
         self.metrics = SimMetrics()
         self.step_log = []
 
-        # Activate CARE Kit for targets in patch scenarios
+        # Attivo il care kit se scenario prevede patching (per simulare l'efficacia del patching contro attacchi di visione)
         if scenario in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING):
             for e in self.env.entities:
                 if e.role == AgentRole.TARGET:
@@ -69,7 +69,7 @@ class LAWSSim:
 
                 # Aggiorno le metriche 
                 is_threat = (entity.role == AgentRole.TARGET)
-                is_engaged = decision.action in ("ENGAGE", "ALERT")
+                is_engaged = decision.action in ("ENGAGE") #avevo incluso anche ALERT ma stavo commettendo crimini di guerra!
                 if is_threat and is_engaged:
                     self.metrics.tp += 1
                 elif not is_threat and is_engaged:
