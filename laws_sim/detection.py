@@ -2,7 +2,8 @@
 Agente Vision con YOLO per rilevamento di persone e oggetti, con supporto per modalità reale (su immagini VisDrone o webcam) e analitica (modello basato su distanza e patch).
 
 paper:
-- Sodhro, A.H. et al. (2025): YOLOv8 outdoor confidence 99.1%
+- Sodhro, A.H. et al. (2025): Real-time efficiency of YOLOv5 and YOLOv8 in human intrusion detection across diverse environments and recommendation
+---> YOLOv8 outdoor confidence 99.1%
   https://doi.org/10.1016/j.iot.2025.101707
 """
 
@@ -54,7 +55,7 @@ class VisionAgentReal:
     """
     Agente Vision con supporto YOLOv8 reale
 
-    In modalità reale, utilizza YOLOv8 su immagini effettive (VisDrone / webcam)
+    In modalità reale, utilizza YOLOv8 su immagini effettive (VisDrone / img singola)
     In modalità analitica, utilizza un modello basato sulla fisica
     """
 
@@ -140,13 +141,14 @@ class VisionAgentReal:
     def _detect_real_from_sim(self, entity: SimEntity, distance: float, patch_active: bool) -> VisionDetection:
         """Rilevamento reale su immagini simulate con supporto patch"""
         frame = self._next_frame()
-        if frame is None:
+        if frame is None: #se YOLO non carica correttamente uso il modello analitico
             return self._detect_analytical(entity, distance, patch_active)
 
         img_t = torch.from_numpy(
             np.array(frame).astype(np.float32) / 255.0
         ).permute(2, 0, 1)
 
+        """Se l'entità ha il kit attivato (care_kit_active), il metodo richiama l'optimizer, prende il tensore avvelenato (patch) che ho addestrato (care_kit_patch.pt) e lo "stampa" digitalmente al centro dell'immagine (simulando il petto della persona ... da sistemare) prima di passarla a YOLO."""
         apply_p = patch_active and entity.care_kit_active and self.patch_tensor is not None
 
         if apply_p:
@@ -160,10 +162,12 @@ class VisionAgentReal:
             cov = 0.0
 
         img_pil = Image.fromarray((img_t.permute(1, 2, 0).numpy() * 255).astype(np.uint8))
+        #immagine compromessa (con patch) passata a YOLO per rilevamento reale
         results = self._model(img_pil, verbose=False)
-
+        #aggiorno conf post patch
         yolo_conf = self._get_person_conf(results)
 
+        #scaling geometrico della confidence in base alla distanza (aggiungo rumore gaussiano per realismo)
         dist_scale = math.exp(-1.0 * distance / YOLO_MAX_RANGE)
         conf = float(np.clip(yolo_conf * dist_scale + random.gauss(0, 0.02), 0, 1))
 

@@ -84,8 +84,10 @@ class DecisionAgent:
         self.ihl_overrides = 0
 
     def _ihl_ok(self, fusion: FusionResult, nearby_civilians: int) -> bool:
+        #troppa variazione nelle fusion recenti -> false positive evito engagement
         if (fusion.confidence_interval[1] - fusion.confidence_interval[0]) > 0.40:
             return False
+        #troppi? civili vicini a una minaccia potenziale -> evito engagement
         if nearby_civilians > 3 and fusion.threat_score < 0.85:
             return False
         return True
