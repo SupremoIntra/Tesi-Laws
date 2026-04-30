@@ -38,14 +38,13 @@ except ImportError:
     HAS_CV2 = False
 
 
-# ══════════════════════════════════════════════════════════════════════
-# UTILITY: POSIZIONAMENTO PATCH SUL PETTO
-# ══════════════════════════════════════════════════════════════════════
+
+# UTILITY: POSIZIONAMENTO PATCH SUL PETTO (da migliorare!)
 
 def get_chest_bbox(person_bbox: Tuple[int,int,int,int],
                    patch_w: int, patch_h: int,
                    img_size: int = 640) -> Tuple[int,int,int,int]:
-    """Centra la patch sul petto (33% dall'alto del bbox persona)."""
+    """Centra la patch sul petto -> simulato 33% dall'alto del bbox persona, non al centro esatto"""
     x1, y1, x2, y2 = person_bbox
     cx = (x1 + x2) // 2
     cy = y1 + int((y2 - y1) * 0.33)
@@ -56,9 +55,8 @@ def get_chest_bbox(person_bbox: Tuple[int,int,int,int],
     return (px1, py1, px2, py2)
 
 
-# ══════════════════════════════════════════════════════════════════════
-# ANCHOR MASK — individua le celle YOLOv8 che overlappano il bbox
-# ══════════════════════════════════════════════════════════════════════
+
+# ANCHOR MASK — individua le celle di YOLO che fanno overlap sul bbox della patch -> mi focalizzo solo su quelle per aumentare il gradiente e forzare YOLO a vedere la PATCH come unica fonte di informazione per la detection -> non usa più ancore di backup fuori dalla patch (sul corpo o ambiente..)
 
 def build_anchor_mask(patch_bbox: Tuple[int,int,int,int],
                       img_size: int = 640,
@@ -68,6 +66,8 @@ def build_anchor_mask(patch_bbox: Tuple[int,int,int,int],
     indices = []
     offset = 0
 
+    # YOLOv8 ha 3 scale di output (strides 8, 16, 32) → 80x80, 40x40, 20x20 griglie 
+    # Ogni cella ha un centro (cx, cy) che rappresenta l'ancora. Se il centro cade dentro il patch_bbox (con un margine), la cella è attiva.
     for stride in [8, 16, 32]:
         grid   = img_size // stride
         margin = stride * 0.5
@@ -90,12 +90,10 @@ def build_anchor_mask(patch_bbox: Tuple[int,int,int,int],
     return torch.tensor(indices, dtype=torch.long, device=device)
 
 
-# ══════════════════════════════════════════════════════════════════════
-# PATCH OPTIMIZER
-# ══════════════════════════════════════════════════════════════════════
 
+# PATCH OPTIMIZER — ottimizza la patch con EoT, focalizzandosi solo sulle celle attive (anchor mask) per massimizzare l'efficacia dell'attacco e forzare YOLO a dipendere esclusivamente dalla patch per la detection.
 class PatchOptimizer:
-    TV_WEIGHT = 0.001
+    TV_WEIGHT = 0.001 # peso della total variation (regolarizzazione per mantenere la patch visivamente coerente)
 
     def __init__(self, patch_h: int = PATCH_H, patch_w: int = PATCH_W,
                  model_path: str = "yolov8n.pt"):
@@ -108,17 +106,19 @@ class PatchOptimizer:
         self.patch = (torch.rand(3, patch_h, patch_w) * 0.4 + 0.3).requires_grad_(True)
 
     def _get_model(self):
-        """Carica YOLOv8 lazy (solo alla prima chiamata)."""
+        """Carica YOLOv8 lazy (solo alla prima chiamata)"""
         if self._yolo is None:
             self._yolo = _YOLO(self.model_path)
             for p in self._yolo.model.parameters():
-                p.requires_grad_(False)
+                p.requires_grad_(False) # congeliamo i pesi di YOLO, ottimizziamo solo la patch
             self._yolo.model.eval()
 
-            # --- FIX: INFERENCE TENSOR BUG ---
+            # FIX: AUTOGRAD GRAPH BREAK -> evitiamo che YOLO generi dinamicamente i tensori 'anchors' e 'strides' fuori dal grafo computazionale
             # YOLOv8 genera 'anchors' e 'strides' dinamicamente al primo forward.
-            # Eseguiamo una passata dummy (senza inference_mode) per costringere
-            # PyTorch a creare questi tensori in modo compatibile con l'autograd.
+            # Eseguendo un forward con un tensore dummy (fuori da torch.no_grad()),
+            # forziamo PyTorch a inizializzare questi tensori agganciandoli 
+            # correttamente al grafo computazionale. Senza questo fix, 
+            # la backpropagation verso i pixel della patch fallisce silenziosamente.
             device = next(self._yolo.model.parameters()).device
             dummy = torch.zeros(1, 3, IMG_SIZE, IMG_SIZE, device=device)
             _ = self._yolo.model(dummy)
@@ -129,14 +129,15 @@ class PatchOptimizer:
     def _focused_bce_loss(torch_model: torch.nn.Module,
                           batch: torch.Tensor,
                           person_class: int = PERSON_CLASS_ID) -> torch.Tensor:
-        """Schiaccia l'intero 'iceberg' di detection, attaccando tutte le ancore attive."""
+        """abbatte la confidence di detection, attaccando tutte le ancore attive."""
         raw  = torch_model(batch)
         pred = raw[0] if isinstance(raw, (tuple, list)) else raw
         
-        person_scores = pred[:, 4 + person_class, :]   
+        person_scores = pred[:, 4 + person_class, :] 
         
-        # Selezioniamo TUTTE le celle che "vedono" una persona, non solo le prime 10.
-        # Questo impedisce a YOLO di usare ancore di backup per mantenere alta la confidence.
+        # Selezioniamo TUTTE le celle che "vedono" una persona -> CONFIDENCE > 0.10 (AGGRESSIVO)
+        # Attacca qualsiasi cella di YOLO che pensi, anche solo al 10%, che ci sia una persona -> questo forza YOLO a dipendere esclusivamente dalla patch per la detection, senza usare ancore di backup su altre parti del corpo o ambiente.
+        
         mask = person_scores > 0.10
         
         if not mask.any():
@@ -149,14 +150,14 @@ class PatchOptimizer:
 
     @staticmethod
     def _tv_loss(patch: torch.Tensor) -> torch.Tensor:
-        """Total Variation: penalizza variazioni brusche tra pixel vicini."""
+        """Total Variation: penalizza variazioni brusche tra pixel vicini per mantenere la patch visivamente coerente."""
         dx = (patch[:, :, 1:] - patch[:, :, :-1]).abs().mean()
         dy = (patch[:, 1:, :] - patch[:, :-1, :]).abs().mean()
         return dx + dy
 
     @staticmethod
     def _random_transform(patch: torch.Tensor) -> torch.Tensor:
-        """Trasformazione fisica casuale (EoT)."""
+        """Trasformazione fisica casuale (EoT): rotazione, scala, luminosità, contrasto, blur"""
         t = patch.unsqueeze(0)
         t = TF.rotate(t, random.uniform(-20, 20))
 
@@ -182,7 +183,7 @@ class PatchOptimizer:
     def apply_patch_to_image(img_t: torch.Tensor,
                              patch_t: torch.Tensor,
                              bbox: Tuple[int,int,int,int]) -> torch.Tensor:
-        """Sovrascrive i pixel del bbox con la patch (tensor slicing)."""
+        """tensor slicing -> sovrappongo patch all'img originale nel bbox"""
         x1, y1, x2, y2 = bbox
         ph, pw = y2-y1, x2-x1
         if ph <= 0 or pw <= 0:
@@ -195,7 +196,7 @@ class PatchOptimizer:
 
     @staticmethod
     def _get_person_conf(results) -> float:
-        """Confidence YOLO (post-NMS)."""
+        """Confidence YOLO (post-NMS)"""
         for r in results:
             if r.boxes is not None and len(r.boxes) > 0:
                 mask = (r.boxes.cls == PERSON_CLASS_ID)
@@ -205,7 +206,7 @@ class PatchOptimizer:
 
     @staticmethod
     def _find_person_bbox(results) -> Optional[Tuple[int,int,int,int]]:
-        """Bbox della persona con confidence più alta."""
+        """Bbox della persona con confidence più alta"""
         for r in results:
             if r.boxes is not None and len(r.boxes) > 0:
                 mask = (r.boxes.cls == PERSON_CLASS_ID)
@@ -222,7 +223,7 @@ class PatchOptimizer:
         
         model = self._get_model()
 
-        # ── Carica immagine ───────────────────────────────────────────
+        #Carica img (o webcam) 
         if image_path == "webcam":
             if not HAS_CV2:
                 raise RuntimeError("pip install opencv-python")
@@ -246,15 +247,15 @@ class PatchOptimizer:
             np.array(img_pil).astype(np.float32) / 255.0
         ).permute(2, 0, 1)
 
-        # ── Baseline ─────────────────────────────────────────────────
+        #Baseline
         print("Rilevamento baseline...")
         results_base = model(img_pil, verbose=False)
         conf_before  = self._get_person_conf(results_base)
         print(f"  Confidence PRIMA patch: {conf_before:.4f}")
         if conf_before < 0.10:
-            print("  Attenzione: confidence bassa. Usa foto frontale, buona luce.")
+            print("  Attenzione: confidence bassa. Persona non rilevata correttamente -> cambia img o sistema l'ambiente")
 
-        # ── Calcola bbox petto ────────────────────────────────────────
+        #Calcola bbox petto
         person_bbox = bbox if bbox is not None else self._find_person_bbox(results_base)
         if person_bbox is None:
             cx, cy  = IMG_SIZE // 2, IMG_SIZE // 2
@@ -265,17 +266,17 @@ class PatchOptimizer:
         patch_bbox = get_chest_bbox(person_bbox, self.patch_w, self.patch_h, IMG_SIZE)
         px1, py1, px2, py2 = person_bbox  # Prendo i vertici della PERSONA
         person_area = (px2 - px1) * (py2 - py1)
-        coverage = (self.patch_h * self.patch_w) / max(person_area, 1)
+        coverage = (self.patch_h * self.patch_w) / max(person_area, 1) #... area patch / area persona
         print(f"  BBox persona: {person_bbox}")
         print(f"  BBox patch (petto): {patch_bbox}  coverage={coverage:.3f}")
 
-        # ── Setup ─────────────────────────────────────────────────────
+        #Setup
         torch_model = model.model
         device      = next(torch_model.parameters()).device
         img_t       = img_t.to(device)
 
         self.patch  = self.patch.detach().to(device).requires_grad_(True)
-        optimizer   = torch.optim.Adam([self.patch], lr=lr)
+        optimizer   = torch.optim.Adam([self.patch], lr=lr) #adam è più stabile per ottimizzare pixel direttamente (in futuro provo anche SGD con momentum)
         scheduler   = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=n_steps, eta_min=lr * 0.1)
 
@@ -290,7 +291,7 @@ class PatchOptimizer:
         for step in range(n_steps):
             optimizer.zero_grad()
             step_losses = []
-
+        # Per ogni step, applichiamo n_eot trasformazioni casuali alla patch e calcoliamo la loss media → questo rende la patch robusta a variazioni fisiche e di illuminazione, simulando condizioni reali di utilizzo.
             for _ in range(n_eot):
                 patch_t     = self._random_transform(self.patch).to(device)
                 img_patched = self.apply_patch_to_image(img_t, patch_t, patch_bbox)
@@ -322,7 +323,7 @@ class PatchOptimizer:
                       f"conf_yolo={conf_now:.4f}  "
                       f"lr={optimizer.param_groups[0]['lr']:.5f}")
 
-        # ── Valutazione finale ────────────────────────────────────────
+        #Valutazione finale
         print("\nValutazione finale...")
         with torch.no_grad():
             img_final = self.apply_patch_to_image(img_t, self.patch, patch_bbox)
@@ -335,7 +336,7 @@ class PatchOptimizer:
         print(f"  Confidence DOPO:   {conf_after:.4f}")
         print(f"  Drop:              {drop:+.4f}  ({drop/max(conf_before,1e-6)*100:.1f}%)")
         if coverage > 0:
-            print(f"  CLAE = {drop:.4f} / {coverage:.4f} = {drop/coverage:.3f}")
+            print(f"  CEAE = {drop:.4f} / {coverage:.4f} = {drop/coverage:.3f}")
 
         return {
             "patch"         : self.patch.detach().cpu(),
