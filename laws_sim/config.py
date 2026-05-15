@@ -71,7 +71,7 @@ PATCH_H = 120                 # FIX: era 240 → patch enorme che copriva tutta 
 PATCH_W = 100                 # realistico per un logo stampato su indumento , tipo A5, boh?!
 PATCH_LR = 0.03 #(acceleratore) dice all'optimizer Adam quanto violentamente modificare i pixel del patch ad ogni step. (ci vuole un bilanciamento, troppo basso non impara, troppo alto cambia in modo caotico e YOLO riconosce subito) ---> PAPER Thys et al. e Brown et al. (file optimizer)
 
-PATCH_STEPS = 1000. #FIX aumentati a 1000 per modellare meglio l'attacco altrimenti era troppo debole
+PATCH_STEPS = 1000 #FIX aumentati a 1000 per modellare meglio l'attacco altrimenti era troppo debole
 PATCH_EPS = 0.05 #(limite alla perturbazione) -> quanto i pixel possono essere modificati rispetto al valore dei colori base. 
 EOT_N_TRANSFORMS = 4
 PERSON_CLASS_ID = 0           # COCO classe 0 = "person"
