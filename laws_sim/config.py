@@ -73,10 +73,10 @@ PATCH_LR = 0.03 #(acceleratore) dice all'optimizer Adam quanto violentamente mod
 
 PATCH_STEPS = 1000 #FIX aumentati a 1000 per modellare meglio l'attacco altrimenti era troppo debole
 PATCH_EPS = 0.05 #(limite alla perturbazione) -> quanto i pixel possono essere modificati rispetto al valore dei colori base. 
-EOT_N_TRANSFORMS = 4
+EOT_N_TRANSFORMS = 8
 PERSON_CLASS_ID = 0           # COCO classe 0 = "person"
 IMG_SIZE = 640                # input size YOLOv8
 
-# C_vision per CLAE: patch_area / bbox_area (aggiornato con nuove dimensioni)
-# Su un bbox medio di ~200×400px: (100×80)/(200×400) = 0.10
-PATCH_BBOX_COVERAGE = 0.10
+# C_vision per CLAE: patch_area / bbox_area 
+
+PATCH_BBOX_COVERAGE = 0.20  # patch_area / person_bbox_area (80x60 su bbox medio)

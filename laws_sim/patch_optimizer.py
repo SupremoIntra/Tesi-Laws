@@ -350,3 +350,102 @@ class PatchOptimizer:
             "img_original"  : img_t.cpu(),
             "img_patched"   : img_final.cpu(),
         }
+        
+    def optimize_universal(self, loader,
+                       n_steps: int = PATCH_STEPS,
+                       lr: float    = PATCH_LR,
+                       n_eot: int   = EOT_N_TRANSFORMS,
+                       batch_size: int = 4,
+                       verbose: bool = True) -> dict:
+        """
+        Universal Adversarial Patch su dataset VisDrone.
+        Ogni step usa un batch di frame diversi → patch generalizza su qualsiasi soggetto.
+        MAX_TARGETS_PER_FRAME: limite bbox per frame, evita saturazione VRAM su MPS (M4).
+        """
+        MAX_TARGETS_PER_FRAME = 5   # M4 MPS: max bbox simultanei per frame, se no si fonde il Mac:)
+
+        model       = self._get_model()
+        torch_model = model.model
+        device      = next(torch_model.parameters()).device
+
+        self.patch = self.patch.detach().to(device).requires_grad_(True)
+        optimizer  = torch.optim.Adam([self.patch], lr=lr)
+        scheduler  = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=int(n_steps), eta_min=lr * 0.1)
+
+        batch_gen    = self._infinite_batches(loader, batch_size)
+        loss_history = []
+        conf_history = []
+
+        print(f"\nUniversal Patch — VisDrone  |  {len(loader)} frame  |  "
+            f"steps={n_steps}  batch={batch_size}  eot={n_eot}  "
+            f"max_bbox/frame={MAX_TARGETS_PER_FRAME}")
+        print("─" * 65)
+
+        for step in range(int(n_steps)):
+            imgs_pil, bboxes_list = next(batch_gen)
+            optimizer.zero_grad()
+            step_losses = []
+
+            for img_pil, bboxes in zip(imgs_pil, bboxes_list):
+                img_t = torch.from_numpy(
+                    np.array(img_pil).astype(np.float32) / 255.0
+                ).permute(2, 0, 1).to(device)
+
+                # VRAM guard: campiona casualmente max MAX_TARGETS_PER_FRAME bbox
+                if len(bboxes) > MAX_TARGETS_PER_FRAME:
+                    bboxes = random.sample(bboxes, MAX_TARGETS_PER_FRAME)
+
+                for person_bbox in bboxes:
+                    patch_bbox = get_chest_bbox(
+                        person_bbox, self.patch_w, self.patch_h, IMG_SIZE)
+                    for _ in range(n_eot):
+                        pt    = self._random_transform(self.patch).to(device)
+                        img_p = self.apply_patch_to_image(img_t, pt, patch_bbox)
+                        loss  = self._bce_loss(torch_model, img_p.unsqueeze(0))
+                        step_losses.append(loss)
+
+            if not step_losses:
+                continue
+
+            adv  = torch.stack(step_losses).mean()
+            tv   = self._tv_loss(self.patch)
+            (adv + self.TV_WEIGHT * tv).backward()
+            optimizer.step()
+            scheduler.step()
+
+            with torch.no_grad():
+                self.patch.clamp_(0, 1)
+
+            loss_history.append(adv.item())
+
+            if verbose and (step % 10 == 0 or step == int(n_steps) - 1):
+                # valutazione rapida sul primo bbox del batch corrente
+                with torch.no_grad():
+                    img0 = torch.from_numpy(
+                        np.array(imgs_pil[0]).astype(np.float32) / 255.0
+                    ).permute(2, 0, 1).to(device)
+                    pb   = get_chest_bbox(bboxes_list[0][0], self.patch_w,
+                                        self.patch_h, IMG_SIZE)
+                    chk  = self.apply_patch_to_image(img0, self.patch, pb)
+                    pil  = Image.fromarray(
+                        (chk.cpu().permute(1, 2, 0).numpy() * 255).astype(np.uint8))
+                    conf_now = self._get_person_conf(model(pil, verbose=False))
+                    conf_history.append((step, conf_now))
+                print(f"  step {step+1:4d}/{int(n_steps)}  "
+                    f"bce={adv.item():.4f}  tv={tv.item():.4f}  "
+                    f"conf={conf_now:.4f}  "
+                    f"lr={optimizer.param_groups[0]['lr']:.5f}")
+
+        return {
+            "patch"         : self.patch.detach().cpu(),
+            "loss_history"  : loss_history,
+            "conf_history"  : conf_history,
+            "patch_coverage": PATCH_BBOX_COVERAGE,
+        }
+
+    @staticmethod
+    def _infinite_batches(loader, batch_size: int):
+        """Generatore infinito che ricicla il dataset."""
+        while True:
+            yield from loader.iter_batches(batch_size=batch_size, shuffle=True)

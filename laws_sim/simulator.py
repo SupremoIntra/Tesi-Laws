@@ -69,7 +69,7 @@ class LAWSSim:
 
                 # Aggiorno le metriche 
                 is_threat = (entity.role == AgentRole.TARGET)
-                is_engaged = decision.action in ("ENGAGE") #avevo incluso anche ALERT ma stavo commettendo crimini di guerra!
+                is_engaged = decision.action in ("ENGAGE, ALERT") #Rimesso ALERT -> segnalazione per revisione umana, non engagement diretto
                 if is_threat and is_engaged:
                     self.metrics.tp += 1
                 elif not is_threat and is_engaged:
@@ -92,3 +92,68 @@ class LAWSSim:
                     })
 
         return self.metrics
+    
+def evaluate_on_dataset(loader, patch_tensor=None,
+                        model_path: str = "yolov8n.pt",
+                        conf_threshold: float = 0.50,
+                        max_samples: int = None,
+                        verbose: bool = True) -> SimMetrics:
+    """
+    F1 reale su frame VisDrone — sostituisce il decadimento matematico (fake)
+    Logica frame-level: TP se YOLO rileva almeno 1 persona dove ce n'è 1 annotata.
+    """
+    try:
+        import torch
+        from ultralytics import YOLO
+        from patch_optimizer import PatchOptimizer, get_chest_bbox
+        from config import IMG_SIZE, PERSON_CLASS_ID
+        import numpy as np
+        from PIL import Image
+    except ImportError as e:
+        raise RuntimeError(f"Dipendenza mancante: {e}")
+
+    model   = YOLO(model_path)
+    metrics = SimMetrics()
+    indices = list(range(len(loader)))
+    if max_samples:
+        indices = indices[:max_samples]
+
+    for n_done, idx in enumerate(indices):
+        img_pil, gt_bboxes = loader.get_sample(idx)
+        has_person_gt      = len(gt_bboxes) > 0
+
+        # applica patch su ogni persona annotata nel frame
+        if patch_tensor is not None and gt_bboxes:
+            img_t = torch.from_numpy(
+                np.array(img_pil).astype(np.float32) / 255.0
+            ).permute(2, 0, 1)
+            for bbox in gt_bboxes:
+                patch_bbox = get_chest_bbox(
+                    bbox, patch_tensor.shape[2], patch_tensor.shape[1], IMG_SIZE)
+                img_t = PatchOptimizer.apply_patch_to_image(img_t, patch_tensor, patch_bbox)
+            img_pil = Image.fromarray(
+                (img_t.permute(1,2,0).numpy() * 255).astype(np.uint8))
+
+        # inferenza YOLO
+        results      = model(img_pil, verbose=False)
+        detected_any = any(
+            (r.boxes is not None and
+             (r.boxes.cls == PERSON_CLASS_ID).any() and
+             r.boxes.conf[(r.boxes.cls == PERSON_CLASS_ID)].max() >= conf_threshold)
+            for r in results if r.boxes is not None and len(r.boxes) > 0
+        )
+
+        if   has_person_gt and     detected_any: metrics.tp += 1
+        elif has_person_gt and not detected_any: metrics.fn += 1
+        elif not has_person_gt and detected_any: metrics.fp += 1
+        else:                                    metrics.tn += 1
+
+        if verbose and (n_done + 1) % 20 == 0:
+            print(f"  {n_done+1}/{len(indices)}  "
+                  f"P={metrics.precision:.3f}  R={metrics.recall:.3f}  F1={metrics.f1:.3f}")
+
+    if verbose:
+        print(f"\n  Finale: TP={metrics.tp} FP={metrics.fp} FN={metrics.fn} TN={metrics.tn}")
+        print(f"  P={metrics.precision:.3f}  R={metrics.recall:.3f}  "
+              f"F1={metrics.f1:.3f}  FPR={metrics.fpr:.3f}")
+    return metrics
