@@ -2,36 +2,32 @@ import os
 os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
 from visdrone_loader import VisDroneLoader
-from patch_optimizer import PatchOptimizer
-import torch
+from simulator import evaluate_on_dataset
 
-# Sostituisci con il tuo percorso reale
-DATASET_PATH = "/Users/intra/visdrone" 
+# Il tuo percorso
+DATASET_PATH = "/Users/intra/visdrone"
 
 def main():
-    print("1. Caricamento Dataset...")
+    print("=== AVVIO VALUTAZIONE EMPIRICA VISDRONE (BASELINE) ===")
     loader = VisDroneLoader(DATASET_PATH)
     
-    print("\n2. Inizializzazione Optimizer...")
-    opt = PatchOptimizer()
+    # Valutiamo i primi 100 frame per fare in fretta prima che tu debba scappare
+    metrics = evaluate_on_dataset(
+        loader=loader,
+        patch_tensor=None,  # Nessuna patch -> Stiamo calcolando la Baseline pura
+        conf_threshold=0.50,
+        max_samples=100,
+        verbose=True
+    )
     
-    # Controllo device per rassicurarci sull'M4
-    device = next(opt._get_model().model.parameters()).device
-    print(f"-> YOLO sta girando su: {device}")
-    
-    print("\n3. Avvio Smoke Test (10 step, batch_size=1)...")
-    try:
-        # Facciamo girare solo 10 step con 1 immagine alla volta per non fondere il Mac
-        res = opt.optimize_universal(
-            loader=loader, 
-            n_steps=10, 
-            batch_size=1, 
-            verbose=True
-        )
-        print("\n✅ TEST SUPERATO! Il loop di ottimizzazione universale gira senza crash.")
-        
-    except Exception as e:
-        print(f"\n❌ ERRORE DURANTE IL LOOP: {e}")
+    print("\n" + "="*40)
+    print("🎯 RISULTATI REALI (GROUND TRUTH / BASELINE)")
+    print("="*40)
+    print(f"F1-Score:  {metrics.f1:.3f}")
+    print(f"Precision: {metrics.precision:.3f}")
+    print(f"Recall:    {metrics.recall:.3f}")
+    print(f"TP: {metrics.tp} | FP: {metrics.fp} | FN: {metrics.fn}")
+    print("="*40)
 
 if __name__ == "__main__":
     main()
