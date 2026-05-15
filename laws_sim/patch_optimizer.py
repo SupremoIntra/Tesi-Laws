@@ -22,7 +22,7 @@ import torchvision.transforms.functional as TF
 
 from config import (
     PATCH_H, PATCH_W, PATCH_LR, PATCH_STEPS,
-    EOT_N_TRANSFORMS, PERSON_CLASS_ID, IMG_SIZE
+    EOT_N_TRANSFORMS, PERSON_CLASS_ID, IMG_SIZE, PATCH_BBOX_COVERAGE
 )
 
 try:
@@ -108,7 +108,9 @@ class PatchOptimizer:
     def _get_model(self):
         """Carica YOLOv8 lazy (solo alla prima chiamata)"""
         if self._yolo is None:
+            device_str = "mps" if torch.backends.mps.is_available() else "cpu"
             self._yolo = _YOLO(self.model_path)
+            self._yolo.to(device_str)  # Forza il caricamento su M4
             for p in self._yolo.model.parameters():
                 p.requires_grad_(False) # congeliamo i pesi di YOLO, ottimizziamo solo la patch
             self._yolo.model.eval()
@@ -402,7 +404,7 @@ class PatchOptimizer:
                     for _ in range(n_eot):
                         pt    = self._random_transform(self.patch).to(device)
                         img_p = self.apply_patch_to_image(img_t, pt, patch_bbox)
-                        loss  = self._bce_loss(torch_model, img_p.unsqueeze(0))
+                        loss  = self._focused_bce_loss(torch_model, img_p.unsqueeze(0))
                         step_losses.append(loss)
 
             if not step_losses:

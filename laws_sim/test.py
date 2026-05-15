@@ -1,9 +1,12 @@
+import os
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+
 from visdrone_loader import VisDroneLoader
 from patch_optimizer import PatchOptimizer
 import torch
 
 # Sostituisci con il tuo percorso reale
-DATASET_PATH = "/Users/intra/Tesi/visdrone" 
+DATASET_PATH = "/Users/intra/visdrone" 
 
 def main():
     print("1. Caricamento Dataset...")
