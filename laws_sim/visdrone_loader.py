@@ -6,7 +6,7 @@ Carica immagini e bounding box reali dal dataset VisDrone2019-DET.
 Formato annotazioni VisDrone (una riga per oggetto):
     bbox_left, bbox_top, bbox_width, bbox_height, score, category, truncation, occlusion
 
-Categorie rilevanti per questa tesi:
+Categorie rilevanti:
     1 = pedestrian
     2 = people (gruppo)
     (ignoriamo veicoli, categorie 3-10)
