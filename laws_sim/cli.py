@@ -7,60 +7,24 @@ import argparse
 import json
 import sys
 
+#import per dataset visdrone
+import os
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'  # Deve essere caricato PRIMA di torch
+from visdrone_loader import VisDroneLoader
+
 from rich.table import Table
 from config import PATCH_STEPS, EOT_N_TRANSFORMS
 from metrics import AttackScenario, SimMetrics, clae_costs, compute_clae
-from simulator import LAWSSim
+from simulator import LAWSSim, evaluate_on_dataset
 from patch_optimizer import PatchOptimizer
 from utils import console, HAS_RICH, HAS_MPL, save_patch_plots
-#import per dataset visdrone
-import os
-from visdrone_loader import VisDroneLoader
-from simulator import evaluate_on_dataset
-from patch_optimizer import PatchOptimizer
+
 
 try:
     import torch
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
-
-# creo la patch -> la ottimizzo con EoT applicata su una img di test e poi mostro i risultati + salvo la patch.pt
-def run_demo_patch(image_path: str, model_path: str = "yolov8n.pt", steps: int = PATCH_STEPS):
-    """Demo della patch adversariale creata con EoT su una img"""
-    if not HAS_TORCH: #controllo che ci sia torch ecc
-        console.print("[red]Requisiti non soddisfatti, installa le seguenti librerie: pip install torch ultralytics[/red]")
-        return
-
-    console.print(f"[bold cyan]Demo Patch EoT applicata su img (Adversarial Attack)[/bold cyan]")
-    console.print(f"Img usata: [yellow]{image_path}[/yellow]")
-    console.print(f"Modello di YOLO: [yellow]{model_path}[/yellow]")
-    console.print(f"Numero di steps di ottimizzazione: [yellow]{steps}[/yellow]")
-    console.print(f"Numero di steps di trasformazioni (EoT): [yellow]{EOT_N_TRANSFORMS}[/yellow]")
-
-    optimizer = PatchOptimizer(model_path=model_path)
-    result = optimizer.optimize(image_path, n_steps=steps, verbose=True)
-
-    cov = result["patch_coverage"]
-    delta_conf = result["conf_drop"]
-    #calcolo del CEAE reale come rapporto tra drop di confidence e copertura visiva (C_vision)
-    clae_real = delta_conf / cov if cov > 0 else 0.0
-
-    console.print(f"\n[bold green]Recap Metriche Calcolate[/bold green]")
-    console.print(f"Confidence prima: [green]{result['conf_before']:.4f}[/green]")
-    console.print(f"Confidence dopo:  [red]{result['conf_after']:.4f}[/red]")
-    console.print(f"Drop misurato: [bold yellow]{delta_conf:+.4f} ({delta_conf/max(result['conf_before'],1e-6)*100:.1f}%)[/bold yellow]")
-    console.print(f"C_vision (percentuale della patch (in pixel) su bbox) = {cov:.4f} ({cov*100:.1f}% of bbox)")
-    console.print(f"CEAE = Δconf / C_vision = [bold cyan]{clae_real:.3f}[/bold cyan]")
-
-    if HAS_MPL: #controllo che ci sia matplotlib per mostrare la patch su png
-        patch_arr = (result["patch"].permute(1, 2, 0).numpy() * 255).astype("uint8")
-        result["patch_arr"] = patch_arr
-        save_patch_plots(result, output_dir=".")
-
-    #salvo patch in formato .pt
-    torch.save(result["patch"], "care_kit_patch.pt")
-    console.print("[green]✓ Patch salvata → care_kit_patch.pt[/green]")
 
 
 def print_results(results: dict, baseline: SimMetrics):
@@ -117,7 +81,6 @@ def main():
 
         # ADDESTRAMENTO UNIVERSAL PATCH 
     if args.train_universal:
-        os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'  # Fix per operatore MPS mancante su Mac M4
         console.print(f"[bold cyan]Avvio Training Universal Patch su: {args.train_universal}[/bold cyan]")
         loader = VisDroneLoader(args.train_universal)
         opt = PatchOptimizer()

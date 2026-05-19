@@ -25,5 +25,5 @@ __pycache__/
 .venv/
 venv/
 **/*.pt
-datasets/
+visdrone/
 runs/
