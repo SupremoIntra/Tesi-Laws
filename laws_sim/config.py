@@ -51,12 +51,9 @@ TRACK_THRESHOLD = 0.22
 # =============================================================================
 # VISION AGENT (YOLOv8)
 # =============================================================================
-BASELINE_CONFIDENCE = 0.991   # Sodhro et al., 2025
+# Da paper, uso reale da visdrone -> BASELINE_CONFIDENCE = 0.991   # Sodhro et al., 2025
 DETECTION_THRESHOLD = 0.50
 
-# Parametri modello analitico (fallback senza YOLO reale)
-PATCH_SUPPRESSION = 0.65
-PATCH_DIST_FALLOFF = 0.04
 
 # =============================================================================
 # OSINT PROFILING
@@ -77,6 +74,5 @@ EOT_N_TRANSFORMS = 8
 PERSON_CLASS_ID = 0           # COCO classe 0 = "person"
 IMG_SIZE = 640                # input size YOLOv8
 
-# C_vision per CLAE: patch_area / bbox_area 
 
-PATCH_BBOX_COVERAGE = 0.20  # patch_area / person_bbox_area (80x60 su bbox medio)
+PATCH_BBOX_COVERAGE = 0.15  # patch_area / person_bbox_area -> ripresa drone, prima era 0.20

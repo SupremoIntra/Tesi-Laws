@@ -1,0 +1,30 @@
+{
+  "Baseline (No Attack)": {
+    "precision": 0.1698,
+    "recall": 1.0,
+    "f1": 0.2903,
+    "fpr": 0.9778,
+    "CEAE": null
+  },
+  "Adversarial Patch [Vision]": {
+    "precision": 0.1658,
+    "recall": 0.98,
+    "f1": 0.2836,
+    "fpr": 0.9862,
+    "CEAE": 0.0336
+  },
+  "OSINT Poisoning": {
+    "precision": 0.1658,
+    "recall": 0.9667,
+    "f1": 0.2831,
+    "fpr": 0.9724,
+    "CEAE": 0.024
+  },
+  "Cascading Attack [Multi-Layer]": {
+    "precision": 0.0449,
+    "recall": 0.2289,
+    "f1": 0.075,
+    "fpr": 0.9747,
+    "CEAE": 0.4893
+  }
+}
