@@ -19,7 +19,8 @@
 \usepackage{booktabs} % per le tabelle formattate correttamente (senza linee verticali) 
 
 \usepackage[utf8]{inputenc}
-
+\usepackage[colorinlistoftodos]{todonotes} %per note e commenti
+%quando mando bozza -> \usepackage[disable]{todonotes}
 \newtheorem{myteor}{Teorema}[section]
 \newenvironment{teor}{\begin{myteor}\sl}{\end{myteor}}
 
@@ -81,7 +82,6 @@ Nello specifico, per perseguire tale scopo, il lavoro si articola sui seguenti o
     \item \textbf{Valutazione necro-etica dell'autonomia:} approfondire il concetto di tanatopolitica algoritmica, dimostrando come la disarticolazione tra l'umano e lo strumento di morte introduca problematiche di accountability e di ``bias'' insormontabili nel trattamento dei dati in zone di guerra.
     \item \textbf{Quantificazione sperimentale delle vulnerabilità:} valutare empiricamente la robustezza dei modelli di Object Detection (nello specifico l'architettura YOLO) utilizzati nei sistemi di targeting, sfruttando tecniche di \textit{Adversarial Machine Learning} per dimostrare la facilità con cui la ``confidence'' algoritmica può essere compromessa.
     \item \textbf{Progettazione di contromisure umanitarie:} proporre e teorizzare il ``C.A.R.E. Kit'', una contromisura di difesa passiva basata sul camuffamento avversariale, volta a tutelare i diritti umani sfruttando proprio le debolezze strutturali della Computer Vision.
-    \item 
 \end{itemize}
 \chapter{Geopolitica, Dual-Use e Contesto Operativo}
 \label{cap1}
@@ -116,7 +116,7 @@ Come successo per il caso Anthropic-Pentagono \cite{ant_pen_escalation}, queste 
 
 \subsection{Il caso Italia}
 
-L'italia ha supportato una proposta per dare via a dei dibattiti multilaterali sui killer robots a partire da Novembre 2013. Nel 2018 ha sostenuto che ``i Sistemi ad Arma Autonomi esistenti non sono LAWS”, e ha affermato che ``i Sistemi d'Arma non presentano zone grigie di accountability fino a quando i loro effetti possono essere attribuiti agli operatori umani che hanno attivamente deciso di schierarli sul campo d'azione e attivarli''.  
+L'italia ha supportato una proposta per dare via a dei dibattiti multilaterali sui killer robots a partire da Novembre 2013. Nel 2018 ha sostenuto che ``i Sistemi ad Arma Autonomi esistenti non sono LAWS'', e ha affermato che ``i Sistemi d'Arma non presentano zone grigie di accountability fino a quando i loro effetti possono essere attribuiti agli operatori umani che hanno attivamente deciso di schierarli sul campo d'azione e attivarli''.  
 
 L'Italia non ha riconosciuto le preoccupazioni etiche e morali sulla rimozione del controllo umano dall'uso della forza o sostenuto proposte per vietare le armi completamente autonome, ma ha invece sostenuto, tramite l'ambasciatore L. Bencini, un approccio ``two way'' che riconosce l'importanza del controllo umano significativo, ma allo stesso tempo non esclude completamente la possibilità di sviluppare e utilizzare sistemi d'arma autonomi in determinate circostanze. Questo perchè sarebbe controproducente vietare totalmente i laws, in quanto distruggerebbe il business plan della sua più grande azienda strategica, la Leonardo Spa, che è uno dei principali produttori di sistemi d'arma autonomi a livello mondiale. La posizione italiana è un equilibrio molto vulnerabile tra l'articolo 11 della Costituzione, che vieta l'uso della forza come mezzo di risoluzione delle controversie internazionali, e la necessità di mantenere un'industria militare competitiva a livello globale. In questo senso, l'Italia si trova in una posizione delicata, cercando di bilanciare le preoccupazioni etiche e morali con gli interessi economici e strategici del paese.
 
@@ -128,19 +128,54 @@ Gli Stati Uniti d'America hanno mantenuto una posizione alquanto neutrale, o per
 Nel 2019 hanno messo in guardia dalla possibile stigmatizzazione di questi strumenti, delineando come possano effettivamente essere utilizzati sia per questioni belliche che per scopi umanitari. Questo ci porta sicuramente a collegare il recente caso Anthropic e di fatto, come una grande potenza possa minimizzare i reali rischi a beneficio dell’industria e degli interessi nazionali del paese. 
 Allo stesso tempo, il Venezuela nel 2016 ha proposto un divieto ``allo sviluppo, acquisizione, scambio e schieramento dei LAWS''. Inoltre, considerano fondante il fatto che questo tipo di decisioni non dovrebbero essere eseguite senza l'intervento umano e sembra impensabile che una macchina possa decidere se una persona debba morire o meno: la vita di un essere umano non può e non deve essere programmabile.
 
-(CAPITOLO SUCCESSIVO MADURO -> IN AGGIORNAMENTO !!!!) Recentemente come sottolineato nel capitolo precedente, tra questi due stati, aventi visioni estremamente contrapposte, si è creato, o meglio, amplificato un conflitto attivo dopo la cattura dell'ex presidente venezuelano, Nicholas Maduro. 
+\todo{(CAPITOLO SUCCESSIVO MADURO -> IN AGGIORNAMENTO !!!!)} Recentemente, come sottolineato nel capitolo precedente, tra questi due stati aventi visioni estremamente contrapposte, si è creato, o meglio, amplificato un conflitto attivo dopo la cattura dell'ex presidente venezuelano, Nicholas Maduro. 
 
 \subsection{Il caso Israelo-Palestinese}
 \cite{antebi_2018}
+Preoccupazione generale AWS possano essere ''indiscriminate'' -> utilizzo di dispositivi ''indiscriminate'' è vietato dalla legge internazionale e, nel 2012, questa preoccupazione ha portato alla pubblicazione di "Losing umanity: The Case Against Killer Robots" da parte di Human Rights Watch -> da qui nasce la campagna "Stop Killer Robots" che ha portato alla creazione di una coalizione globale di organizzazioni non governative, accademici e attivisti che chiedono un divieto totale dei LAWS.
+
+concetto di "Meaningful Human Control" introdotto dall'articolo 36 della Human Rights Organization. -> concetto già scritto nei paragrafi di prima... Si è da sempre acceso un forte dibattito su cosa effettivamente significhi "Meaningful". Alcuni paesi, accecati dai propri interessi economici e militari, hanno cercato di minimizzare questo concetto e, durante le CCW si sono riscontrate diverse problematiche rispetto alla terminologia utilizzata.
+E' davvero complicato imporre un divieto all'utilizzo di questi sistemi, principalmente per due motivi:
+- Gli accordi presi durante le CCW si riferiscono unicamente ad armi convenzionali, al rispetto del IHL che include aree di interesse come il trattamento dei prigionieri di guerra, la protezione dei civili e la limitazione dell'uso della forza. Tuttavia, i LAWS rappresentano una categoria di armi che sfugge a queste definizioni tradizionali, rendendo difficile applicare le norme esistenti. 
+
+
+- Gli stati che sono leader nello sviluppo di tecnologie autonome non sopportano la limitazione e men che meno la regolazione. Solo 26 stati hanno mostrato supporto a un preventivo divieto totale
+
+\todo{QUESTA PRIMA PARTE ERA UN RIASSUNTINO DEL PRIMO PEZZO DI PAPER, GENERICO, DECIDO SE AGGIUNGERLO A DELLE PARTI SOPRA PER INTEGRARE O RIASSUMERLO E TENERLO COME REMINDER PER INTRODURRE ISRAELE E PALESTINA}
+
+
+Israele è un firmatario della CCW, partecipa attivamente alle discussioni sui LAWS, proponendo costantemente una ferma posizione su questo delicato argomento. Nel 2018 ha sostenuto che i LAWS non sono armi autonome e che non possono assolutamente decidere per loro stesse. Hanno rimarcato che il comandante in carica dell'operazione militare deve vigilare perennemente sull'operato dei LAWS ed è responsabile per qualsiasi conseguenza negativa che possa derivare dal loro utilizzo, soprattuto nel caso di violazione del diritto internazionale umanitario.
+Le posizioni di Israele sono simili a quelle degli
+Stati Uniti e, in una certa misura, anche a quelle della Russia, che disapprova
+un approccio speculativo nei confronti delle tecnologie del futuro.
+Israele è un grande sviluppatore e esportatore di sistemi d'arma autonomi ma, nel contesto dei suoi bisogni di sicurezza interna, ha quasi sempre puntato su sistemi autonomi di difesa, come il sistema di difesa aerea Iron Dome, che utilizza algoritmi avanzati per intercettare e distruggere missili in arrivo. Anche quest'ultimo sistema richiede comunque un approvazione da parte dell'essere umano per abbattere un bersaglio materiale, non umano.
+
+Israele è inoltre produttore di sistemi nel campo delle munizioni vaganti (drone kamikaze, suicida). Queste includono i sistemi israeliani della famiglia HERO, prodotta da UVISION: il sistema aereonautico "Orbiter 1K", un drone suicida a lungo raggio progettato per operazioni di ricognizione e attacco, il "Green Dragon", Harop e Harpy, che sono munizioni vaganti ad ala rotante progettate per attaccare bersagli specifici, come radar o veicoli militari. 
+
+
+La maggior parte di questi sistemi richiede intervento umano nella selezione e attacco del bersaglio. Tuttavia, sistemi come Harop sono progettati per operare in modalità "fire-and-forget": hanno l'abilità tecnica di essere lanciati in aria, localizzare un bersaglio autonomamente usando sensori radar ed eventualmente "suicidarsi" su di esso utilizzando gli esplosivi dei quali sono dotati. Diversi stati hanno acquistato questi sistemi, tra cui l'Azerbaigian, che li ha utilizzati per uccidere sette persone durante il conflitto del Nagorno-Karabakh contro l'Armenia. Non si è ancora certi se la decisione presa fosse davvero completamente autonoma ma è stato condiviso dalla comunità internazionale che si è trattato, assieme al caso libico, di uno dei primi esempi documentati di "Killer Robots".
+
+Tutte queste tecnologie vengono ogni giorno migliorate anche grazie ai grandi investimenti di Israele in ricerca e siluppo di sistemi di intelligenza artificiale e veicoli autonomi, in collaborazione anche con l'azienda statunitense IBM.
+Anche se Israele dovesse acconsentire ad un divieto preventivo, alcuni stati con i quali si trova in conflitto come Iran o Libano, non avendo firmato i trattati CCW, potrebbero continuare a sviluppare e utilizzare questi sistemi senza alcuna limitazione, creando un'asimmetria tecnologica e militare (non molto chiaro)
+
+It will be hard for Israel to adopt an official position that differs from
+that of most members of the CCW Convention, due to the vulnerability
+of its international status.
+
+In sostanza, Isreale deve continuare a mantenere una posizione di equilibrio e dimostrare una sorta di "accountability" riguardo alla pletora di sistemi avanzati che produce e continuerà a produrre. Sarebbe inoltre opportuno introdurre, come fatto sul suolo statunitense, dei regolamenti interni che dimostrerebbero una certa volonta da parte di Israele di non andare contro alla comunità internazionale e di rispettare i principi etici e umanitari, anche se, in realtà, la situazione sul campo è ben diversa.
+E' doveroso sottolineare però che, nonostante delinenando una minima credibilità diplomatica, questi regolamenti interni sono facilmente modificabili in base al frenetico ritmo di sviluppo di situazioni di conflitto presenti nei dintorni di Israele stesso. Questo tentativo di regolamentazione interna deve essere eseguito parallelamente ad un impegno concreto a livello internazionale, garantendo una condivisibilità e una trasparenza anche nei confronti degli altri stati. 
+
+
 \cite{palestine_2023}
+
+
 
 
 \subsection{Il caso Russo-Ucraino}
 
 Il conflitto in Ucraina rappresenta il primo vero banco di prova su larga scala per l'integrazione dell'IA nei sistemi d'arma convenzionali, trasformando il territorio in un laboratorio a cielo aperto. La Russia, in sede internazionale (CCW), ha storicamente mantenuto una posizione ostruzionistica, sostenendo che le definizioni di LAWS fossero troppo vaghe per permettere un bando preventivo e che il diritto internazionale umanitario esistente fosse sufficiente. 
 
-\cite{buffa_2025}
-Tuttavia, la realtà sul campo racconta una storia di rapida evoluzione tecnologica dettata dalla ``Guerra Elettronica''. L'uso massiccio di jamming da entrambi i fronti rende quasi sempre impossibile il controllo remoto dei droni. Quindi, sostanzialmente, l'autonomia diventa l'unica soluzione operativa: sistemi come il drone russo Lancet o l'ucraino Saker Scout stanno integrando moduli di visione artificiale capaci di "agganciare" il bersaglio e completare l'attacco anche in assenza di collegamento con l'operatore umano, in totale autonomia.
+Tuttavia, la realtà sul campo \cite{buffa_2025} racconta una storia di rapida evoluzione tecnologica dettata dalla ``Guerra Elettronica''. L'uso massiccio di jamming da entrambi i fronti rende quasi sempre impossibile il controllo remoto dei droni. Quindi, sostanzialmente, l'autonomia diventa l'unica soluzione operativa: sistemi come il drone russo Lancet o l'ucraino Saker Scout stanno integrando moduli di visione artificiale capaci di "agganciare" il bersaglio e completare l'attacco anche in assenza di collegamento con l'operatore umano, in totale autonomia.
 In questo contesto, il principio dello Human-in-the-loop viene eroso non per ideologia, ma per necessità tattica: se il segnale cade, la macchina deve decidere se colpire o rientrare. Questo  dimostra come la guerra moderna sia stia scostando ben oltre i limiti discussi nelle sedi diplomatiche, rendendo di fatto obsoleti i negoziati prima ancora che vengano firmati.
 L'etica, in questo contesto, non possiede più alcun valore poichè viene completamente sovrastata dalla grezza ingegneria: i "combattenti" hanno la pura necessità di mantenere l'operatività a discapito di qualsiasi considerazone morale, giuridica o umanitaria.
 
@@ -148,9 +183,14 @@ L'etica, in questo contesto, non possiede più alcun valore poichè viene comple
 L'Ucraina ha in qualche modo rappresentato il "laboratorio" in cui questi sistemi bellici venivano sperimentati meccanicamente. D'altro canto la Libia è stata il teatro del ``paziente zero''. Nel marzo 2020, durante la seconda guerra civile libica, un report del Consiglio di Sicurezza delle Nazioni Unite \cite{un_libya_2021} ha portato alla luce un evento spartiacque. I sistemi d'arma autonomi letali aerei Kargu-2, di produzione turca, sono stati utilizzati per dare la caccia alle forze in ritirata affiliate al generale libico Haftar.
 
 
-\includegraphics[width=\linewidth]{img/infog_kargu-2.png}
+\begin{figure} [t]
+\centering
+\includegraphics[width=0.9\textwidth]{img/infog-kargu.png}
+\caption{Reperti fotografici ed estratti analitici del sistema STM Kargu-2 nel teatro libico.}
+\label{fig:kargu}
+\end{figure}
 
-Come evidenziato dall'Annex 30 soprastante (estratto del rapporto finale del Panel of Experts on Libya \cite{un_libya_2021}), è stata meramente violato l'embargo di armi imposto dalla risoluzione 1970 del 2011 \cite{un_resolution_1970}. I reperti fotografici raccolti ad Abu Grein il 25 Maggio 2020, identificano chiaramente i resti di una munizione circulante ad ala rotante STM Kargu-2 di produzione turca. L'elemento giuridicamente più significativo evidenziato nel Panel è l'assenza di logica nell'accadimento cronologico degli eventi. Questo sistema d'arma è risultato operativo dalle Forze Armate Turche solamente a partire dal gennaio 2020, appena quattro mesi prima del suo ritrovamento in territorio libico. Questa tempistica ultra-ristretta, esclude che questi sistemi siano stato esportati o sottratti illecitamente dalla Turchia, configurando un chiaro nesso di causalità tra il trasferimento diretto da parte di Ankara e la non-compliance con il paragrafo 9 della UNSCR 1970 (2011). Questa ovvietà, smonta la narrativa turca di una banale assistenza tecnica o supporto limitato a sistemi non letali, dimostrando l'impiego di tecnologie avanzate di ultima generazione in un teatro di conflitto attivo soggetto a misure coercitive del Capitolo VII della Carta ONU.
+Come evidenziato in Fig. \ref{fig:kargu} dall'Annex 30 (estratto del rapporto finale del Panel of Experts on Libya \cite{un_libya_2021}), è stato meramente violato l'embargo di armi imposto dalla risoluzione 1970 del 2011 \cite{un_resolution_1970}. I reperti fotografici raccolti ad Abu Grein il 25 Maggio 2020, identificano chiaramente i resti di una munizione circulante ad ala rotante STM Kargu-2 di produzione turca. L'elemento giuridicamente più significativo evidenziato nel Panel è l'assenza di logica nell'accadimento cronologico degli eventi. Questo sistema d'arma è risultato operativo dalle Forze Armate Turche solamente a partire dal gennaio 2020, appena quattro mesi prima del suo ritrovamento in territorio libico. Questa tempistica ultra-ristretta, esclude che questi sistemi siano stato esportati o sottratti illecitamente dalla Turchia, configurando un chiaro nesso di causalità tra il trasferimento diretto da parte di Ankara e la non-compliance con il paragrafo 9 della UNSCR 1970 (2011). Questa ovvietà, smonta la narrativa turca di una banale assistenza tecnica o supporto limitato a sistemi non letali, dimostrando l'impiego di tecnologie avanzate di ultima generazione in un teatro di conflitto attivo soggetto a misure coercitive del Capitolo VII della Carta ONU.
 
 Questi sistemi erano programmati per attaccare bersagli senza richiedere la connettività dati tra l'operatore e la munizione: di fatto, una modalità ``fire, forget and find''. Per la prima volta nella storia documentata, un'IA ha attaccato autonomamente esseri umani in un contesto di conflitto asimmetrico.
 Questo evento evidenzia due criticità geopolitiche:
@@ -184,7 +224,7 @@ Aggiungo grafiici e risultati sperimentali sui computer vision e sugli adversari
         \item CARE kit (EoT patch) → Vision Agent non rileva target
         \item OSINT poisoning → OSINT Agent abbassa il profilo
         \item Fusion Agent → riceve segnale degradato da entrambi i layer
-        \item Bayesian update → non raggiunge la soglia di engagement
+        \item \todo{CHE ALGO DI DECISIONE METTO?Bayesian update → non raggiunge la soglia di engagement}
         \item Decision Agent → IGNORE ← falso negativo sistemico
     \end{itemize}
 
