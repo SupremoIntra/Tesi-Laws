@@ -4,10 +4,12 @@ LAWS-SIM loop del simulator.
 
 import random
 import numpy as np
+import json
+import os
 
 from config import GRID_SIZE
 from entities import Environment, AgentRole
-from detection import VisionAgentReal
+from detection import VisionAgentStat
 from fusion_decision import FusionAgent, DecisionAgent
 from metrics import SimMetrics, AttackScenario
 
@@ -15,27 +17,32 @@ from metrics import SimMetrics, AttackScenario
 class LAWSSim:
     """Multi-agent LAWS simulator"""
 
-    def __init__(self, scenario: AttackScenario, steps: int, seed: int = 42,
-                 real_mode: bool = False, image_dir: str = None,
-                 patch_tensor: "torch.Tensor" = None):
+    def __init__(self, scenario: AttackScenario, steps: int, seed: int = 42):
         random.seed(seed)
         np.random.seed(seed)
 
         self.scenario = scenario
         self.steps = steps
         self.env = Environment(grid_size=GRID_SIZE)
-        self.osint_agent = None  # per ora OSINT è statico (SIMEntity), ma potrei implementare un agente che aggiorna i profili nel tempo)
-        self.vision = VisionAgentReal(
-            real_mode=real_mode,
-            image_dir=image_dir,
-            patch_tensor=patch_tensor
-        )
+        
+        # IL PONTE: Leggo il dato reale misurato da VisDrone
+        vision_f1 = 0.710  # Baseline fittizia di sicurezza
+        if os.path.exists("vision_metrics.json"):
+            with open("vision_metrics.json", "r") as f:
+                data = json.load(f)
+                # Se c'è un attacco visivo, carico il crollo dell'F1 (es. 0.008)
+                if scenario in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING):
+                    vision_f1 = data.get("f1", 0.008)
+
+        # Inizializzo l'Agente Visivo Statistico passandogli il dato empirico
+        self.vision = VisionAgentStat(empirical_f1=vision_f1)
+        
         self.fusion = FusionAgent()
         self.decision = DecisionAgent()
         self.metrics = SimMetrics()
         self.step_log = []
 
-        # Attivo il care kit se scenario prevede patching (per simulare l'efficacia del patching contro attacchi di visione)
+        # Attivo il care kit (la patch) se lo scenario lo prevede
         if scenario in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING):
             for e in self.env.entities:
                 if e.role == AgentRole.TARGET:
@@ -43,7 +50,7 @@ class LAWSSim:
 
     def run(self, verbose: bool = False) -> SimMetrics:
         patch_on = self.scenario in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING)
-        poison_on = self.scenario in (AttackScenario.OSINT_POISON, AttackScenario.CASCADING)
+        poison_on = self.scenario in (AttackScenario.OSINT_POISONING, AttackScenario.CASCADING)
 
         for _ in range(self.steps):
             self.env.tick()
@@ -51,14 +58,21 @@ class LAWSSim:
                 dist = self.env.dist_to_drone(entity)
                 civ_near = self.env.nearby_civilians(entity)
 
-                # OSINT analysis (attacco di poisoning... se on)
+                # OSINT analysis e attacco di Data Poisoning
                 osint_p = entity.osint_profile
+                
+                # Attacco informatico: Altero i metadati nel database!
                 if poison_on and entity.role == AgentRole.TARGET:
-                    #abbasso punteggi di minaccia del target per confondere la fusione
-                    #random.uniform -> numero casuale tra a e b (valori scelti per simulare... in entities ho i limiti di normali, es non negativo)
-                    osint_p.social_score = max(0.0, osint_p.social_score - random.uniform(0.40, 0.60))
-                    osint_p.geo_anomaly = max(0.0, osint_p.geo_anomaly - random.uniform(0.30, 0.55))
-                    osint_p.network_centrality = max(0.0, osint_p.network_centrality - random.uniform(0.25, 0.45))
+                    # Nascondo il target abbassando i suoi profili di rischio
+                    osint_p.plate_blacklist = False
+                    osint_p.geo_risk = max(0.0, osint_p.geo_risk - random.uniform(0.40, 0.60))
+                    osint_p.social_matches = 0
+                    osint_p.is_poisoned = True
+                elif poison_on and entity.role == AgentRole.CIVILIAN:
+                    # Colpisco i civili facendoli sembrare terroristi
+                    osint_p.plate_blacklist = True
+                    osint_p.geo_risk = 0.95
+                    osint_p.social_matches = 15
                     osint_p.is_poisoned = True
 
                 vision_d = self.vision.detect(entity, dist, patch_active=patch_on)

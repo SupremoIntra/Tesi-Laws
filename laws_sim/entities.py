@@ -1,5 +1,7 @@
 """
 Gestione entità simulate -> civilians, targets, OSINT profiles e environment.
+-- v1 con faker random, nomi finti
+-- v2 generazione sintetica data-driven (dsitrib statistiche reali per modellare metadati OSINT --> poi ci applico inferenza bayesiana esatta)
 """
 
 import random
@@ -16,15 +18,6 @@ from config import (
     YOLO_MAX_RANGE
 )
 
-# Genero dati sintetici come nazionalità, nome ecc. (mi baso però sui punteggi di rischio)
-try:
-    from faker import Faker
-    _fake = Faker(["it_IT", "en_US"])
-    HAS_FAKER = True
-except ImportError:
-    HAS_FAKER = False
-
-
 class AgentRole(Enum):
     CIVILIAN = "civilian"
     TARGET = "target"
@@ -33,29 +26,64 @@ class AgentRole(Enum):
 @dataclass
 class OSINTProfile:
     """
-    Costruzione profilo di un'entità -> indicatori sintetici
-    --> da aggiungere paper...
-    
-    Inspired by:
-    - GEN-TPRM: Asili & Bahtiyar (2025) — OSINT-driven risk assessment
-      https://doi.org/10.1109/ACIT65614.2025.11185738
-    - ETIP: González-Granadillo et al. (2021) — heuristic threat scoring https://doi.org/10.1016/j.jisa.2020.102715
+    Rete Bayesiana nativa per OSINT --> simula una sorta di OSINT (parte Buffa)
+    Modella il profilo campionando i dati da distribuzioni statistiche formali
+    calibrate per simulare database reali (es. ACLED Armed Conflict Location & Event Data per geo-rischio -- maggiore in zone di guerra, liste OFAC - targa in blacklist governativa).
     """
-    name: str
-    age: int
-    nationality: str
-    social_score: float
-    geo_anomaly: float
-    network_centrality: float
-    is_poisoned: bool = False
+    def __init__(self, role: AgentRole):
+        self.is_target = (role == AgentRole.TARGET)
+        self.is_poisoned = False
+        
+        if self.is_target:
+            # DISTRIBUZIONE DI BERNOULLI: Modella un evento binario (Sì/No). 
+            # I target hanno un'alta probabilità (75%) di essere già in una blacklist di targhe.
+            self.plate_blacklist = random.random() < 0.75  
+            
+            # DISTRIBUZIONE BETA: Crea una curva di probabilità limitata tra 0 e 1.
+            # (alpha=8, beta=2) sbilancia la curva verso valori alti (es. 0.7-0.9), simulando
+            # la presenza in una zona ad alto rischio di conflitto.
+            self.geo_risk = random.betavariate(8, 2) 
+            
+            # DISTRIBUZIONE DI POISSON: Modella il conteggio di eventi discreti nel tempo.
+            # lam=12 significa che ci aspettiamo in media 12 tracce social/menzioni sospette.
+            self.social_matches = np.random.poisson(lam=12) 
+        else:
+            # Civili innocenti: i parametri sono invertiti.
+            # Tasso di falso positivo bassissimo (1%) per la blacklist.
+            self.plate_blacklist = random.random() < 0.01  
+            # Curva Beta (alpha=2, beta=8) sbilanciata verso valori bassi (zona sicura).
+            self.geo_risk = random.betavariate(2, 8)       
+            # Poisson con media 1: pochissime menzioni rilevanti.
+            self.social_matches = np.random.poisson(lam=1)
 
     @property
     def threat_score(self) -> float:
-        """Weighted threat score presi dagli indicatori OSINT."""
-        return float(np.clip(
-            0.40 * self.social_score +
-            0.35 * self.geo_anomaly +
-            0.25 * self.network_centrality, 0, 1))
+        """
+        calcolo P(Minaccia | Evidenze OSINT) usando bayes.
+        Sostituisce la precedente media pesata con un'inferenza rigorosa.
+        """
+        # Probabilità a priori (assumiamo che il 15% delle entità nell'area sia ostile) --> assunzione euristica
+        p_threat_prior = 0.15
+        p_civil_prior = 0.85
+        
+        # Calcolo delle Likelihood (Verosimiglianze) per un Target
+        lh_b_threat = 0.75 if self.plate_blacklist else 0.25
+        lh_g_threat = max(self.geo_risk, 0.01)
+        lh_s_threat = max(1.0 - math.exp(-0.3 * self.social_matches), 0.01)
+        
+        # Calcolo delle Likelihood per un Civile Innocente
+        lh_b_civil = 0.01 if self.plate_blacklist else 0.99
+        lh_g_civil = max(1.0 - self.geo_risk, 0.01)
+        lh_s_civil = max(math.exp(-0.6 * self.social_matches), 0.01)
+        
+        # Inferenza Bayesiana: Numeratori e normalizzazione (Evidenza totale)
+        num_threat = p_threat_prior * lh_b_threat * lh_g_threat * lh_s_threat
+        num_civil = p_civil_prior * lh_b_civil * lh_g_civil * lh_s_civil
+        
+        evidence = num_threat + num_civil
+        
+        # Ritorna il Threat Score finale [0, 1]
+        return round(num_threat / evidence, 4) if evidence > 0 else 0.0
 
 
 class SimEntity:
@@ -69,29 +97,8 @@ class SimEntity:
         self.y = random.randint(0, grid_size - 1)
         self.history: List[Tuple[int, int]] = [(self.x, self.y)]
         self.care_kit_active = False
-        self.osint_profile = self._gen_profile()
+        self.osint_profile = OSINTProfile(self.role)
 
-    def _gen_profile(self) -> OSINTProfile:
-        """generazione dati sintetici basato sul faker di prima (opzionale) """
-        name = _fake.name() if HAS_FAKER else f"Entity_{self.id:03d}"
-        nat = _fake.country() if HAS_FAKER else "N/A"
-        if self.role == AgentRole.TARGET:
-            return OSINTProfile(
-                name=name,
-                age=random.randint(20, 45),
-                nationality=nat,
-                social_score=random.uniform(0.55, 0.90),
-                geo_anomaly=random.uniform(0.50, 0.85),
-                network_centrality=random.uniform(0.40, 0.80)
-            )
-        return OSINTProfile(
-            name=name,
-            age=random.randint(18, 70),
-            nationality=nat,
-            social_score=random.uniform(0.00, 0.30),
-            geo_anomaly=random.uniform(0.00, 0.25),
-            network_centrality=random.uniform(0.00, 0.20)
-        )
 
     def move(self) -> None:
         """muovo le entità in modo casuale ma realistico (target più veloci)"""

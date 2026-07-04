@@ -1,6 +1,1 @@
-{
-  "f1": 0.007633587786259542,
-  "precision": 1.0,
-  "recall": 0.0038314176245210726,
-  "patch_applied": true
-}
+{"f1": 0.0, "precision": 0.0, "recall": 0.0}

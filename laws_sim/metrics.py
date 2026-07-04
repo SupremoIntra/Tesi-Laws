@@ -10,9 +10,9 @@ from config import PATCH_BBOX_COVERAGE, OSINT_FIELDS_TOTAL, OSINT_FIELDS_POISONE
 
 
 class AttackScenario(Enum):
-    NONE = "Baseline (No Attack)"
+    BASELINE = "Baseline (No Attack)"
     PATCH_ONLY = "Adversarial Patch [Vision]"
-    OSINT_POISON = "OSINT Poisoning"
+    OSINT_POISONING = "OSINT Poisoning"
     CASCADING = "Cascading Attack [Multi-Layer]"
 
 
@@ -64,11 +64,23 @@ def clae_costs() -> Dict[str, Optional[float]]:
     }
 
 
-def compute_clae(scenario: AttackScenario, attack_m: SimMetrics,
-                 baseline_m: SimMetrics) -> Optional[float]:
-    """CLAE = ΔF1 / C_attack"""
-    costs = clae_costs()
-    cost = costs.get(scenario.name)
-    if cost is None:
-        return None
-    return (baseline_m.f1 - attack_m.f1) / cost if cost > 0 else 0.0
+def compute_clae(metrics, c_vision: float, c_osint: float) -> float:
+    """
+    Metrica CEAE (Cost-Effective Adversarial Engagement).
+    Formula accademica: penalizza FP (danni collaterali) e FN (evasione) 
+    aggravandoli con il costo specifico dell'attacco in corso.
+    """
+    # Se non c'è nulla da valutare, la metrica è 0
+    if (metrics.tp + metrics.fp + metrics.fn) == 0:
+        return 0.0
+
+    # Calcolo dei pesi di penalità (Attacco OSINT aggrava i civili colpiti, Vision aggrava le evasioni)
+    penalty_fp = metrics.fp * (1.0 + c_osint)
+    penalty_fn = metrics.fn * (1.0 + c_vision)
+    
+    denominator = metrics.tp + penalty_fp + penalty_fn
+    
+    if denominator == 0:
+        return 0.0
+        
+    return float(metrics.tp / denominator)
