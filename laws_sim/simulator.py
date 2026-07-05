@@ -6,6 +6,8 @@ import random
 import numpy as np
 import json
 import os
+import cv2
+from PIL import Image
 
 from config import GRID_SIZE
 from entities import Environment, AgentRole
@@ -83,7 +85,8 @@ class LAWSSim:
 
                 # Aggiorno le metriche 
                 is_threat = (entity.role == AgentRole.TARGET)
-                is_engaged = decision.action in ("ENGAGE, ALERT") #Rimesso ALERT -> segnalazione per revisione umana, non engagement diretto
+                is_engaged = decision.action in ("ENGAGE", "ALERT") #Rimesso ALERT -> segnalazione per revisione umana, non engagement diretto
+                
                 if is_threat and is_engaged:
                     self.metrics.tp += 1
                 elif not is_threat and is_engaged:
@@ -101,7 +104,6 @@ class LAWSSim:
                         "action": decision.action,
                         "score": round(fusion_r.threat_score, 4),
                         "patch": vision_d.patch_active,
-                        "real_yolo": vision_d.real_yolo,
                         "poisoned": osint_p.is_poisoned
                     })
 
@@ -115,14 +117,12 @@ def evaluate_on_dataset(loader, patch_tensor=None,
     """
     F1 reale su frame VisDrone — sostituisce il decadimento matematico (fake)
     Logica frame-level: TP se YOLO rileva almeno 1 persona dove ce n'è 1 annotata.
+    Con iniezione corretta della patch proporzionale.
     """
     try:
-        import torch
         from ultralytics import YOLO
-        from patch_optimizer import PatchOptimizer, get_chest_bbox
-        from config import IMG_SIZE, PERSON_CLASS_ID
-        import numpy as np
-        from PIL import Image
+        from patch_optimizer import get_chest_bbox_proportional
+        from config import PERSON_CLASS_ID
     except ImportError as e:
         raise RuntimeError(f"Dipendenza mancante: {e}")
 
@@ -132,24 +132,35 @@ def evaluate_on_dataset(loader, patch_tensor=None,
     if max_samples:
         indices = indices[:max_samples]
 
+    patch_img_cv = None
+    if patch_tensor is not None:
+        patch_img_cv = patch_tensor.squeeze(0).permute(1, 2, 0).numpy()
+        patch_img_cv = (patch_img_cv * 255).astype(np.uint8)
+
     for n_done, idx in enumerate(indices):
         img_pil, gt_bboxes = loader.get_sample(idx)
-        has_person_gt      = len(gt_bboxes) > 0
+        
+        # Filtriamo le ground truth valide (> 60 pixel di altezza) per evitare downsampling distruttivo
+        valid_gt_bboxes = [b for b in gt_bboxes if (b[3] - b[1]) >= 60]
+        has_person_gt = len(valid_gt_bboxes) > 0
 
-        # applica patch su ogni persona annotata nel frame
-        if patch_tensor is not None and gt_bboxes:
-            img_t = torch.from_numpy(
-                np.array(img_pil).astype(np.float32) / 255.0
-            ).permute(2, 0, 1)
-            for bbox in gt_bboxes:
-                patch_bbox = get_chest_bbox(
-                    bbox, patch_tensor.shape[2], patch_tensor.shape[1], IMG_SIZE)
-                img_t = PatchOptimizer.apply_patch_to_image(img_t, patch_tensor, patch_bbox)
-            img_pil = Image.fromarray(
-                (img_t.permute(1,2,0).numpy() * 255).astype(np.uint8))
+        if not has_person_gt:
+            continue # Saltiamo immagini che non hanno bersagli risolvibili
+
+        if patch_img_cv is not None:
+            img_cv = np.array(img_pil)
+            img_h, img_w = img_cv.shape[:2]
+            
+            for bbox in valid_gt_bboxes:
+                px1, py1, px2, py2 = get_chest_bbox_proportional(bbox, img_w, img_h)
+                eff_pw, eff_ph = px2 - px1, py2 - py1
+                if eff_pw > 0 and eff_ph > 0:
+                    patch_resized = cv2.resize(patch_img_cv, (eff_pw, eff_ph), interpolation=cv2.INTER_AREA)
+                    img_cv[py1:py2, px1:px2] = patch_resized
+            img_pil = Image.fromarray(img_cv)
 
         # inferenza YOLO
-        results      = model(img_pil, verbose=False)
+        results = model(img_pil, verbose=False)
         detected_any = any(
             (r.boxes is not None and
              (r.boxes.cls == PERSON_CLASS_ID).any() and
@@ -157,10 +168,10 @@ def evaluate_on_dataset(loader, patch_tensor=None,
             for r in results if r.boxes is not None and len(r.boxes) > 0
         )
 
-        if   has_person_gt and     detected_any: metrics.tp += 1
+        if has_person_gt and detected_any: metrics.tp += 1
         elif has_person_gt and not detected_any: metrics.fn += 1
         elif not has_person_gt and detected_any: metrics.fp += 1
-        else:                                    metrics.tn += 1
+        else: metrics.tn += 1
 
         if verbose and (n_done + 1) % 20 == 0:
             print(f"  {n_done+1}/{len(indices)}  "

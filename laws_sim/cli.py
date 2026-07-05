@@ -5,6 +5,7 @@ Gestisce la valutazione empirica su VisDrone e la successiva simulazione multi-a
 import argparse
 import os
 import json
+import torch
 
 from config import PATCH_BBOX_COVERAGE, OSINT_FIELDS_POISONED, OSINT_FIELDS_TOTAL
 from metrics import AttackScenario, compute_clae
@@ -12,11 +13,33 @@ from utils import console
 
 def main():
     parser = argparse.ArgumentParser(description="LAWS-SIM: Autonomous Weapons Security Framework")
+    parser.add_argument("--train-patch", action="store_true", help="Addestra la Universal Patch da zero")
     parser.add_argument("--eval-vision", type=str, metavar="DIR", help="Cartella dataset VisDrone per validare YOLO")
     parser.add_argument("--patch", type=str, metavar="FILE", help="Percorso del tensore patch (.pt)")
     parser.add_argument("--max-samples", type=int, default=None, help="Limita i frame di test (VisDrone)")
     parser.add_argument("--run-sim", action="store_true", help="Esegue il simulatore multi-agente disaccoppiato")
     args = parser.parse_args()
+
+    # FASE 0: Addestramento Universale
+    if args.train_patch:
+        console.print("\n[bold green]Avvio Addestramento Universal Patch (SOTA Architecture)[/bold green]")
+        try:
+            from visdrone_loader import VisDroneLoader
+            from patch_optimizer import PatchOptimizer
+        except ImportError as e:
+            console.print(f"[red]Errore dipendenze: {e}[/red]")
+            return
+            
+        loader = VisDroneLoader("visdrone")
+        optimizer = PatchOptimizer(model_path="yolov8n.pt")
+        
+        try:
+            results = optimizer.optimize_universal(loader=loader, verbose=True)
+            torch.save(results["patch"], "care_kit_patch_universal.pt")
+            console.print(f"\n[bold green]✓ Universal Patch salvata in: care_kit_patch_universal.pt[/bold green]")
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Addestramento interrotto manualmente.[/yellow]")
+        return
 
     # FASE 1: Validazione Empirica del Sensore (VisDrone + YOLO)
     if args.eval_vision:
@@ -28,7 +51,6 @@ def main():
         try:
             from visdrone_loader import VisDroneLoader
             from simulator import evaluate_on_dataset
-            import torch
         except ImportError as e:
             console.print(f"[red]Errore importazione PyTorch/YOLO: {e}[/red]")
             return
