@@ -67,11 +67,11 @@ PATCH_H = 120                 # FIX: era 240 → patch enorme che copriva tutta 
 PATCH_W = 100                 # realistico per un logo stampato su indumento , tipo A5, boh?!
 PATCH_LR = 0.03 #(acceleratore) dice all'optimizer Adam quanto violentamente modificare i pixel del patch ad ogni step. (ci vuole un bilanciamento, troppo basso non impara, troppo alto cambia in modo caotico e YOLO riconosce subito) ---> PAPER Thys et al. e Brown et al. (file optimizer)
 
-# FIX Architetturale: Aumentati step a 3000 per garantire distruzione delle feature map
-PATCH_STEPS = 3000
+# FIX Architetturale: Aumentati step a 10000 per garantire distruzione delle feature map
+PATCH_STEPS = 10000
 PATCH_EPS = 0.05 #(limite alla perturbazione) -> quanto i pixel possono essere modificati rispetto al valore dei colori base. 
-EOT_N_TRANSFORMS = 8
+EOT_N_TRANSFORMS = 16
 PERSON_CLASS_ID = 0           # COCO classe 0 = "person"
 IMG_SIZE = 640                # input size YOLOv8
 
-PATCH_BBOX_COVERAGE = 0.15  # patch_area / person_bbox_area -> ripresa drone, prima era 0.20
+PATCH_BBOX_COVERAGE = 0.20  # patch_area / person_bbox_area -> ripresa drone

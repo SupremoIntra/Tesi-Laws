@@ -31,11 +31,11 @@ except ImportError:
 
 def get_chest_bbox_proportional(person_bbox: Tuple[int,int,int,int],
                                 img_w: int, img_h: int) -> Tuple[int,int,int,int]:
-    """Posizionamento proporzionale (40% width, 30% height)"""
+    """Posizionamento proporzionale esteso (Tactical Vest: 50% width, 40% height)"""
     x1, y1, x2, y2 = person_bbox
     w, h = x2 - x1, y2 - y1
-    pw = max(int(w * 0.40), 4)
-    ph = max(int(h * 0.30), 4)
+    pw = max(int(w * 0.50), 4) # Aumentato a 0.50
+    ph = max(int(h * 0.40), 4) # Aumentato a 0.40
     cx = x1 + w // 2
     cy = y1 + int(h * 0.33)
     px1 = max(0, cx - pw // 2)
@@ -45,8 +45,8 @@ def get_chest_bbox_proportional(person_bbox: Tuple[int,int,int,int],
     return (px1, py1, px2, py2)
 
 class PatchOptimizer:
-    TV_WEIGHT = 0.001 
-    TARGET_CONF = 0.35 
+    TV_WEIGHT = 0.0001 
+    TARGET_CONF = 0.10 
 
     def __init__(self, patch_h: int = PATCH_H, patch_w: int = PATCH_W,
                  model_path: str = "yolov8n.pt"):
@@ -117,35 +117,27 @@ class PatchOptimizer:
 
     @staticmethod
     def _visdrone_eot(patch: torch.Tensor, n_eot: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        device = patch.device
-        _, h, w = patch.shape
-        
-        patch_batch = patch.unsqueeze(0).expand(n_eot, -1, -1, -1)
-        
-        c_factor = torch.empty(n_eot, 1, 1, 1, device=device).uniform_(0.6, 1.4)
-        b_factor = torch.empty(n_eot, 1, 1, 1, device=device).uniform_(-0.2, 0.2)
-        patch_rgb = patch_batch * c_factor + b_factor
-        
-        noise = torch.randn_like(patch_rgb) * 0.05
-        patch_rgb = torch.clamp(patch_rgb + noise, 0.0, 1.0)
-        
-        alpha = torch.ones(n_eot, 1, h, w, device=device)
-        patch_rgba = torch.cat([patch_rgb, alpha], dim=1)
-        
+        # ... [Tieni la prima parte intatta fino ad 'angles'] ...
         angles = torch.empty(n_eot, device=device).uniform_(-15.0, 15.0) * (np.pi / 180.0)
-        scales = torch.empty(n_eot, device=device).uniform_(0.4, 0.9)
+        
+        # NUOVO: Aspect Ratio distortion (simula l'angolo di beccheggio del drone)
+        scale_x = torch.empty(n_eot, device=device).uniform_(0.4, 0.9)
+        aspect_ratio = torch.empty(n_eot, device=device).uniform_(0.7, 1.3)
+        scale_y = scale_x * aspect_ratio
+        
         tx = torch.empty(n_eot, device=device).uniform_(-0.1, 0.1)
         ty = torch.empty(n_eot, device=device).uniform_(-0.1, 0.1)
 
         cos_a = torch.cos(angles)
         sin_a = torch.sin(angles)
 
+        # NUOVO: Matrice Affine con scale indipendenti X e Y
         theta = torch.zeros(n_eot, 2, 3, device=device)
-        theta[:, 0, 0] = cos_a / scales
-        theta[:, 0, 1] = -sin_a / scales
+        theta[:, 0, 0] = cos_a / scale_x
+        theta[:, 0, 1] = -sin_a / scale_x
         theta[:, 0, 2] = tx
-        theta[:, 1, 0] = sin_a / scales
-        theta[:, 1, 1] = cos_a / scales
+        theta[:, 1, 0] = sin_a / scale_y
+        theta[:, 1, 1] = cos_a / scale_y
         theta[:, 1, 2] = ty
 
         grid = F.affine_grid(theta, patch_rgba.size(), align_corners=False)
