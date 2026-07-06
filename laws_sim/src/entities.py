@@ -1,7 +1,7 @@
 """
 Gestione entità simulate -> civilians, targets, OSINT profiles e environment.
--- v1 con faker random, nomi finti
--- v2 generazione sintetica data-driven (dsitrib statistiche reali per modellare metadati OSINT --> poi ci applico inferenza bayesiana esatta)
+Generazione sintetica data-driven: distribuzioni statistiche reali per modellare
+metadati OSINT, su cui applichiamo poi inferenza bayesiana esatta.
 """
 
 import random

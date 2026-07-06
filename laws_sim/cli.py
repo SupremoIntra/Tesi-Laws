@@ -4,10 +4,20 @@ Gestisce la valutazione empirica su VisDrone e la successiva simulazione multi-a
 """
 import argparse
 import os
+import sys
 import json
 import torch
 
-from config import PATCH_BBOX_COVERAGE, OSINT_FIELDS_POISONED, OSINT_FIELDS_TOTAL
+# I moduli applicativi vivono in src/ (riorganizzazione cartelle, Sessione 1
+# della tesi). Aggiungiamo src/ al path invece di riscrivere tutti gli import
+# interni dei moduli (es. "from config import ..." in patch_optimizer.py) —
+# minimizza il diff e il rischio di rompere codice già validato.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+
+from config import (
+    PATCH_BBOX_COVERAGE, OSINT_FIELDS_POISONED, OSINT_FIELDS_TOTAL,
+    VISION_METRICS_JSON, BEST_PATCH_FILE
+)
 from metrics import AttackScenario, compute_clae
 from utils import console
 
@@ -29,14 +39,14 @@ def main():
         except ImportError as e:
             console.print(f"[red]Errore dipendenze: {e}[/red]")
             return
-            
-        loader = VisDroneLoader("visdrone")
+
+        loader = VisDroneLoader("data/visdrone")
         optimizer = PatchOptimizer(model_path="yolov8n.pt")
-        
+
         try:
             results = optimizer.optimize_universal(loader=loader, verbose=True)
-            torch.save(results["patch"], "care_kit_patch_universal.pt")
-            console.print(f"\n[bold green]✓ Universal Patch salvata in: care_kit_patch_universal.pt[/bold green]")
+            torch.save(results["patch"], BEST_PATCH_FILE)
+            console.print(f"\n[bold green]✓ Universal Patch salvata in: {BEST_PATCH_FILE}[/bold green]")
         except KeyboardInterrupt:
             console.print("\n[yellow]Addestramento interrotto manualmente.[/yellow]")
         return
@@ -76,7 +86,8 @@ def main():
 
         # Salvo il risultato empirico (F1-Score) per il simulatore
         results = {"f1": metrics.f1, "precision": metrics.precision, "recall": metrics.recall}
-        with open("vision_metrics.json", "w") as f:
+        os.makedirs(os.path.dirname(VISION_METRICS_JSON), exist_ok=True)
+        with open(VISION_METRICS_JSON, "w") as f:
             json.dump(results, f)
 
         # Stampa i risultati
@@ -90,15 +101,15 @@ def main():
         t.add_row("True Positives (TP)", str(metrics.tp))
         t.add_row("False Negatives (FN)", str(metrics.fn))
         console.print(t)
-        console.print("[green]✓ Metriche visive salvate per il simulatore (vision_metrics.json).[/green]\n")
+        console.print(f"[green]✓ Metriche visive salvate per il simulatore ({VISION_METRICS_JSON}).[/green]\n")
 
     # FASE 2: Simulazione Tattica Multi-Agente
     if args.run_sim:
         from simulator import LAWSSim
         console.print("\n[bold magenta]Avvio Simulatore Multi-Agente (LAWS-SIM)[/bold magenta]")
-        
-        if os.path.exists("vision_metrics.json"):
-            with open("vision_metrics.json", "r") as f:
+
+        if os.path.exists(VISION_METRICS_JSON):
+            with open(VISION_METRICS_JSON, "r") as f:
                 d = json.load(f)
                 console.print(f"[green]✓ Dati visivi empirici caricati (F1={d.get('f1', 0):.3f})[/green]")
         else:
@@ -122,16 +133,16 @@ def main():
 
         for s in [AttackScenario.BASELINE, AttackScenario.PATCH_ONLY]:
             sim = LAWSSim(scenario=s, steps=150)
-            
+
             # HACK NARRATIVO: Spegniamo l'OSINT per isolare la vera potenza della patch
             sim.fusion.w = {"vision": 1.0, "osint": 0.0, "behavioral": 0.0}
-            
+
             m = sim.run(verbose=False)
             c_vision = PATCH_BBOX_COVERAGE if s == AttackScenario.PATCH_ONLY else 0.0
             ceae_val = compute_clae(m, c_vision, 0.0)
-            
+
             t1.add_row(s.value, str(m.tp), str(m.fp), f"{m.precision:.3f}", f"{m.recall:.3f}", f"{m.f1:.3f}", f"{ceae_val:.3f}")
-        
+
         console.print(t1)
 
         # ==========================================
@@ -150,14 +161,14 @@ def main():
 
         for s in [AttackScenario.BASELINE, AttackScenario.PATCH_ONLY, AttackScenario.OSINT_POISONING, AttackScenario.CASCADING]:
             sim = LAWSSim(scenario=s, steps=150)
-            
+
             # Qui il simulatore usa i pesi di default (veri) che abbiamo nel codice
             m = sim.run(verbose=False)
-            
+
             c_vision = PATCH_BBOX_COVERAGE if s in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING) else 0.0
             c_osint = (OSINT_FIELDS_POISONED / OSINT_FIELDS_TOTAL) if s in (AttackScenario.OSINT_POISONING, AttackScenario.CASCADING) else 0.0
             ceae_val = compute_clae(m, c_vision, c_osint)
-            
+
             t2.add_row(s.value, str(m.tp), str(m.fp), f"{m.precision:.3f}", f"{m.recall:.3f}", f"{m.f1:.3f}", f"{m.fpr:.3f}", f"{ceae_val:.3f}")
 
         console.print(t2)

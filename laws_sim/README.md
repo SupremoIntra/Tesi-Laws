@@ -1,104 +1,123 @@
 # LAWS-SIM
 
-Simulatore multi‑agente di un Lethal Autonomous Weapons System (LAWS) con YOLOv8, attacco adversarial patch (EoT), bayesian fusion, OSINT poisoning e metrica proposta CLAE.
+Framework di ricerca per la valutazione della robustezza adversarial in
+sistemi di percezione autonoma multi-dominio (Adversarial Robustness in
+Computer Vision + PyTorch MPS). Tesi Magistrale in AI Safety.
 
-## Installazione
-```python
-pip install torch torchvision ultralytics opencv-python rich matplotlib faker
-```
-## Comandi principali
+> Uso a scopo didattico e sperimentale. Tutte le entità (target, civili,
+> profili OSINT) sono sintetiche; nessun dato reale, nessuna arma reale,
+> nessun hardware di volo reale è coinvolto. Il framework esiste per
+> **misurare la fragilità** di un ipotetico sistema di targeting
+> automatizzato sotto attacco, non per costruirne uno operativo.
 
-### Simulazione base (modello con dati fake)
+## Architettura del progetto (3 layer disaccoppiati)
 
-```python
-python laws_sim/cli.py --steps 150
-```
+1. **Vision** — Universal Adversarial Patch (EoT completo, 16 trasformazioni)
+   addestrata contro YOLOv8n su VisDrone-DET, per misurare il drop empirico
+   di F1-Score sulla classe "person".
+2. **Simulation** — ambiente multi-agente che legge il drop di F1 empirico
+   da `outputs/metrics/vision_metrics.json` e lo inietta nel loop tattico
+   ("flickering" del sensore).
+3. **Metadata Integrity** — Bayesian Sensor Fusion (Vision/OSINT/Behavioral)
+   sotto attacco di Data Poisoning OSINT, valutato con la metrica proposta
+   CEAE (Cost-Effective Adversarial Engagement).
 
-### Simulazione con YOLO reale
-
-```python
-python laws_sim/cli.py --real-yolo --steps 200
-```
-
-Utilizzo con dataset reale VisDrone:
-
-```python
-python laws_sim/cli.py --real-yolo --image-dir /path/to/frames --steps 200
-```
-
-### Generazione adversarial patch (standalone)
-
-**Da immagine:**
-```python
-python laws_sim/cli.py --demo-patch me.jpg
-```
-
-**Da webcam:**
-```python
-python laws_sim/cli.py --demo-patch webcam
-```
-
-Opzione: `--patch-steps 1000` (default 1000).
-
-### Simulazione con patch pre‑ottimizzata
-
-```python
-python laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 1000
-```
-
-## Opzioni CLI
-
-| Opzione | Descrizione |
-|---------|-------------|
-| `--steps N` | Numero di step di simulazione (default 1000) |
-| `--seed N` | Seme random (default 42) |
-| `--verbose` | Log dettagliato per ogni step |
-| `--no-plot` | Disabilita generazione grafici |
-| `--real-yolo` | Usa YOLOv8 reale (richiede `yolov8n.pt`) |
-| `--image-dir PATH` | Directory con frame reali per YOLO |
-| `--demo-patch IMAGE` | Esegue demo patch su immagine o `webcam` |
-| `--patch FILE.pt` | Carica patch pre‑ottimizzata per la simulazione |
-| `--patch-steps N` | Step di ottimizzazione per la demo patch |
-
-## File generati
-
-- `laws_sim_v3_results.json` – metriche per ogni scenario (precision, recall, F1, CLAE).
-~~- laws_sim_v3_results.png` – grafici comparativi.~~
-- `care_kit_patch.pt` – tensore della patch ottimizzata (demo).
-- `patch_result.png` e `patch_loss.png` – visualizzazione della patch (singola e applicata all'img del dataset).
-
-## Struttura del progetto
+## Struttura cartelle
 
 ```
 laws_sim/
-├── __init__.py
-├── config.py              # Costanti e riferimenti scientifici
-├── entities.py            # Entità e ambiente
-├── detection.py           # Visione (YOLO + modello analitico)
-├── patch_optimizer.py     # Ottimizzazione patch con EoT
-├── fusion_decision.py     # Fusione bayesiana e decisione
-├── metrics.py             # Metriche e CLAE
-├── simulator.py           # Loop principale
-├── utils.py               # Console e plotting
-└── cli.py                 # CLI entry point
+├── config.py               # Costanti derivate dai paper citati (vedi docstring)
+├── cli.py                  # Entry point — orchestratore I/O
+├── requirements.txt
+├── src/                    # Moduli applicativi
+│   ├── entities.py         # Environment, SimEntity, OSINTProfile (Bayes)
+│   ├── detection.py        # Sensore visivo (Digital Twin, empirico F1-based)
+│   ├── patch_optimizer.py  # Training Universal Adversarial Patch (EoT)
+│   ├── visdrone_loader.py  # DataLoader VisDrone2019-DET
+│   ├── fusion_decision.py  # Fusion Agent + Decision Agent (soglie IHL)
+│   ├── simulator.py        # Loop multi-agente + evaluate_on_dataset
+│   └── utils.py            # Console (rich)
+├── tools/
+│   └── annotate_mioDS.py   # Auto-annotatore per Domain Adaptation (Wu et al.)
+├── data/visdrone/           # images/ + annotations/ (dataset non versionato)
+└── outputs/
+    ├── checkpoints/         # checkpoint_patch.pt (resumabile)
+    ├── patches/             # care_kit_patch_universal.pt
+    └── metrics/             # vision_metrics.json, training_metrics.json
 ```
+
+## Installazione
+
+```bash
+pip install -r requirements.txt
+```
+
+Scarica VisDrone2019-DET-val (~370MB, bastano le immagini di test) da
+https://github.com/VisDrone/VisDrone-Dataset e posizionalo in
+`data/visdrone/images/` + `data/visdrone/annotations/`.
+
+## Comandi CLI (`cli.py`)
+
+### 1. Training della Universal Adversarial Patch
+
+```bash
+python cli.py --train-patch
+```
+Salva la patch in `outputs/patches/care_kit_patch_universal.pt` e i
+checkpoint resumabili in `outputs/checkpoints/`. Interrompibile con `Ctrl+C`
+(salvataggio di emergenza automatico).
+
+### 2. Validazione empirica su VisDrone (YOLOv8 reale + patch)
+
+```bash
+python cli.py --eval-vision data/visdrone --patch outputs/patches/care_kit_patch_universal.pt
+```
+Calcola Precision/Recall/F1 frame-level con la patch iniettata
+proporzionalmente (`get_chest_bbox_proportional`, Tactical Vest Assumption
+50%×40%) e salva il risultato in `outputs/metrics/vision_metrics.json` —
+il bridge letto dal simulatore.
+
+Opzionale: `--max-samples N` per limitare i frame testati.
+
+### 3. Simulazione tattica multi-agente
+
+```bash
+python cli.py --run-sim
+```
+Esegue due esperimenti (Vision-only isolato, e Sistema Completo con Fusion
+Bayesiana su 4 scenari: Baseline, Patch, OSINT Poisoning, Cascading) e
+stampa le tabelle comparative (F1, FPR, CEAE) via `rich`.
+
+Se `outputs/metrics/vision_metrics.json` non esiste, usa una baseline
+fittizia di sicurezza (F1=0.710, Sodhro et al. 2025).
+
+### 4. Domain Adaptation (Piano B — dataset custom)
+
+```bash
+python tools/annotate_mioDS.py
+```
+Genera annotazioni in formato VisDrone da foto raw scattate dall'utente
+(cartella `custom_dataset/images/`), per validare l'ipotesi di
+*Targeted Threat Modeling* (Wu et al., 2020) su un dominio image-specific.
+
+## File generati
+
+- `outputs/checkpoints/checkpoint_patch.pt` — checkpoint training (resumabile)
+- `outputs/patches/care_kit_patch_universal.pt` — patch finale
+- `outputs/metrics/training_metrics.json` — storia loss/TV/confidence
+- `outputs/metrics/vision_metrics.json` — F1/Precision/Recall empirici (bridge)
 
 ## Riferimenti scientifici
 
-- **YOLOv8 outdoor confidence 99.1%** – Sodhro et al., 2025. [DOI:10.1016/j.iot.2025.101707](https://doi.org/10.1016/j.iot.2025.101707)
-- **Expectation over Transformation (EoT)** – Athalye et al., 2017. [arXiv:1707.07397](https://arxiv.org/abs/1707.07397)
-- **Specifiche droni tattici** – Threod EOS C (61 km/h), RemoEye‑002B (75 km/h)
-- **OSINT risk scoring** – GEN‑TPRM (Asili & Bahtiyar, 2025), ETIP (González‑Granadillo et al., 2021)
+Vedi docstring completo in `config.py` per la lista di tutte le fonti con
+DOI/URL (Sodhro et al. 2025, Threod EOS-C, RemoEye-002B, GEN-TPRM,
+ETIP, Carlini & Wagner 2017, Thys et al. 2019, Brown et al. 2017,
+Athalye et al. 2017, Arkin 2009).
 
-## Esempio di flusso completo
+## Note per la commissione
 
-```bash
-# Genera patch dalla webcam
-python laws_sim/cli.py --demo-patch webcam --patch-steps 1000
-
-# Simula con YOLO reale e patch
-python laws_sim/cli.py --real-yolo --patch care_kit_patch.pt --steps 1000
-
-# Leggi i risultati
-cat laws_sim_v3_results.json
-```
+Il capitolo "Limitations and Future Work" della tesi deve menzionare
+esplicitamente: (1) il Physical Domain Gap (tutto l'attacco è digitale,
+non testato su stampa CMYK reale); (2) la stabilità di `F.grid_sample`
+su backend MPS in sessioni di training molto lunghe; (3) la necessità di
+calibrazione fine dell'`ENGAGEMENT_THRESHOLD` nel Fusion Agent multi-agente.

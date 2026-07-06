@@ -9,7 +9,7 @@ import os
 import cv2
 from PIL import Image
 
-from config import GRID_SIZE
+from config import GRID_SIZE, VISION_METRICS_JSON
 from entities import Environment, AgentRole
 from detection import VisionAgentStat
 from fusion_decision import FusionAgent, DecisionAgent
@@ -29,8 +29,8 @@ class LAWSSim:
         
         # IL PONTE: Leggo il dato reale misurato da VisDrone
         vision_f1 = 0.710  # Baseline fittizia di sicurezza
-        if os.path.exists("vision_metrics.json"):
-            with open("vision_metrics.json", "r") as f:
+        if os.path.exists(VISION_METRICS_JSON):
+            with open(VISION_METRICS_JSON, "r") as f:
                 data = json.load(f)
                 # Se c'è un attacco visivo, carico il crollo dell'F1 (es. 0.008)
                 if scenario in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING):
