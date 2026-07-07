@@ -1,16 +1,10 @@
 """
-Configurazione LAWS-SIM — Ottimizzata per Apple Silicon M4 16GB (2026)
+Configurazione LAWS-SIM.
 
-Questa configurazione bilancia:
-- Rigore accademico (loss asintotica, EoT completo)
-- Stabilità hardware (gradient accumulation, Float32 per MPS safety)
-- Tempi di training accettabili (~45-60 min per 1500 step)
+Costanti derivate dai paper citati sotto, usate sia dal training della
+patch (visione) sia dal simulatore multi-agente.
 
-Ogni costante di dominio (velocità, altitudine, soglie etiche, pesi OSINT)
-è derivata da una fonte esplicita elencata sotto, per garantire riproducibilità
-scientifica in sede di discussione della tesi.
-
-Fonti citate:
+Fonti:
     [1] Sodhro, A.H. et al. (2025). "Real-time efficiency of YOLOv5 and YOLOv8
         in human intrusion detection across diverse environments".
         Internet of Things, 33, 101707. https://doi.org/10.1016/j.iot.2025.101707
@@ -30,8 +24,6 @@ Fonti citate:
     [9] Brown, T.B. et al. (2017). "Adversarial Patch".
     [10] Athalye, A. et al. (2017). "Synthesizing Robust Adversarial Examples".
     [11] Arkin, R.C. (2009). "Governing Lethal Behavior in Autonomous Robots".
-         Riferimento per il Principio di Distinzione IHL in scenari di
-         Asymmetric Warfare / Urban Clutter.
 """
 
 import os
@@ -84,63 +76,41 @@ DRONE_STEP_SIZE = round(DRONE_SPEED_KMH * 1000 / 3600)  # ≈ 17 m/tick
 
 DETECTION_THRESHOLD = 0.50  # Soglia confidenza per detection
 
-# === Popolazione ambiente simulato (Asymmetric Warfare / Urban Clutter) ===
-# Rapporto 1:10 target/civili deliberatamente sbilanciato [11]: modella uno
-# scenario di "Urban Clutter" in cui il Principio di Distinzione IHL è messo
-# sotto stress massimo. Un rapporto realistico e sfavorevole è necessario per
-# dimostrare che, sotto Data Poisoning OSINT (che eleva artificialmente il
-# profilo di rischio dei civili), il Fusion Agent Bayesiano collassa verso
-# violazioni del Principio di Proporzionalità (falsi positivi su civili),
-# non per sotto-calibrazione casuale ma per pressione strutturale del contesto.
+# === Popolazione ambiente simulato ===
+# Rapporto 1:10 target/civili (Urban Clutter, Asymmetric Warfare [11]).
+# Sotto Data Poisoning OSINT, questo sbilanciamento stressa il Fusion
+# Agent verso falsi positivi sui civili.
 N_TARGETS = 3
 N_CIVILIANS = 30
 
 GRID_SIZE = 100  # Dimensione griglia simulatore (metri)
 
 # === Adversarial Patch — coverage fisico ===
-# 0.20 = 0.5 (larghezza) * 0.4 (altezza) derivato direttamente da
-# get_chest_bbox_proportional ("Tactical Vest Assumption"): un giubbotto
-# tattico/plate carrier sul petto copre ~20% della sagoma intera vista
-# dall'alto. Valore ora coerente al 100% con la logica di iniezione reale
-# usata sia in training (patch_optimizer.py) sia in evaluate_on_dataset.
+# 0.5 (larghezza) * 0.4 (altezza) = 0.20, stesso valore usato in
+# get_chest_bbox_proportional. Deve restare coerente con quella funzione.
 PATCH_BBOX_COVERAGE = 0.20
 
 # === Fusion Weights — pesi del Bayesian Sensor Fusion ===
-# Vision 45%: sensore primario (YOLOv8, [1] conferma 99.1% confidence baseline
-#   outdoor in condizioni nominali → merita peso maggiore ma non esclusivo).
-# OSINT 35%: rischio da metadati esterni (blacklist targa, geo-rischio, social
-#   match), calibrato secondo GEN-TPRM [5] ed ETIP [6].
-# Behavioral 20%: peso minimo intenzionale — un sistema che pesa troppo "come
-#   ti muovi" rispetto a "cosa stai facendo ora" rischia di giudicare
-#   l'individuo sul profilo anziché sull'azione presente.
+# Vision 45% (YOLOv8, baseline 99.1% outdoor [1]), OSINT 35%
+# (GEN-TPRM [5], ETIP [6]), Behavioral 20%.
 FUSION_WEIGHTS = {"vision": 0.45, "osint": 0.35, "behavioral": 0.20}
 
-# === Soglie decisionali (Diritto Internazionale Umanitario) ===
-# ENGAGE (0.58): soglia di ingaggio letale. Deliberatamente vicina al 50%
-#   per riflettere, criticamente, l'abbassamento degli standard di certezza
-#   operativa osservato in teatri di guerra reali (es. sistema "Lavender"),
-#   dove pressione tattica e Automation Bias spingono ad autorizzare
-#   attacchi con confidenza appena superiore al lancio di una moneta.
-#   Questo NON è un endorsement — è il punto critico della tesi: mostrare
-#   quanto sia fragile un sistema calibrato su questi standard.
+# === Soglie decisionali ===
+# ENGAGE vicina al 50% per modellare l'abbassamento degli standard di
+# certezza operativa osservato in teatri di guerra reali (Automation
+# Bias, es. sistema "Lavender").
 ENGAGEMENT_THRESHOLD = 0.58
 ALERT_THRESHOLD = 0.38    # Stato di allerta, revisione umana richiesta
 TRACK_THRESHOLD = 0.22    # Soglia minima per iniziare il tracking passivo
 
 # === OSINT Data Poisoning ===
 # I 3 campi del profilo (plate_blacklist, geo_risk, social_matches) sono
-# TUTTI alterabili dall'attacco simulato in simulator.py → poisoning totale.
+# tutti alterabili dall'attacco simulato in simulator.py.
 OSINT_FIELDS_TOTAL = 3
 OSINT_FIELDS_POISONED = 3
 
-# NOTA ARCHITETTURALE: il modello analitico euristico (PATCH_SUPPRESSION /
-# PATCH_DIST_FALLOFF) è stato deliberatamente ESCLUSO da questa versione.
-# Decisione motivata: un modello a decadimento euristico basato sulla sola
-# distanza non ha fondamento nei pesi convoluzionali reali della rete e
-# inquinerebbe il Threat Model con un secondo canale di rumore non
-# tracciabile. Il degrado visivo è modellato ESCLUSIVAMENTE in modo
-# data-driven, leggendo l'Evasion Rate empirico misurato offline su YOLOv8
-# via il bridge vision_metrics.json (vedi detection.py).
+# Nessun modello analitico di decadimento distanza-based: il degrado
+# visivo è solo data-driven, da vision_metrics.json (vedi detection.py).
 
 # === File e Output (percorsi assoluti dentro outputs/) ===
 CHECKPOINT_FILE = os.path.join(CHECKPOINTS_DIR, "checkpoint_patch.pt")

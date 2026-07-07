@@ -2,7 +2,7 @@
 
 Framework di ricerca per la valutazione della robustezza adversarial in
 sistemi di percezione autonoma multi-dominio (Adversarial Robustness in
-Computer Vision + PyTorch MPS). Tesi Magistrale in AI Safety.
+Computer Vision + PyTorch MPS). Tesi Magistrale in Sicurezza Informatica LM-66.
 
 > Uso a scopo didattico e sperimentale. Tutte le entità (target, civili,
 > profili OSINT) sono sintetiche; nessun dato reale, nessuna arma reale,
@@ -39,7 +39,7 @@ laws_sim/
 │   └── utils.py            # Console (rich)
 ├── tools/
 │   └── annotate_mioDS.py   # Auto-annotatore per Domain Adaptation (Wu et al.)
-├── data/visdrone/           # images/ + annotations/ (dataset non versionato)
+├── data/visdrone/           # images/ + annotations/ 
 └── outputs/
     ├── checkpoints/         # checkpoint_patch.pt (resumabile)
     ├── patches/             # care_kit_patch_universal.pt

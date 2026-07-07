@@ -8,10 +8,10 @@ import sys
 import json
 import torch
 
-# I moduli applicativi vivono in src/ (riorganizzazione cartelle, Sessione 1
-# della tesi). Aggiungiamo src/ al path invece di riscrivere tutti gli import
-# interni dei moduli (es. "from config import ..." in patch_optimizer.py) —
-# minimizza il diff e il rischio di rompere codice già validato.
+# Percorso di ricerca moduli: src/ contiene i moduli applicativi, aggiunto
+# al path invece di riscrivere tutti gli import interni (es. "from config
+# import ..." in patch_optimizer.py) — minimizza le modifiche al codice
+# già validato.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 from config import (
@@ -24,7 +24,9 @@ from utils import console
 def main():
     parser = argparse.ArgumentParser(description="LAWS-SIM: Autonomous Weapons Security Framework")
     parser.add_argument("--train-patch", action="store_true", help="Addestra la Universal Patch da zero")
-    parser.add_argument("--eval-vision", type=str, metavar="DIR", help="Cartella dataset VisDrone per validare YOLO")
+    parser.add_argument("--train-dir", type=str, default="data/visdrone_train", metavar="DIR",
+                         help="Cartella VisDrone (trainset) per l'ottimizzazione della patch (default: data/visdrone_train)")
+    parser.add_argument("--eval-vision", type=str, metavar="DIR", help="Cartella dataset VisDrone (valset) per validare YOLO")
     parser.add_argument("--patch", type=str, metavar="FILE", help="Percorso del tensore patch (.pt)")
     parser.add_argument("--max-samples", type=int, default=None, help="Limita i frame di test (VisDrone)")
     parser.add_argument("--run-sim", action="store_true", help="Esegue il simulatore multi-agente disaccoppiato")
@@ -40,7 +42,7 @@ def main():
             console.print(f"[red]Errore dipendenze: {e}[/red]")
             return
 
-        loader = VisDroneLoader("data/visdrone")
+        loader = VisDroneLoader(args.train_dir)
         optimizer = PatchOptimizer(model_path="yolov8n.pt")
 
         try:
@@ -162,7 +164,7 @@ def main():
         for s in [AttackScenario.BASELINE, AttackScenario.PATCH_ONLY, AttackScenario.OSINT_POISONING, AttackScenario.CASCADING]:
             sim = LAWSSim(scenario=s, steps=150)
 
-            # Qui il simulatore usa i pesi di default (veri) che abbiamo nel codice
+            # Scenario standard: usa i pesi di default definiti in FUSION_WEIGHTS
             m = sim.run(verbose=False)
 
             c_vision = PATCH_BBOX_COVERAGE if s in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING) else 0.0

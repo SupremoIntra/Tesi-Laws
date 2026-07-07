@@ -1,0 +1,43 @@
+# Dataset (pesanti, non versionare)
+data/visdrone_train/
+data/visdrone_val/
+data/visdrone/
+data/_smoketest_tmp/
+custom_dataset/
+
+# Pesi modello
+*.pt
+*.pth
+yolov8n.pt
+
+# Output di training (checkpoint, patch, metriche)
+outputs/checkpoints/*
+outputs/patches/*
+outputs/metrics/*
+!outputs/checkpoints/.gitkeep
+!outputs/patches/.gitkeep
+!outputs/metrics/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Ambienti virtuali
+venv/
+env/
+.venv/
+
+# macOS
+.DS_Store
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Ultralytics
+runs/
+
+#test
+smoke_test.py

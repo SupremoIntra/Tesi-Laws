@@ -21,6 +21,12 @@ Data: 2026
 """
 
 import os
+
+# grid_sampler_2d_backward non è implementato su MPS (usato dall'EoT per
+# rotazione/scala/aspect ratio). Questo fa girare solo quell'operatore su
+# CPU, il resto (YOLO) resta su MPS. Deve stare prima di "import torch".
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
 import json
 import random
 from typing import Optional, Tuple, List, Dict, Any
@@ -565,10 +571,12 @@ class PatchOptimizer:
                 if not bboxes:
                     continue
                 
-                # Converti immagine in tensor
+                # .contiguous() necessario: senza, lo stride creato da
+                # .permute() si propaga attraverso .expand() più sotto e
+                # rompe il primo conv2d di YOLO su backend MPS.
                 img_t = torch.from_numpy(
                     np.array(img_pil).astype(np.float32) / 255.0
-                ).permute(2, 0, 1).to(device)
+                ).permute(2, 0, 1).contiguous().to(device)
                 
                 # Area-based Sampling: prendi solo i target più grandi
                 if len(bboxes) > MAX_TARGETS_PER_FRAME:
@@ -647,11 +655,12 @@ class PatchOptimizer:
                 # Combina spatial masks di tutti i target
                 global_spatial_mask = torch.stack(global_spatial_mask_list).any(dim=0)
                 
-                # Crea batch adversarial
+                # .contiguous() finale: seconda protezione per lo stesso
+                # bug di stride, nel caso il blending non lo risolva.
                 adv_batch = (
                     img_t.unsqueeze(0).expand(n_eot, -1, -1, -1) * (1 - global_canvas_mask) +
                     global_canvas_rgb * global_canvas_mask
-                )
+                ).contiguous()
                 
                 # Calcola loss asintotica
                 loss = self._asymptotic_loss(

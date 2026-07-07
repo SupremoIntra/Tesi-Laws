@@ -4,16 +4,9 @@ Invece di eseguire l'inferenza di YOLO ad ogni step temporale (pesante),
 questo modulo simula le prestazioni del sensore visivo utilizzando il parametro F1-Score (es. 0.008) 
 misurato sperimentalmente e isolatamente sul dataset VisDrone.
 
-NOTA ARCHITETTURALE (Threat Model Integrity):
-Questo modulo dipende ESCLUSIVAMENTE dal dato empirico letto dal bridge
-JSON (vision_metrics.json, prodotto da simulator.evaluate_on_dataset).
-È stato deliberatamente scartato un modello analitico/euristico alternativo
-(a decadimento distanza-dipendente) perché non fondato sui pesi
-convoluzionali reali della rete: avrebbe introdotto un secondo canale di
-rumore non tracciabile, indebolendo la validità scientifica del Threat
-Model. Il collasso del sensore in questa simulazione è quindi sempre
-la fotografia diretta dell'Evasion Rate misurato offline su YOLOv8,
-non un'approssimazione matematica indipendente.
+Il degrado visivo dipende solo dal dato empirico letto da vision_metrics.json
+(prodotto da simulator.evaluate_on_dataset). Nessun modello di decadimento
+analitico basato sulla distanza: solo il drop reale misurato su YOLOv8.
 """
 
 import math
