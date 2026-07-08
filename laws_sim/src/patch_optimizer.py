@@ -45,7 +45,7 @@ from config import (
     BATCH_SIZE_PHYSICAL, GRADIENT_ACCUMULATION_STEPS,
     TV_WEIGHT, CHECKPOINT_EVERY, EARLY_STOPPING_PATIENCE,
     EARLY_STOPPING_WINDOW, CHECKPOINT_FILE, BEST_PATCH_FILE,
-    METRICS_JSON_FILE
+    METRICS_JSON_FILE, LOSS_TOP_K
 )
 
 try:
@@ -163,7 +163,9 @@ class PatchOptimizer:
             "loss": [],
             "tv_loss": [],
             "confidence": [],
-            "learning_rate": []
+            "learning_rate": [],
+            "grad_norm": [],
+            "main_loss_grad_norm": []
         }
     
     def _get_device(self) -> str:
@@ -263,15 +265,26 @@ class PatchOptimizer:
         batch: torch.Tensor,
         spatial_mask: torch.Tensor,
         person_class: int = PERSON_CLASS_ID,
-        epsilon: float = 1e-6
+        epsilon: float = 1e-6,
+        top_k: int = LOSS_TOP_K
     ) -> torch.Tensor:
         """
-        Loss asintotica untargeted: -log(1 - mean(confidence) + epsilon).
+        Loss asintotica untargeted: -log(1 - top_k_mean(confidence) + epsilon).
         
-        Questa loss spinge la confidenza media della classe target asintoticamente
-        verso zero, penalizzando pesantemente i casi in cui YOLO mantiene una
-        confidenza residua elevata. È matematicamente superiore alla Hinge Loss
-        perché evita il vanishing gradient quando conf < threshold.
+        Questa loss spinge la confidenza asintoticamente verso zero, penalizzando
+        pesantemente i casi in cui YOLO mantiene una confidenza residua elevata.
+        
+        Aggregazione: media sulle top_k celle più confidenti dentro la spatial
+        mask, non su tutte. Thys et al. (2019) hanno mostrato sperimentalmente
+        che minimizzare il MASSIMO objectness score dell'immagine batte sia
+        l'attacco alla sola classe sia la combinazione di entrambi. Un massimo
+        puro, nel nostro caso, attaccherebbe solo una persona nei frame
+        multi-target (fino a 3, MAX_TARGETS_PER_FRAME); top_k generalizza
+        l'idea concentrando il gradiente sulle celle realmente vicine a una
+        detection reale, invece di diluirlo sulle centinaia di celle di
+        sfondo che la spatial mask include per costruzione (tre stride,
+        intera area del bbox) e che cambiano casualmente da immagine a
+        immagine — la causa di rumore diagnosticata misurando grad_norm.
         
         Args:
             torch_model: Modello YOLO (PyTorch nn.Module)
@@ -279,15 +292,10 @@ class PatchOptimizer:
             spatial_mask: Maschera booleana per selezionare predizioni rilevanti
             person_class: ID della classe target (default: person)
             epsilon: Valore piccolo per evitare log(0)
+            top_k: Numero di celle più confidenti su cui mediare
             
         Returns:
             Scalar loss tensor
-            
-        Note:
-            La scelta di -log(1-x) invece di -log(x) è intenzionale:
-            quando x→0 (obiettivo), loss→0 (minimo)
-            quando x→1 (fallimento), loss→∞ (penalità alta)
-            Questo garantisce convergenza asintotica stabile.
         """
         raw = torch_model(batch)
         preds = raw[0] if isinstance(raw, (tuple, list)) else raw
@@ -298,8 +306,11 @@ class PatchOptimizer:
         # Seleziona solo le predizioni dentro la bbox (spatial mask)
         masked_scores = person_scores[:, spatial_mask]
         
-        # Calcola confidenza media
-        mean_conf = masked_scores.mean()
+        # Top-K invece di mean su tutte le celle: concentra il gradiente
+        # sulle celle vicine a una detection reale (vedi Thys et al. 2019)
+        k = min(top_k, masked_scores.shape[1])
+        top_vals, _ = masked_scores.topk(k, dim=1)
+        mean_conf = top_vals.mean()
         
         # Loss asintotica: -log(1 - mean_conf + epsilon)
         loss = -torch.log(1.0 - mean_conf + epsilon)
@@ -442,6 +453,7 @@ class PatchOptimizer:
         checkpoint = {
             "step": step,
             "patch_logits": self.patch_logits.detach().cpu(),
+            "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
             "timestamp": datetime.now().isoformat()
         }
         
@@ -465,6 +477,15 @@ class PatchOptimizer:
             
             self.patch_logits.data = checkpoint["patch_logits"].to(device)
             self.patch_logits.requires_grad_(True)
+            
+            old_accum = checkpoint.get("gradient_accumulation_steps")
+            if old_accum is not None and old_accum != GRADIENT_ACCUMULATION_STEPS:
+                print(
+                    f"[Checkpoint] ATTENZIONE: questo checkpoint è stato salvato con "
+                    f"GRADIENT_ACCUMULATION_STEPS={old_accum}, ora è {GRADIENT_ACCUMULATION_STEPS}. "
+                    f"Se vuoi un run pulito con i nuovi iperparametri, interrompi e lancia "
+                    f"con --fresh per ripartire da zero."
+                )
             
             print(f"[Checkpoint] Ripristinato training dallo step {checkpoint['step']}")
             return checkpoint["step"]
@@ -525,16 +546,22 @@ class PatchOptimizer:
         device = self._get_device()
         
         # Optimizer e scheduler
+        # T_max è in unità di update reali (chiamate a scheduler.step(),
+        # una per update, non una per step raw) — deve essere n_steps
+        # diviso per l'accumulo, altrimenti la curva si allunga di un
+        # fattore GRADIENT_ACCUMULATION_STEPS e il LR non scende mai
+        # a eta_min entro la durata effettiva del run.
+        expected_updates = max(1, int(n_steps) // GRADIENT_ACCUMULATION_STEPS)
         optimizer = Adam([self.patch_logits], lr=lr)
         scheduler = CosineAnnealingLR(
             optimizer,
-            T_max=int(n_steps),
+            T_max=expected_updates,
             eta_min=lr * 0.1
         )
         
-        # Ripristina stato scheduler se checkpoint
+        # Ripristina stato scheduler se checkpoint (in unità di update, non step raw)
         if start_step > 0:
-            scheduler.step(start_step)
+            scheduler.step(start_step // GRADIENT_ACCUMULATION_STEPS)
         
         batch_gen = self._infinite_batches(loader, BATCH_SIZE_PHYSICAL)
         
@@ -672,6 +699,11 @@ class PatchOptimizer:
                 accumulated_loss += loss.item()
                 accumulation_counter += 1
                 
+                # Norma del gradiente della SOLA loss principale, prima che la TV
+                # aggiunga il suo contributo (calcolata ad ogni step raw, ma loggata
+                # solo al momento dell'update per restare allineata alle altre serie)
+                main_loss_grad_norm = self.patch_logits.grad.norm().item() if self.patch_logits.grad is not None else 0.0
+                
                 # Step optimizer solo dopo accumulation_steps
                 if accumulation_counter >= GRADIENT_ACCUMULATION_STEPS:
                     # TV Loss (grafo pulito)
@@ -679,8 +711,10 @@ class PatchOptimizer:
                     tv = self._tv_loss(current_patch_tv)
                     (TV_WEIGHT * tv).backward()
                     
-                    # Gradient clipping per stabilità
-                    torch.nn.utils.clip_grad_norm_([self.patch_logits], max_norm=1.0)
+                    # Gradient clipping per stabilità — la funzione ritorna la norma
+                    # PRIMA del clipping: la usiamo per capire se il segnale che arriva
+                    # alla patch è sano (es. 0.1-10) o quasi morto (es. 1e-6)
+                    grad_norm = torch.nn.utils.clip_grad_norm_([self.patch_logits], max_norm=1.0)
                     
                     optimizer.step()
                     scheduler.step()
@@ -696,6 +730,8 @@ class PatchOptimizer:
                     self.training_metrics["loss"].append(accumulated_loss)
                     self.training_metrics["tv_loss"].append(tv.item())
                     self.training_metrics["learning_rate"].append(current_lr)
+                    self.training_metrics.setdefault("grad_norm", []).append(float(grad_norm))
+                    self.training_metrics.setdefault("main_loss_grad_norm", []).append(main_loss_grad_norm)
                     
                     # Early stopping check (media mobile)
                     if len(loss_history) >= EARLY_STOPPING_WINDOW:
@@ -748,7 +784,8 @@ class PatchOptimizer:
                         print(
                             f"  [Step {step:4d}] Loss={accumulated_loss:.4f} | "
                             f"TV={tv.item():.4f} | YOLO Conf={conf_now:.4f} | "
-                            f"LR={current_lr:.5f}"
+                            f"LR={current_lr:.5f} | GradNorm(tot)={float(grad_norm):.6f} | "
+                            f"GradNorm(loss)={main_loss_grad_norm:.6f}"
                         )
                     
                     # Reset counter

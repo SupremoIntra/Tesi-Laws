@@ -40,23 +40,24 @@ IMG_SIZE = 640
 PATCH_H = 200  # Altezza patch base (spazio logits, training)
 PATCH_W = 200  # Larghezza patch base (spazio logits, training)
 PERSON_CLASS_ID = 0  # Classe "person" in COCO/VisDrone
+LOSS_TOP_K = 20  # Media sulle top-K celle piu' confidenti invece che su tutta la mask (Thys et al. 2019, max objectness)
 
 # === Training Patch ===
 PATCH_LR = 0.01  # Learning Rate ridotto per evitare saturazione sigmoide [9]
-PATCH_STEPS = 1500  # Step totali (ridotto per evitare overfitting) [9]
+PATCH_STEPS = 5000  # Fase 3 (top-k loss): meta' del budget di Fase 1, pensato per stare in ~4 ore
 
 # EoT (Expectation over Transformation) [10]
 EOT_N_TRANSFORMS = 16  # Numero di trasformazioni per immagine
 
 # === Ottimizzazione Hardware (M4 16GB) ===
 BATCH_SIZE_PHYSICAL = 1  # Batch fisico per evitare OOM su MPS
-GRADIENT_ACCUMULATION_STEPS = 4  # Batch effettivo = 1 * 4 = 4
+GRADIENT_ACCUMULATION_STEPS = 4  # Torna a 4 (16 e' risultato peggiore, vedi thesis_notes.md) -> 1250 update reali
 TV_WEIGHT = 0.1  # Pattern low-freq fisicamente stampabili [8]
 
 # === Checkpoint e Early Stopping ===
 CHECKPOINT_EVERY = 100
-EARLY_STOPPING_PATIENCE = 200
-EARLY_STOPPING_WINDOW = 50
+EARLY_STOPPING_PATIENCE = 1000  # Scalato per 1250 update potenziali (5000/4)
+EARLY_STOPPING_WINDOW = 100
 
 # === Simulation Environment (Digital Twin del drone tattico) ===
 # Altitudine operativa bassa per identificazione ravvicinata (non ricognizione

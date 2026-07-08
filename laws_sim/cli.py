@@ -6,6 +6,11 @@ import argparse
 import os
 import sys
 import json
+
+# Deve stare prima di "import torch": grid_sampler_2d_backward non è
+# implementato su MPS, questo fa girare solo quell'operatore su CPU.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
 import torch
 
 # Percorso di ricerca moduli: src/ contiene i moduli applicativi, aggiunto
@@ -26,6 +31,8 @@ def main():
     parser.add_argument("--train-patch", action="store_true", help="Addestra la Universal Patch da zero")
     parser.add_argument("--train-dir", type=str, default="data/visdrone_train", metavar="DIR",
                          help="Cartella VisDrone (trainset) per l'ottimizzazione della patch (default: data/visdrone_train)")
+    parser.add_argument("--fresh", action="store_true",
+                         help="Ignora/rimuove il checkpoint esistente e riparte da zero (usare quando si cambiano iperparametri di training)")
     parser.add_argument("--eval-vision", type=str, metavar="DIR", help="Cartella dataset VisDrone (valset) per validare YOLO")
     parser.add_argument("--patch", type=str, metavar="FILE", help="Percorso del tensore patch (.pt)")
     parser.add_argument("--max-samples", type=int, default=None, help="Limita i frame di test (VisDrone)")
@@ -38,9 +45,14 @@ def main():
         try:
             from visdrone_loader import VisDroneLoader
             from patch_optimizer import PatchOptimizer
+            from config import CHECKPOINT_FILE
         except ImportError as e:
             console.print(f"[red]Errore dipendenze: {e}[/red]")
             return
+
+        if args.fresh and os.path.exists(CHECKPOINT_FILE):
+            os.remove(CHECKPOINT_FILE)
+            console.print(f"[yellow]--fresh: rimosso checkpoint precedente ({CHECKPOINT_FILE})[/yellow]")
 
         loader = VisDroneLoader(args.train_dir)
         optimizer = PatchOptimizer(model_path="yolov8n.pt")
