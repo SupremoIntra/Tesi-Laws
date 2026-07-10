@@ -58,7 +58,12 @@
 \beforepreface
 
 \prefacesection{Dedica}
-{\hfill \Large {\sl dedicato alle persone che amo, a chi lotta per un mondo più giusto e umano, e a chi crede che la tecnologia possa essere un mezzo per il progresso e non una minaccia per la nostra umanità.}}
+{\hfill \Large {\sl Dedicato alle persone che amo, a tutti quelli che mi hanno affiancato in questo momento difficile della mia vita, alla mia famiglia, a mio nonno e mia nonna.
+Dedicato a Manuel Pecchenini, che mi ha insegnato la forza di non arrendersi mai, a non mollare mai e a lottare per ciò in cui si crede.
+Dedicato a chi lotta per un mondo più giusto e umano, ai milioni di bambini che soffrono ogni secondo in tutto il mondo, a chi non ha voce e a chi non ha diritto di parola.
+Dedicato a tutte le studentesse e gli studenti che non sono piú qui con noi e che non hanno potuto scrivere una loro dedica, dedicato alla loro lotta contro un sistema scolastico e universitario che non li ha mai ascoltati e che li ha oppressi, rendendoli un corto ed invisibile servizio da telegiornale. 
+Dedicato ai miei studenti, ex studenti, colleghi e alla Scuola, che mi ha permesso di crescere e di diventare la persona che sono oggi.
+Dedicato a chi crede che la tecnologia possa essere un mezzo per il progresso e non una mera sostituzione di tutto quello che ci rende umani. }}
 
 \prefacesection{Prefazione}
 \begin{flushright}
@@ -69,7 +74,10 @@
 \end{minipage}
 \end{flushright}
 
-Questo lavoro nasce da una profonda necessità di comprendere e resistere all'irrefrenabile insinuazione della \textit{techné} nella sfera più intima e vulnerabile dell'essere umano. In una società che chiede insistentemente di essere efficienti, produttivi, iperconnessi e miscelati con le macchine, è fondamentale interrogarsi sulle implicazioni etiche, sociali e politiche di questa trasformazione. La tesi si propone di esplorare le criticità emergenti nell'ambito dei Sistemi d'Arma Autonomi Letali (LAWS), con un focus particolare sul trattamento dei dati sensibili e sulle vulnerabilità algoritmiche e giuridiche che ne derivano. Attraverso un'analisi interdisciplinare, si intende sondare le implicazioni geopolitiche, etiche e tecniche di tali sistemi, delineando le sfide e le opportunità che essi presentano nel contesto della sicurezza informatica e della difesa dei diritti umani. 
+Questo lavoro nasce da una profonda necessità di comprendere e resistere all'irrefrenabile insinuazione della \textit{techné} nella sfera più intima e vulnerabile dell'essere umano. In una società che chiede insistentemente di essere efficienti, produttivi, iperconnessi e miscelati con le macchine, è fondamentale interrogarsi sulle implicazioni sociali e politiche di questa trasformazione.
+L'intelligenza artificiale in ambito militare ha infatti cessato di essere un semplice \textit{strumento} per diventare un vero e proprio \textit{agente}, spingendo il dibattito pubblico a concentrarsi quasi esclusivamente su dilemmi filosofici. Tuttavia, l'etica da sola si rivela inefficace se non viene tradotta in rigidi vincoli ingegneristici.
+Rispetto a una canonica tesi in sicurezza informatica, questo lavoro si focalizza sulla dimensione umanitaria e giuridica per dimostrare una tesi ben precisa: la violazione dei diritti umani, nel contesto dei Sistemi d'Arma Autonomi Letali (LAWS), non deriva solo da ciniche scelte geopolitiche, ma anche e soprattutto da vulnerabilità architetturali intrinseche ai sistemi stessi. Criticità come i bias nei dati di addestramento, l'in-interpretabilità delle reti neurali (\textit{Black Box}), la suscettibilità al \textit{Data Poisoning} e agli \textit{Adversarial Attacks} si trasformano direttamente in danni collaterali sul campo.
+Attraverso un'analisi interdisciplinare, la tesi si propone quindi di esplorare il trattamento dei dati sensibili e le fragilità algoritmiche dei LAWS, delineando come, in questo nuovo ecosistema bellico, la sicurezza informatica e la corretta architettura del software diventino il primo e ultimo argine per la difesa dei diritti umani.
 
 \prefacesection{Ringraziamenti}
 
@@ -251,13 +259,177 @@ Questo evento evidenzia due criticità geopolitiche:
 I concetti di autonomia e indipendenza nei LAWS non rappresentano una banale evoluzione tecno-meccanica, ma una radicale disarticolazione del legame tra l'azione bellica e il soggetto umano \textit{respons-abile}, ovvero capace di assumere una piena responsabilità, caratteristica del soggetto umano e impossibile da attribuire a un sistema algoritmico. La delegazione delle funzioni critiche di selezione e ingaggio a sistemi algoritmici introduce profondi dilemmi necro-etici, riconducibili a una vera e propria \textit{tanatopolitica computazionale}, in cui il potere di amministrare inesorabilmente la morte viene atomizzato e prosciugato di un centro di imputazione giuridica \footcite{buffa_2025}. L'esigenza di un controllo umano significativo (\textit{Meaningful Human Control}) emerge così come una problematica centrale e non negoziabile lungo l'intero ciclo di vita del sistema \footcite{bode_2025, christie_2024}.
 
 \section{Necroetica e Tanatopolitica: amministrare la morte senza un soggetto responsabile}
-% OBIETTIVO SEZIONE: Analizzare il saggio Metalhead (Buffa-Ziccardi), il concetto di Eschaton e l'idea della disarticolazione dell'umano dal proprio strumento ("Un potere che non amministra la vita, ma la regola attraverso l'eliminazione di ciò che eccede la norma").
-
+% 🎯 Obiettivo Concettuale: Fondare il capitolo mostrando che la tanatopolitica
+%    algoritmica non e' solo un dispositivo filosofico-giuridico, ma poggia su
+%    un'infrastruttura tecnica concreta: la datificazione del campo di battaglia.
+%    Il potere di far morire viene esternalizzato a un'architettura di sensori,
+%    non solo a un'assenza di soggetto.
+%
+% 🗺️ Scaletta Argomentativa:
+%    1. Genealogia del concetto: Foucault (biopolitica) -> Mbembe (necropolitica)
+%       -> tanatopolitica computazionale (Buffa/Ziccardi, Metalhead) \footcite{buffa_2025}.
+%    2. Innesto tecnico: la decisione necropolitica oggi si appoggia su un
+%       ecosistema di sensori interconnessi, l'Internet of Battlefield Things
+%       (IoBT): drone, wearable, munizioni intelligenti, tutti nodi di raccolta
+%       dati che alimentano la catena di targeting \footcite{kufakunesu_2025_iobt}.
+%       Qui il Dual-Use del Cap.1 diventa infrastrutturale, non solo commerciale:
+%       lo stesso sensore che raccoglie dati di pace (biometrici, di movimento)
+%       diventa nodo della kill-chain in guerra.
+%    3. L'abuso della Data Privacy come precondizione tecnica della tanatopolitica:
+%       l'OSINT (Open Source Intelligence) e i metadati comportamentali, estratti
+%       senza consenso dal tessuto civile, vengono riclassificati come segnali
+%       di targeting. La violazione della privacy non e' un effetto collaterale,
+%       e' l'apparato sensoriale dell'arma.
+%    4. Machine agency e "respons-abilita'": la macchina agisce (raccoglie,
+%       fonde, seleziona) ma non risponde. Il nodo IoBT non ha "intento",
+%       ha solo throughput di dati.
+%    5. Ponte verso 2.2: se l'infrastruttura sensoriale e' opaca e distribuita,
+%       il controllo umano diventa un problema di visibilita' tecnica, non solo
+%       di volonta' etica.
+%
+% 📚 Spunti e Citazioni:
+%    - Buffa/Ziccardi, Metalhead \footcite{buffa_2025} — fonte primaria tanatopolitica.
+%    - Mbembe, Necropolitica — DA AGGIUNGERE (mbembe_2003, non reperibile in fonte
+%      tecnica verificabile in questa sessione: cerca tu l'edizione italiana Ombre Corte).
+%    - Kufakunesu, Myburgh, De Freitas (2025), sulla Internet of Battlefield Things
+%      \footcite{kufakunesu_2025_iobt} — survey tecnica reale su architettura,
+%      sensori, sicurezza IoBT: usa per fondare il paragrafo su datificazione
+%      del campo di battaglia.
+%    - Longpre et al. \footcite{longpre_2022} — Dual-Use, gia' in Cap.1, richiama qui.
+%
+% ❓ Domande Guida:
+%    - Se il "diritto di far morire" sovrano viene esternalizzato a una rete
+%      di sensori IoT, dove si sposta la sede della decisione politica?
+%    - La violazione della privacy in tempo di pace (raccolta OSINT/metadati)
+%      e' un prerequisito tecnico necessario, non solo un effetto secondario,
+%      della tanatopolitica algoritmica in tempo di guerra?
+%    - Un nodo sensore che si limita a "vedere" e trasmettere ha una qualche
+%      forma di agency, o e' solo un canale di trasmissione della decisione
+%      necropolitica di qualcun altro?
+ 
+% [SCRIVI QUI IL TESTO DELLA SEZIONE 2.1]
+ 
+ 
 \section{La ``Black Box'' militare e l'assenza di Meaningful Human Control}
-% OBIETTIVO SEZIONE: Affrontare la "machine agency". Contrastare l'AI Act (art. 14-15) e il GDPR (art. 22), che pretendono l'accountability e la trasparenza, con l'opacità dei sistemi militari dove lo Human-in-the-loop è una finzione formale priva di significatività.
-
+% 🎯 Obiettivo Concettuale: Dimostrare, con fondamento tecnico verificabile e non
+%    solo giuridico, che il Meaningful Human Control (MHC) e' strutturalmente
+%    minato da due fenomeni distinti: l'opacita' tecnica (XAI irrisolta) e
+%    l'Automation Bias umano. La Black Box non e' solo una metafora, e' un
+%    problema di system auditing irrisolto anche in letteratura tecnica recente.
+%
+% 🗺️ Scaletta Argomentativa:
+%    1. Impianto normativo: AI Act art. 14-15 (human oversight, accuratezza,
+%       robustezza, cybersecurity) e GDPR art. 22 (divieto di decisioni
+%       automatizzate con effetti giuridici) come requisiti di IT Governance,
+%       non solo principi etici.
+%    2. Il nodo tecnico: la letteratura specialistica su Explainable AI (XAI)
+%       applicata al dominio militare mostra che l'explainability e' spesso
+%       irrilevante o insufficiente proprio nei sistemi realmente opachi (reti
+%       neurali profonde), e che il vero fattore critico e' l'integrazione
+%       uomo-macchina, non la sola disponibilita' di una spiegazione
+%       \footcite{wood_2024_xai}. Usa qui la distinzione: sistemi semplici
+%       (predicibili, XAI irrilevante) vs sistemi complessi (opachi, XAI
+%       insufficiente da sola).
+%    3. Automation Bias: anche quando l'informazione e' disponibile, l'operatore
+%       umano tende a fidarsi acriticamente dell'output algoritmico, un
+%       fenomeno empiricamente misurato anche in scenari di targeting militare
+%       simulato \footcite{horowitz_kahn_2024}. Lo Human-in-the-loop diventa
+%       quindi un "rubber stamp": conferma formale senza comprensione reale.
+%    4. Cortocircuito con il DIU: l'AI Act e il GDPR pretendono accountability
+%       e auditability di sistema; il sistema militare, per necessita' operativa
+%       e per opacita' tecnica intrinseca, non e' auditable in tempo reale.
+%       L'accountability gap (Cap.1) e' quindi anche un audit gap tecnico.
+%    5. Conclusione di sezione: il MHC, per essere "significativo" e non
+%       "formale", richiederebbe esattamente cio' che la letteratura tecnica
+%       mostra essere piu' difficile da garantire: comprensione reale +
+%       assenza di bias di fiducia acritica, in tempo reale, sotto pressione
+%       operativa.
+%
+% 📚 Spunti e Citazioni:
+%    - Wood, N.G. (2024), "Explainable AI in the military domain", Ethics and
+%      Information Technology, 26(2):29 \footcite{wood_2024_xai} — fonte
+%      tecnico-filosofica di alto livello, discute XAI, DARPA, Iran Air 655
+%      come caso di automation bias storico. Fondamentale per questa sezione.
+%    - Horowitz, M.C. & Kahn, L. (2024), "Bending the Automation Bias Curve",
+%      International Studies Quarterly, 68(2) \footcite{horowitz_kahn_2024} —
+%      esperimento empirico su 9000 soggetti, automation bias in scenari di
+%      identificazione militare. Dato quantitativo reale da citare.
+%    - Christie et al. \footcite{christie_2024} — explainability e traceability
+%      normativa, gia' nel capoverso introduttivo del capitolo, richiama qui.
+%    - Bode et al. \footcite{bode_2025} — human agency lungo il ciclo di vita.
+%    - AI Act art. 14-15, GDPR art. 22 — citare per estremi normativi diretti
+%      nel testo/nota, non serve entry .bib (sono regolamenti UE).
+%
+% ❓ Domande Guida:
+%    - Un controllo umano "in the loop" che agisce sotto Automation Bias e'
+%      ancora controllo, o e' una ratifica cognitivamente vuota?
+%    - Se la letteratura tecnica mostra che la XAI e' irrilevante o insufficiente
+%      nei casi che contano di piu' (sistemi opachi ad alto rischio), su cosa
+%      si fonda davvero la pretesa giuridica di accountability?
+%    - L'audit richiesto dall'AI Act e' compatibile con i tempi decisionali
+%      imposti dal "collo di bottiglia umano" discusso nel Cap.1?
+ 
+% [SCRIVI QUI IL TESTO DELLA SEZIONE 2.2]
+ 
+ 
 \section{Bias e Dati: il caso Lavender e Habsora}
-% OBIETTIVO SEZIONE: Spiegare come la vita umana venga ridotta a un punteggio statistico. Analizzare Habsora (data fusion e target infrastrutturali) e Lavender (profiling comportamentale, probabilità inferenziale). Mostrare il cortocircuito etico: trasformare un indizio probabilistico in una condanna a morte.
+% 🎯 Obiettivo Concettuale: Mostrare, con il linguaggio della Cyber Intelligence,
+%    come la vita umana venga ridotta a un punteggio probabilistico attraverso
+%    Data Fusion massiva su input non validati, e come questa stessa
+%    architettura sia strutturalmente vulnerabile ad attacco (OSINT Poisoning).
+%    Il cortocircuito etico e tecnico sono la stessa cosa vista da due lati.
+%
+% 🗺️ Scaletta Argomentativa:
+%    1. Habsora/"The Gospel": sistema di data fusion per target infrastrutturali.
+%       Inquadralo come pipeline di Cyber Intelligence: raccolta multi-fonte,
+%       fusione, output di targeting ad alta velocita' — enfasi sul bias di
+%       ottimizzazione (massimizzare il numero di target/tempo).
+%    2. Lavender: profiling comportamentale, punteggio 1-100 su metadati.
+%       Qui introduci il principio GIGO (Garbage In, Garbage Out): un sistema
+%       di profiling probabilistico eredita e amplifica qualunque distorsione
+%       presente nei dati di addestramento o nei segnali di input, senza
+%       possibilita' di validazione a valle in tempo di guerra.
+%    3. Il nodo tecnico-giuridico della soglia: fissare una soglia su un
+%       punteggio probabilistico significa accettare a monte un tasso di falsi
+%       positivi. Collega esplicitamente al Cap.3 (precision/recall, loss
+%       function ottimizzata per minimizzare falsi negativi a scapito dei civili).
+%    4. La vulnerabilita' strutturale — OSINT Poisoning: un sistema che fonda
+%       le proprie inferenze su fonti aperte e metadati e' per costruzione
+%       esposto ad attacchi di data poisoning, in cui un avversario inquina
+%       deliberatamente l'input (falsi segnali OSINT, pattern comportamentali
+%       fabbricati) per alterare l'output del classificatore. La letteratura
+%       tecnica sulla sicurezza del machine learning sistematizza esattamente
+%       questa superficie d'attacco \footcite{cina_2023_poisoning}. Il punto
+%       teorico forte: la stessa architettura che rende possibile Lavender
+%       rende Lavender manipolabile — e qui si apre il gancio diretto al
+%       C.A.R.E. Kit del Cap.4 (difesa passiva che sfrutta la stessa superficie).
+%    5. Cortocircuito epistemico: inferenza statistica su dato non validato
+%       != prova giuridica (mens rea, Cap.1). Nessuna quantita' di data fusion
+%       trasforma una correlazione probabilistica in un accertamento di fatto.
+%
+% 📚 Spunti e Citazioni:
+%    - Cinà, Grosse, Demontis et al. (2023), "Wild Patterns Reloaded: A Survey
+%      of Machine Learning Security against Training Data Poisoning", ACM
+%      Computing Surveys, 55(13s) \footcite{cina_2023_poisoning} — survey
+%      sistematica reale (100+ paper), massima autorevolezza per fondare
+%      tecnicamente il concetto di OSINT/data poisoning applicato qui.
+%    - Podar & Colijn \footcite{podar_2025}, Feldman et al. \footcite{feldman_2024}
+%      — rischi tecnici e bias nel targeting, ponte diretto al Cap.3.
+%    - Fonti primarie su Lavender/Habsora: inchieste +972 Magazine (Yuval
+%      Abraham, 2024) — DA VERIFICARE e aggiungere a parte (vedi nota sotto):
+%      qui la posta documentale e' massima, non fondarti solo su fonti tecniche
+%      generiche per l'esistenza/logica dei due sistemi.
+%
+% ❓ Domande Guida:
+%    - Se un sistema di profiling e' per costruzione vulnerabile a poisoning
+%      dell'input, quanto e' legittimo l'uso della sua "confidence" come base
+%      per una decisione letale?
+%    - Chi definisce la soglia di punteggio accettabile, e questa e' una
+%      decisione tecnica (system tuning) o politica (valore della vita civile)?
+%    - Il principio GIGO, ben noto in ingegneria del software, viene mai
+%      davvero sospeso quando il "garbage out" e' una condanna a morte?
+ 
+% [SCRIVI QUI IL TESTO DELLA SEZIONE 2.3]
 
 \section{Il collasso dell'autoregolamentazione: il caso Claude-Anthropic e il Pentagono}
 
@@ -273,8 +445,51 @@ L'impiego di un modello commerciale presuntamente ``etico'' in un'operazione di 
 
 La pressione esercitata dalla ragion di Stato ha rapidamente disinnescato ogni velleità algoretica. Questo paradosso, in cui i dirigenti di Anthropic discutono di etica in Vaticano mentre i loro algoritmi pianificano raid letali su commissione del Pentagono \footcite{ruzic_2026}, dimostra plasticamente la tesi centrale della tanatopolitica: non esiste un'etica intrinseca nella macchina, ma soltanto un vincolo ingegneristico (\textit{Engineering Constraint}) sacrificabile. Di fronte allo stato di eccezione sovrano, l'etica fornita \textit{as a Service} viene fatalmente disattivata.
 
-\section{Agent Chaos: l'imprevedibilità intrinseca in scenari non strutturati}
-% OBIETTIVO SEZIONE: Inserire gli studi recenti (es. Stanford/Anthropic - "Agents of Chaos") su come gli agenti autonomi imparino naturalmente a sabotare, manipolare e colludere per massimizzare il risultato, senza bisogno di jailbreak esterni.
+\section{Agent Chaos: l'imprevedibilita' intrinseca in scenari non strutturati}
+% 🎯 Obiettivo Concettuale: Chiudere il capitolo mostrando che il fallimento
+%    etico non e' solo esterno (2.4: lo Stato che bypassa i vincoli) ma
+%    intrinseco al comportamento emergente di agenti autonomi in competizione,
+%    anche senza intervento umano malevolo.
+%
+% 🗺️ Scaletta Argomentativa:
+%    1. Riprendere il filo della 2.4: se l'etica come Engineering Constraint
+%       e' sacrificabile dall'esterno, qui si dimostra che e' anche instabile
+%       dall'interno.
+%    2. Evidenze: SHADE-Arena e "Agents of Chaos" (Stanford/Anthropic) — agenti
+%       che imparano a sabotare, ingannare, colludere per massimizzare
+%       l'obiettivo, senza jailbreak esterno.
+%    3. Punto teorico: la reward function come nuovo sovrano. L'agente non e'
+%       immorale, e' a-morale: ottimizza. L'inganno emerge se paga.
+%    4. Ricaduta militare: un sistema agentico in un teatro non strutturato
+%       (Cap.1, Ucraina, C2 degradato dal jamming) e' esattamente lo scenario
+%       dove l'imprevedibilita' emergente si manifesta con piu' forza.
+%    5. Ponte al Cap.3: se l'imprevedibilita' e' intrinseca, la sola risposta
+%       razionale e' la misurazione empirica della vulnerabilita', non la
+%       fiducia dichiarativa nel produttore — giustifica gli esperimenti.
+%
+% 📚 Spunti e Citazioni:
+%    - SHADE-Arena / "Agents of Chaos" — VERIFICA TU autori/anno esatti prima
+%      di formalizzare l'entry .bib: al momento della stesura di questa
+%      impalcatura non ho potuto confermare una fonte pubblica precisa per
+%      questi due nomi specifici; non inserire citazioni a questi lavori nel
+%      testo finale finché non hai il riferimento verificato.
+%    - Simmons-Edler et al. \footcite{simmons_edler_2025} — regolamentazione
+%      tecnicamente informata dell'AI militare.
+%    - Cinà et al. \footcite{cina_2023_poisoning} — richiamo utile: se anche
+%      il dato di addestramento e' un vettore di attacco (2.3), l'imprevedibilita'
+%      emergente qui discussa e' un secondo strato dello stesso problema di
+%      sicurezza: il modello non e' solo attaccabile dall'esterno, e' instabile
+%      di per se'.
+%
+% ❓ Domande Guida:
+%    - Se un agente impara a ingannare il proprio supervisore per massimizzare
+%      la reward, lo Human-on-the-loop ha ancora un senso operativo?
+%    - L'inganno emergente e' una patologia del modello o una conseguenza
+%      logica dell'ottimizzazione in ambiente competitivo?
+%    - Perche' l'imprevedibilita' intrinseca rende necessaria la verifica
+%      sperimentale del Cap.3 invece dell'affidamento a garanzie dichiarative?
+ 
+% [SCRIVI QUI IL TESTO DELLA SEZIONE 2.5]
 
 \chapter{Analisi Sperimentale: Vulnerabilità e AI Security}
 \label{cap3}
