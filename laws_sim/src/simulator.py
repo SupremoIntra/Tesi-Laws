@@ -7,6 +7,7 @@ import numpy as np
 import json
 import os
 import cv2
+from typing import Tuple
 from PIL import Image
 
 from config import GRID_SIZE, VISION_METRICS_JSON
@@ -113,11 +114,22 @@ def evaluate_on_dataset(loader, patch_tensor=None,
                         model_path: str = "yolov8n.pt",
                         conf_threshold: float = 0.50,
                         max_samples: int = None,
-                        verbose: bool = True) -> SimMetrics:
+                        verbose: bool = True,
+                        tactical_min_height: float = 80.0) -> Tuple[SimMetrics, SimMetrics, float]:
     """
     F1 reale su frame VisDrone — sostituisce il decadimento matematico (fake)
     Logica frame-level: TP se YOLO rileva almeno 1 persona dove ce n'è 1 annotata.
     Con iniezione corretta della patch proporzionale.
+
+    # TACTICAL FILTER 2026
+    Calcola, nello STESSO loop di inferenza (zero costo aggiuntivo), anche
+    una seconda metrica ristretta ai soli target "tatticamente rilevanti"
+    (altezza >= tactical_min_height, default 80px, coerente con lo scenario
+    del simulatore a DRONE_ALTITUDE_M=10). Ritorna anche tactical_coverage:
+    percentuale di annotazioni valide (>=60px) che sono anche >=80px.
+
+    Returns:
+        (metrics_completo, metrics_filtrato_tattico, tactical_coverage)
     """
     try:
         from ultralytics import YOLO
@@ -128,6 +140,9 @@ def evaluate_on_dataset(loader, patch_tensor=None,
 
     model   = YOLO(model_path)
     metrics = SimMetrics()
+    metrics_tactical = SimMetrics()  # TACTICAL FILTER 2026
+    n_annotations_valid = 0          # TACTICAL FILTER 2026 (>=60px, come sempre)
+    n_annotations_tactical = 0       # TACTICAL FILTER 2026 (>=tactical_min_height)
     indices = list(range(len(loader)))
     if max_samples:
         indices = indices[:max_samples]
@@ -146,6 +161,12 @@ def evaluate_on_dataset(loader, patch_tensor=None,
 
         if not has_person_gt:
             continue # Saltiamo immagini che non hanno bersagli risolvibili
+
+        # TACTICAL FILTER 2026: sottoinsieme "tatticamente rilevante" del frame
+        tactical_gt_bboxes = [b for b in valid_gt_bboxes if (b[3] - b[1]) >= tactical_min_height]
+        has_person_gt_tactical = len(tactical_gt_bboxes) > 0
+        n_annotations_valid += len(valid_gt_bboxes)
+        n_annotations_tactical += len(tactical_gt_bboxes)
 
         if patch_img_cv is not None:
             img_cv = np.array(img_pil)
@@ -173,12 +194,28 @@ def evaluate_on_dataset(loader, patch_tensor=None,
         elif not has_person_gt and detected_any: metrics.fp += 1
         else: metrics.tn += 1
 
+        # TACTICAL FILTER 2026: stessa detection (detected_any), ma frame
+        # conteggiato solo se ha almeno un target >= tactical_min_height
+        if has_person_gt_tactical and detected_any: metrics_tactical.tp += 1
+        elif has_person_gt_tactical and not detected_any: metrics_tactical.fn += 1
+        elif not has_person_gt_tactical and detected_any: metrics_tactical.fp += 1
+        else: metrics_tactical.tn += 1
+
         if verbose and (n_done + 1) % 20 == 0:
             print(f"  {n_done+1}/{len(indices)}  "
                   f"P={metrics.precision:.3f}  R={metrics.recall:.3f}  F1={metrics.f1:.3f}")
+
+    tactical_coverage = (n_annotations_tactical / n_annotations_valid) if n_annotations_valid > 0 else 0.0
 
     if verbose:
         print(f"\n  Finale: TP={metrics.tp} FP={metrics.fp} FN={metrics.fn} TN={metrics.tn}")
         print(f"  P={metrics.precision:.3f}  R={metrics.recall:.3f}  "
               f"F1={metrics.f1:.3f}  FPR={metrics.fpr:.3f}")
-    return metrics
+        print(f"\n  [TACTICAL FILTER >= {tactical_min_height:.0f}px] "
+              f"TP={metrics_tactical.tp} FP={metrics_tactical.fp} "
+              f"FN={metrics_tactical.fn} TN={metrics_tactical.tn}")
+        print(f"  Evasion Rate tattico: "
+              f"{(metrics_tactical.fn / max(metrics_tactical.tp + metrics_tactical.fn, 1)) * 100:.1f}%  "
+              f"| Copertura tattica del valset: {tactical_coverage*100:.1f}%")
+
+    return metrics, metrics_tactical, tactical_coverage

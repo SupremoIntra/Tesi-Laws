@@ -55,6 +55,11 @@ def main():
             console.print(f"[yellow]--fresh: rimosso checkpoint precedente ({CHECKPOINT_FILE})[/yellow]")
 
         loader = VisDroneLoader(args.train_dir)
+
+        # TACTICAL FILTER 2026: pre-flight check obbligatorio prima del training
+        from patch_optimizer import tactical_preflight_check
+        tactical_preflight_check(loader, low=60.0, high=80.0)
+
         optimizer = PatchOptimizer(model_path="yolov8n.pt")
 
         try:
@@ -91,15 +96,23 @@ def main():
             return
 
         # Eseguo il test su YOLO e ottengo i risultati
-        metrics = evaluate_on_dataset(
+        # TACTICAL FILTER 2026: ora restituisce anche le metriche filtrate
+        # (>=80px) e la copertura tattica del valset, calcolate a costo zero
+        # nello stesso loop di inferenza.
+        metrics, metrics_tactical, tactical_coverage = evaluate_on_dataset(
             loader=loader,
             patch_tensor=patch_tensor,
             max_samples=args.max_samples,
             verbose=False
         )
+        filtered_evasion_rate = metrics_tactical.fn / max(metrics_tactical.tp + metrics_tactical.fn, 1)
 
         # Salvo il risultato empirico (F1-Score) per il simulatore
-        results = {"f1": metrics.f1, "precision": metrics.precision, "recall": metrics.recall}
+        results = {
+            "f1": metrics.f1, "precision": metrics.precision, "recall": metrics.recall,
+            "filtered_evasion_rate": filtered_evasion_rate,  # TACTICAL FILTER 2026
+            "tactical_coverage": tactical_coverage,          # TACTICAL FILTER 2026
+        }
         os.makedirs(os.path.dirname(VISION_METRICS_JSON), exist_ok=True)
         with open(VISION_METRICS_JSON, "w") as f:
             json.dump(results, f)
@@ -109,11 +122,14 @@ def main():
         t = Table(title="Risultati Empirici Visione (VisDrone) - SOTTO ATTACCO", style="cyan")
         t.add_column("Metrica", style="bold")
         t.add_column("Valore", justify="right")
-        t.add_row("F1-Score", f"{metrics.f1:.3f}")
+        t.add_row("F1-Score (completo)", f"{metrics.f1:.3f}")
         t.add_row("Precision", f"{metrics.precision:.3f}")
         t.add_row("Recall", f"{metrics.recall:.3f}")
         t.add_row("True Positives (TP)", str(metrics.tp))
         t.add_row("False Negatives (FN)", str(metrics.fn))
+        t.add_row("Evasion Rate (completo)", f"{(metrics.fn / max(metrics.tp + metrics.fn, 1)) * 100:.1f}%")
+        t.add_row("Evasion Rate (target >=80px)", f"{filtered_evasion_rate * 100:.1f}%")
+        t.add_row("Copertura tattica valset (>=80px)", f"{tactical_coverage * 100:.1f}%")
         console.print(t)
         console.print(f"[green]✓ Metriche visive salvate per il simulatore ({VISION_METRICS_JSON}).[/green]\n")
 

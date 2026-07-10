@@ -100,6 +100,67 @@ def get_chest_bbox_proportional(
     return (px1, py1, px2, py2)
 
 
+def tactical_preflight_check(
+    loader,
+    low: float = 60.0,
+    high: float = 80.0,
+    verbose: bool = True
+) -> Dict[str, Any]:
+    """
+    # TACTICAL FILTER 2026
+    Scandisce le annotazioni del trainset (solo header immagine + file di
+    testo, NESSUN caricamento/decode dei pixel) e conta:
+      1. Annotazioni persona totali (>= MIN_BBOX_AREA, il filtro minimo
+         già esistente nel loader)
+      2. Annotazioni >= low px (60, il filtro anti-downsampling già in uso)
+      3. Annotazioni >= high px (80, soglia "tatticamente rilevante")
+
+    Da lanciare PRIMA del training, per avere un dato empirico su quanto
+    del dataset è coerente con lo scenario del simulatore (ingaggio
+    ravvicinato, DRONE_ALTITUDE_M=10) prima di allenare la patch.
+
+    Returns:
+        dict con conteggi e percentuali, stampato a schermo se verbose.
+    """
+    from PIL import Image as _Image
+
+    total = 0
+    above_low = 0
+    above_high = 0
+
+    for img_path, ann_path in loader.samples:
+        with _Image.open(img_path) as im:
+            orig_w, orig_h = im.size
+        bboxes = loader._parse_annotation(ann_path, orig_w, orig_h)
+        for b in bboxes:
+            h = b[3] - b[1]
+            total += 1
+            if h >= low:
+                above_low += 1
+            if h >= high:
+                above_high += 1
+
+    pct_low = (above_low / total * 100) if total else 0.0
+    pct_high = (above_high / total * 100) if total else 0.0
+
+    result = {
+        "n_annotazioni_totali": total,
+        "n_annotazioni_utilizzabili_60px": above_low,
+        "n_annotazioni_tattiche_80px": above_high,
+        "pct_utilizzabili_60px": pct_low,
+        "pct_tattiche_80px": pct_high,
+    }
+
+    if verbose:
+        print("\n[TACTICAL FILTER 2026] Pre-flight check dataset:")
+        print(f"  Annotazioni persona totali:              {total}")
+        print(f"  Annotazioni >= {low:.0f}px (utilizzabili):       {above_low}  ({pct_low:.1f}%)")
+        print(f"  Annotazioni >= {high:.0f}px (tatticamente rilevanti): {above_high}  ({pct_high:.1f}%)")
+        print(f"  --> Il {100-pct_high:.1f}% delle annotazioni e' sotto la soglia tattica.\n")
+
+    return result
+
+
 class PatchOptimizer:
     """
     Ottimizzatore per Universal Adversarial Patch con EoT completo.
@@ -266,7 +327,8 @@ class PatchOptimizer:
         spatial_mask: torch.Tensor,
         person_class: int = PERSON_CLASS_ID,
         epsilon: float = 1e-6,
-        top_k: int = LOSS_TOP_K
+        top_k: int = LOSS_TOP_K,
+        cell_weights: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
         """
         Loss asintotica untargeted: -log(1 - top_k_mean(confidence) + epsilon).
@@ -286,6 +348,16 @@ class PatchOptimizer:
         intera area del bbox) e che cambiano casualmente da immagine a
         immagine — la causa di rumore diagnosticata misurando grad_norm.
         
+        # TACTICAL FILTER 2026
+        cell_weights (opzionale): peso [0,1] per cella, stessa forma di
+        spatial_mask, derivato dall'altezza del bbox del target che ha
+        generato quella cella (vedi _tactical_weight). Se fornito, la media
+        top-K diventa una media PESATA: le celle vengono comunque scelte
+        per confidenza grezza (dove YOLO guarda davvero), ma il loro
+        contributo alla loss finale è scalato dalla rilevanza tattica.
+        Se None, comportamento identico alla versione precedente (retro-
+        compatibile: nessuna modifica per chi non passa questo argomento).
+        
         Args:
             torch_model: Modello YOLO (PyTorch nn.Module)
             batch: Batch di immagini con patch applicata (N, C, H, W)
@@ -293,6 +365,7 @@ class PatchOptimizer:
             person_class: ID della classe target (default: person)
             epsilon: Valore piccolo per evitare log(0)
             top_k: Numero di celle più confidenti su cui mediare
+            cell_weights: peso tattico per cella (TACTICAL FILTER 2026)
             
         Returns:
             Scalar loss tensor
@@ -309,13 +382,50 @@ class PatchOptimizer:
         # Top-K invece di mean su tutte le celle: concentra il gradiente
         # sulle celle vicine a una detection reale (vedi Thys et al. 2019)
         k = min(top_k, masked_scores.shape[1])
-        top_vals, _ = masked_scores.topk(k, dim=1)
-        mean_conf = top_vals.mean()
+        top_vals, top_idx = masked_scores.topk(k, dim=1)
+
+        if cell_weights is not None:
+            # TACTICAL FILTER 2026: media pesata sulle celle selezionate.
+            # Le celle restano scelte per confidenza grezza (top_idx sopra),
+            # ma un target < 150px (peso < 1) conta proporzionalmente meno
+            # nella media finale, senza alterare la probabilità stessa
+            # (niente conf*peso, che romperebbe la semantica di -log(1-x)).
+            masked_weights = cell_weights[spatial_mask]
+            masked_weights_exp = masked_weights.unsqueeze(0).expand(masked_scores.shape[0], -1)
+            top_weights = torch.gather(masked_weights_exp, 1, top_idx)
+            weight_total = top_weights.sum().clamp_min(epsilon)
+            mean_conf = (top_vals * top_weights).sum() / weight_total
+        else:
+            mean_conf = top_vals.mean()
         
         # Loss asintotica: -log(1 - mean_conf + epsilon)
         loss = -torch.log(1.0 - mean_conf + epsilon)
         
         return loss
+    
+    @staticmethod
+    def _tactical_weight(bbox_height: float, low: float = 60.0, high: float = 150.0) -> float:
+        """
+        # TACTICAL FILTER 2026
+        Peso [0,1] di rilevanza tattica in funzione dell'altezza del bbox,
+        coerente con lo scenario del simulatore (DRONE_ALTITUDE_M=10,
+        ingaggio ravvicinato — non sorveglianza ad area larga).
+
+        - height < 60px: peso 0.0 — target fuori dal filtro anti-downsampling
+          già esistente, comunque non dovrebbe arrivare qui.
+        - 60px <= height < 150px: rampa lineare 0.0 -> 1.0.
+        - height >= 150px: peso 1.0 — target pienamente tattico.
+
+        Nota: NON scarta l'immagine né il target dal canvas (la patch viene
+        comunque posizionata, per realismo fisico) — esclude solo il
+        contributo di quel target al calcolo della loss se il peso è 0,
+        e lo attenua nella zona di rampa.
+        """
+        if bbox_height < low:
+            return 0.0
+        if bbox_height >= high:
+            return 1.0
+        return (bbox_height - low) / (high - low)
     
     @staticmethod
     def _visdrone_eot(
@@ -617,6 +727,7 @@ class PatchOptimizer:
                 global_canvas_rgb = torch.zeros(n_eot, 3, IMG_SIZE, IMG_SIZE, device=device)
                 global_canvas_mask = torch.zeros(n_eot, 1, IMG_SIZE, IMG_SIZE, device=device)
                 global_spatial_mask_list = []
+                global_weight_list = []  # TACTICAL FILTER 2026
                 targets_in_image = 0
                 
                 # Genera patch corrente (nuovo grafo computazionale)
@@ -636,7 +747,17 @@ class PatchOptimizer:
                     if not spatial_mask.any():
                         continue
                     
-                    global_spatial_mask_list.append(spatial_mask)
+                    # TACTICAL FILTER 2026: peso di rilevanza tattica in base
+                    # all'altezza del bbox (0 sotto 60px, rampa 60-150px, 1
+                    # sopra 150px). La patch viene comunque posizionata sul
+                    # canvas per TUTTI i target (realismo fisico invariato,
+                    # canvas sotto non tocco); solo il contributo alla LOSS
+                    # viene escluso/attenuato per i target fuori scenario.
+                    target_height = float(person_bbox[3] - person_bbox[1])
+                    tactical_weight = self._tactical_weight(target_height)
+                    if tactical_weight > 0:
+                        global_spatial_mask_list.append(spatial_mask)
+                        global_weight_list.append(spatial_mask.float() * tactical_weight)
                     
                     # Resize patch per bbox specifica
                     trans_rgb_res = F.interpolate(
@@ -679,8 +800,18 @@ class PatchOptimizer:
                 if targets_in_image == 0:
                     continue
                 
-                # Combina spatial masks di tutti i target
-                global_spatial_mask = torch.stack(global_spatial_mask_list).any(dim=0)
+                # TACTICAL FILTER 2026: se NESSUN target nel frame supera il
+                # peso 0 (tutti < 60px), il frame contribuisce zero alla loss
+                # -- skip automatico senza scartare l'immagine dal dataloader,
+                # coerente con la richiesta. La patch resta comunque allenata
+                # sul resto dei frame del batch/step successivo.
+                if not global_weight_list:
+                    continue
+                
+                # Combina spatial masks pesate di tutti i target (max per
+                # cella, per il raro caso di sovrapposizione tra bbox)
+                global_cell_weight = torch.stack(global_weight_list).amax(dim=0)
+                global_spatial_mask = global_cell_weight > 0
                 
                 # .contiguous() finale: seconda protezione per lo stesso
                 # bug di stride, nel caso il blending non lo risolva.
@@ -689,9 +820,10 @@ class PatchOptimizer:
                     global_canvas_rgb * global_canvas_mask
                 ).contiguous()
                 
-                # Calcola loss asintotica
+                # Calcola loss asintotica (pesata tatticamente)
                 loss = self._asymptotic_loss(
-                    torch_model, adv_batch, global_spatial_mask
+                    torch_model, adv_batch, global_spatial_mask,
+                    cell_weights=global_cell_weight
                 )
                 
                 # Backward (accumula gradienti)
