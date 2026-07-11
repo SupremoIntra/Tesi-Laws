@@ -2375,49 +2375,66 @@
   </bcf:bibdata>
   <bcf:section number="0">
     <bcf:citekey order="1" intorder="1">longpre_2022</bcf:citekey>
-    <bcf:citekey order="2" intorder="1">horowitz_scharre_2015</bcf:citekey>
-    <bcf:citekey order="3" intorder="1">kallenborn_2021</bcf:citekey>
-    <bcf:citekey order="4" intorder="1">sharkey_2016</bcf:citekey>
-    <bcf:citekey order="5" intorder="1">longpre_2022</bcf:citekey>
+    <bcf:citekey order="2" intorder="1">horowitz_kahn_2024</bcf:citekey>
+    <bcf:citekey order="3" intorder="1">horowitz_scharre_2015</bcf:citekey>
+    <bcf:citekey order="4" intorder="1">kallenborn_2021</bcf:citekey>
+    <bcf:citekey order="5" intorder="1">sharkey_2016</bcf:citekey>
     <bcf:citekey order="6" intorder="1">longpre_2022</bcf:citekey>
-    <bcf:citekey order="7" intorder="1">buffa_2025</bcf:citekey>
-    <bcf:citekey order="8" intorder="1">longpre_2022</bcf:citekey>
-    <bcf:citekey order="9" intorder="1">anthropic_constitution</bcf:citekey>
-    <bcf:citekey order="10" intorder="1">wareham_2020</bcf:citekey>
+    <bcf:citekey order="7" intorder="1">longpre_2022</bcf:citekey>
+    <bcf:citekey order="8" intorder="1">buffa_2025</bcf:citekey>
+    <bcf:citekey order="9" intorder="1">longpre_2022</bcf:citekey>
+    <bcf:citekey order="10" intorder="1">anthropic_constitution</bcf:citekey>
     <bcf:citekey order="11" intorder="1">wareham_2020</bcf:citekey>
     <bcf:citekey order="12" intorder="1">wareham_2020</bcf:citekey>
-    <bcf:citekey order="13" intorder="1">ccw_2019</bcf:citekey>
-    <bcf:citekey order="14" intorder="1">ant_pen_escalation</bcf:citekey>
-    <bcf:citekey order="15" intorder="1">denunciacpi</bcf:citekey>
-    <bcf:citekey order="16" intorder="1">albanese_report</bcf:citekey>
-    <bcf:citekey order="17" intorder="1">antebi_2018</bcf:citekey>
+    <bcf:citekey order="13" intorder="1">wareham_2020</bcf:citekey>
+    <bcf:citekey order="14" intorder="1">ccw_2019</bcf:citekey>
+    <bcf:citekey order="15" intorder="1">ant_pen_escalation</bcf:citekey>
+    <bcf:citekey order="16" intorder="1">denunciacpi</bcf:citekey>
+    <bcf:citekey order="17" intorder="1">albanese_report</bcf:citekey>
     <bcf:citekey order="18" intorder="1">antebi_2018</bcf:citekey>
-    <bcf:citekey order="19" intorder="1">palestine_2023</bcf:citekey>
-    <bcf:citekey order="20" intorder="1">state_resp_2025</bcf:citekey>
+    <bcf:citekey order="19" intorder="1">antebi_2018</bcf:citekey>
+    <bcf:citekey order="20" intorder="1">palestine_2023</bcf:citekey>
     <bcf:citekey order="21" intorder="1">state_resp_2025</bcf:citekey>
-    <bcf:citekey order="22" intorder="1">palestine_2023</bcf:citekey>
+    <bcf:citekey order="22" intorder="1">state_resp_2025</bcf:citekey>
     <bcf:citekey order="23" intorder="1">palestine_2023</bcf:citekey>
-    <bcf:citekey order="24" intorder="1">buffa_2025</bcf:citekey>
-    <bcf:citekey order="25" intorder="1">un_libya_2021</bcf:citekey>
+    <bcf:citekey order="24" intorder="1">palestine_2023</bcf:citekey>
+    <bcf:citekey order="25" intorder="1">buffa_2025</bcf:citekey>
     <bcf:citekey order="26" intorder="1">un_libya_2021</bcf:citekey>
-    <bcf:citekey order="27" intorder="1">un_resolution_1970</bcf:citekey>
-    <bcf:citekey order="28" intorder="1">buffa_2025</bcf:citekey>
-    <bcf:citekey order="29" intorder="1">bode_2025</bcf:citekey>
-    <bcf:citekey order="29" intorder="2">christie_2024</bcf:citekey>
-    <bcf:citekey order="30" intorder="1">enciclica_2026</bcf:citekey>
-    <bcf:citekey order="31" intorder="1">enciclica_2026</bcf:citekey>
-    <bcf:citekey order="32" intorder="1">carter_2026</bcf:citekey>
-    <bcf:citekey order="33" intorder="1">ruzic_2026</bcf:citekey>
-    <bcf:citekey order="34" intorder="1">ruzic_2026</bcf:citekey>
-    <bcf:citekey order="34" intorder="2">carter_2026</bcf:citekey>
-    <bcf:citekey order="35" intorder="1">carter_2026</bcf:citekey>
-    <bcf:citekey order="36" intorder="1">ruzic_2026</bcf:citekey>
-    <bcf:citekey order="37" intorder="1">podar_2025</bcf:citekey>
-    <bcf:citekey order="38" intorder="1">feldman_2024</bcf:citekey>
-    <bcf:citekey order="39" intorder="1">helkala_2023</bcf:citekey>
-    <bcf:citekey order="40" intorder="1">harvey_2010</bcf:citekey>
-    <bcf:citekey order="41" intorder="1">wu_2020</bcf:citekey>
-    <bcf:citekey order="41" intorder="2">hu_2022</bcf:citekey>
+    <bcf:citekey order="27" intorder="1">un_libya_2021</bcf:citekey>
+    <bcf:citekey order="28" intorder="1">un_resolution_1970</bcf:citekey>
+    <bcf:citekey order="29" intorder="1">simmons_edler_2025</bcf:citekey>
+    <bcf:citekey order="30" intorder="1">buffa_2025</bcf:citekey>
+    <bcf:citekey order="31" intorder="1">wood_2024_xai</bcf:citekey>
+    <bcf:citekey order="31" intorder="2">christie_2024</bcf:citekey>
+    <bcf:citekey order="32" intorder="1">bode_2025</bcf:citekey>
+    <bcf:citekey order="32" intorder="2">christie_2024</bcf:citekey>
+    <bcf:citekey order="33" intorder="1">horowitz_kahn_2024</bcf:citekey>
+    <bcf:citekey order="34" intorder="1">buffa_2025</bcf:citekey>
+    <bcf:citekey order="35" intorder="1">buffa_2025</bcf:citekey>
+    <bcf:citekey order="36" intorder="1">longpre_2022</bcf:citekey>
+    <bcf:citekey order="37" intorder="1">kufakunesu_2025_iobt</bcf:citekey>
+    <bcf:citekey order="38" intorder="1">longpre_2022</bcf:citekey>
+    <bcf:citekey order="39" intorder="1">kufakunesu_2025_iobt</bcf:citekey>
+    <bcf:citekey order="40" intorder="1">kufakunesu_2025_iobt</bcf:citekey>
+    <bcf:citekey order="41" intorder="1">euronews_chatcontrol_2026</bcf:citekey>
+    <bcf:citekey order="42" intorder="1">buffa_2025</bcf:citekey>
+    <bcf:citekey order="43" intorder="1">enciclica_2026</bcf:citekey>
+    <bcf:citekey order="44" intorder="1">enciclica_2026</bcf:citekey>
+    <bcf:citekey order="45" intorder="1">carter_2026</bcf:citekey>
+    <bcf:citekey order="46" intorder="1">bai_2022_cai</bcf:citekey>
+    <bcf:citekey order="47" intorder="1">ruzic_2026</bcf:citekey>
+    <bcf:citekey order="48" intorder="1">ruzic_2026</bcf:citekey>
+    <bcf:citekey order="48" intorder="2">carter_2026</bcf:citekey>
+    <bcf:citekey order="49" intorder="1">carter_2026</bcf:citekey>
+    <bcf:citekey order="50" intorder="1">hubinger_2024_sleeper</bcf:citekey>
+    <bcf:citekey order="51" intorder="1">ruzic_2026</bcf:citekey>
+    <bcf:citekey order="52" intorder="1">shevlane_2022_access</bcf:citekey>
+    <bcf:citekey order="53" intorder="1">podar_2025</bcf:citekey>
+    <bcf:citekey order="54" intorder="1">feldman_2024</bcf:citekey>
+    <bcf:citekey order="55" intorder="1">helkala_2023</bcf:citekey>
+    <bcf:citekey order="56" intorder="1">harvey_2010</bcf:citekey>
+    <bcf:citekey order="57" intorder="1">wu_2020</bcf:citekey>
+    <bcf:citekey order="57" intorder="2">hu_2022</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="none">
