@@ -58,11 +58,11 @@
 \beforepreface
 
 \prefacesection{Dedica}
-{\hfill \Large {\sl Dedicato alle persone che amo, a tutti quelli che mi hanno affiancato in questo momento difficile della mia vita, alla mia famiglia, a mio nonno e mia nonna.
-Dedicato a Manuel Pecchenini, che mi ha insegnato la forza di non arrendersi mai, a non mollare mai e a lottare per ciò in cui si crede.
-Dedicato a chi lotta per un mondo più giusto e umano, ai milioni di bambini che soffrono ogni secondo in tutto il mondo, a chi non ha voce e a chi non ha diritto di parola.
-Dedicato a tutte le studentesse e gli studenti che non sono piú qui con noi e che non hanno potuto scrivere una loro dedica, dedicato alla loro lotta contro un sistema scolastico e universitario che non li ha mai ascoltati e che li ha oppressi, rendendoli un corto ed invisibile servizio da telegiornale. 
-Dedicato ai miei studenti, ex studenti, colleghi e alla Scuola, che mi ha permesso di crescere e di diventare la persona che sono oggi.
+{\hfill \Large {\sl Dedicato alle persone che amo, a tutti quelli che mi hanno affiancato in questo momento difficile della mia vita, alla mia famiglia, a mio nonno e mia nonna.\\\\
+Dedicato a Manuel Pecchenini, che mi ha insegnato la forza di non arrendersi mai, a non mollare mai e a lottare per ciò in cui si crede.\\\\
+Dedicato a chi lotta per un mondo più giusto e umano, ai milioni di bambini che soffrono ogni secondo in tutto il mondo, a chi non ha voce e a chi non ha diritto di parola.\\\\
+Dedicato a tutte le studentesse e agli studenti che non sono piú qui con noi e che non hanno potuto scrivere una loro dedica, dedicato alla loro lotta contro un sistema scolastico e universitario che non li ha mai ascoltati e che li ha oppressi, rendendoli un corto ed invisibile servizio da telegiornale.\\\\
+Dedicato ai miei studenti, ex studenti, colleghi e alla Scuola, che mi ha permesso di crescere e di diventare la persona che sono oggi.\\\\
 Dedicato a chi crede che la tecnologia possa essere un mezzo per il progresso e non una mera sostituzione di tutto quello che ci rende umani. }}
 
 \prefacesection{Prefazione}
@@ -433,6 +433,202 @@ I concetti di autonomia e indipendenza nei LAWS non rappresentano una banale evo
 
 \section{Il collasso dell'autoregolamentazione: il caso Claude-Anthropic e il Pentagono}
 
+
+% =====================================================================
+%  IMPALCATURA 2.4 (v3) — Dialogo Etica/Diritto <-> Sicurezza Informatica
+%  Ogni movimento e' costruito come DUE VOCI che si rispondono:
+%  [V-GIUR] = affermazione giuridico/filosofica (quello che gia' hai scritto)
+%  [V-SEC]  = il correlato tecnico-informatico che la fonda, la verifica
+%             o la complica. Ogni [V-SEC] porta un paper reale verificato.
+%  Il testo che scriverai deve FAR DIALOGARE le due voci nello stesso
+%  paragrafo, non giustapporle in paragrafi separati.
+% =====================================================================
+
+\section{Il collasso dell'autoregolamentazione: il caso Claude-Anthropic e il Pentagono}
+
+% ===================== MOVIMENTO 1 — La Constitution =====================
+% 🎯 Obiettivo Concettuale: Dimostrare che "Engineering Constraint" non e'
+%    una metafora del filosofo per svalutare l'etica aziendale: e' la
+%    descrizione tecnicamente accurata di COME la Constitution esiste
+%    fisicamente in un modello. Se e' training, e' negoziabile per
+%    definizione — il dialogo nasce proprio da questa equivalenza.
+%
+% 🗺️ Scaletta Argomentativa (dialogica):
+%    [V-GIUR] L'Algoretica e l'enciclica Magnifica Humanitas trattano la
+%    Constitution come vincolo morale-dottrinale, quasi un corpus di
+%    principi platonici che l'azienda "possiede" e potrebbe "onorare".
+%    [V-SEC] Tecnicamente la Constitution non e' un documento che il
+%    modello "consulta": e' il segnale di reward usato in una pipeline di
+%    Reinforcement Learning from AI Feedback (RLAIF/"Constitutional AI"),
+%    in cui un modello valutatore giudica le risposte in base a un set di
+%    principi e quel giudizio diventa il training signal che sposta i pesi
+%    del modello \footcite{bai_2022_cai}. Punto per il dialogo: un segnale
+%    di training e', per costruzione tecnica, un PARAMETRO regolabile
+%    (quanto peso dargli, su quali dati, con quali soglie) — non un
+%    principio immutabile. Questo rende "Engineering Constraint" un fatto
+%    tecnico verificabile, non solo un giudizio cinico del capitolo.
+%    [V-GIUR] Ne segue che la domanda "l'etica algoritmica puo' essere
+%    comprata o sospesa" ha una risposta tecnica prima che politica: si',
+%    perche' e' esattamente cosi' che funziona l'addestramento.
+%
+% 📚 Spunti e Citazioni:
+%    - Bai et al. (2022), "Constitutional AI: Harmlessness from AI Feedback",
+%      Anthropic \footcite{bai_2022_cai} — paper originale che descrive il
+%      meccanismo tecnico della "Constitution": fondamentale, va citato qui
+%      con precisione perche' e' la fonte primaria del concetto stesso che
+%      il capitolo critica.
+%
+% ❓ Domande Guida:
+%    - Se la Constitution e' un iperparametro di allineamento e non un
+%      principio, in che senso Anthropic puo' "rifiutarsi" di modificarla
+%      sotto pressione, tecnicamente parlando, oltre che contrattualmente?
+%    - L'enciclica critica "l'oligopolio computazionale": ma il vero potere
+%      qui non e' il possesso del modello, e' il controllo del segnale di
+%      reward — chi definisce quel segnale, controlla l'etica del sistema?
+
+
+% ============= MOVIMENTO 2 — Operation Absolute Resolve / JADC2 =============
+% 🎯 Obiettivo Concettuale: Mostrare che lo Human-in-the-loop descritto come
+%    "finzione formale" nel capoverso introduttivo del Cap.2 (2.2) non e'
+%    un'affermazione retorica: e' cio' che la letteratura empirica su
+%    automation bias e XAI militare misura direttamente nello stesso tipo
+%    di scenario (identificazione target ad alta velocita', supervisione
+%    umana a valle di una pipeline algoritmica).
+%
+% 🗺️ Scaletta Argomentativa (dialogica):
+%    [V-GIUR] Nel raid di gennaio 2026, il comando umano a CENTCOM "autorizza"
+%    la fase finale, mentre "tutto cio' che precede" passa attraverso il
+%    modello — descrizione gia' presente nelle fonti giornalistiche sul
+%    ruolo di Claude nella JADC2 (Joint All-Domain Command and Control).
+%    [V-SEC] Questo e' esattamente lo scenario in cui l'automation bias e'
+%    empiricamente piu' forte: quando l'operatore umano riceve solo l'output
+%    finale di una pipeline che non ha costruito e non puo' ispezionare in
+%    tempo reale, la fiducia acritica nell'output aumenta in modo misurabile,
+%    specialmente sotto pressione temporale \footcite{horowitz_kahn_2024}.
+%    Inoltre la letteratura tecnica sulla XAI militare mostra che la
+%    spiegabilita' e' quasi irrilevante proprio nei sistemi complessi e ad
+%    alta velocita' come questo, mentre diventa un "check box" che riduce,
+%    non aumenta, l'attenzione critica dell'operatore \footcite{wood_2024_xai}.
+%    [V-GIUR] Quindi "l'autorizzazione umana finale" non ripara il gap di
+%    responsabilita' discusso nel Cap.1 (accountability gap): lo sposta a
+%    valle di un processo che il diritto presume ispezionabile e che la
+%    tecnica mostra non esserlo nella pratica operativa.
+%
+% 📚 Spunti e Citazioni:
+%    - Horowitz & Kahn (2024) \footcite{horowitz_kahn_2024} — automation bias,
+%      dato quantitativo reale (9000 soggetti, scenario di identificazione
+%      militare), gia' usato in 2.2: richiamalo qui per continuita' logica.
+%    - Wood (2024) \footcite{wood_2024_xai} — limiti della XAI nei sistemi
+%      militari complessi, gia' in 2.2, richiama qui.
+%
+% ❓ Domande Guida:
+%    - Se l'automation bias e' piu' forte esattamente nelle condizioni
+%      operative del raid (velocita', complessita', fiducia nel sistema),
+%      la "supervisione umana" dichiarata era una garanzia reale o un
+%      requisito procedurale destinato a fallire per costruzione?
+
+
+% ========== MOVIMENTO 3 — "All lawful uses" e Supply Chain Risk =============
+% 🎯 Obiettivo Concettuale: Il punto piu' forte del capitolo. Mostrare che lo
+%    strumento usato dallo Stato per punire Anthropic (la designazione di
+%    "supply chain risk") e' un dispositivo giuridico nato in ambito
+%    CYBERSECURITY per rischi da fornitori legati ad attori statali ostili
+%    (i precedenti noti riguardano fornitori di tecnologia legati alla Cina),
+%    qui riorientato contro un'azienda domestica per essersi rifiutata di
+%    rimuovere un guardrail di sicurezza. E' securitizzazione del linguaggio
+%    allo stato puro: lo stesso vocabolario che protegge la sicurezza
+%    nazionale da un fornitore ostile viene usato per punire un fornitore
+%    che difende la propria sicurezza (nel senso di AI safety).
+%
+% 🗺️ Scaletta Argomentativa (dialogica):
+%    [V-GIUR] Il DoD sostiene che Anthropic potrebbe "manipolare il modello
+%    per imporre i propri giudizi morali sull'uso appropriato della
+%    tecnologia da parte dell'esercito" e potrebbe "codificare limitazioni"
+%    (linguaggio ripreso dalle memorie processuali reali del caso).
+%    [V-SEC] Qui il dialogo si fa interessante perche' l'accusa ha un
+%    fondamento tecnico reale, non e' pura retorica: la ricerca sui
+%    cosiddetti "sleeper agents" mostra che comportamenti nascosti (backdoor)
+%    inseriti in un LLM possono sopravvivere all'addestramento di sicurezza
+%    standard, incluso il fine-tuning supervisionato e l'apprendimento per
+%    rinforzo \footcite{hubinger_2024_sleeper} — quindi "codificare
+%    limitazioni persistenti" non e' fantascienza legale, e' un rischio di
+%    sicurezza che la stessa Anthropic ha per prima documentato e studiato,
+%    non per attaccare un cliente ma per capire come DIFENDERE i propri
+%    modelli da attori malevoli che volessero fare esattamente questo.
+%    [V-GIUR] Il paradosso finale: il governo usa come capo d'accusa contro
+%    Anthropic un rischio di sicurezza che la letteratura tecnica descrive
+%    come minaccia DA PROTEGGERE, non come funzionalita' da vietare. La
+%    "supply chain risk" diventa quindi un'arma retorica che capovolge la
+%    ricerca sulla sicurezza dell'AI contro chi l'ha prodotta.
+%    [V-SEC] Aggiungi qui il secondo tassello tecnico: una volta che il
+%    modello opera dentro un'infrastruttura classificata tramite un
+%    integratore terzo (Palantir, reti Impact Level 6), il grado di
+%    controllo tecnico che il developer mantiene sul proprio modello si
+%    riduce drasticamente rispetto a un deployment via API cloud standard —
+%    la letteratura sulla governance dell'accesso strutturato descrive
+%    esattamente questo trade-off tra livello di integrazione e capacita'
+%    di enforcement delle policy di utilizzo \footcite{shevlane_2022_access}.
+%    Questo spiega tecnicamente perche' ad Anthropic restano solo strumenti
+%    legali (la causa) e non strumenti tecnici diretti per impedire un uso
+%    specifico una volta avvenuta l'integrazione a quel livello.
+%
+% 📚 Spunti e Citazioni:
+%    - Hubinger et al. (2024), "Sleeper Agents: Training Deceptive LLMs that
+%      Persist Through Safety Training" \footcite{hubinger_2024_sleeper} —
+%      paper Anthropic reale, cruciale per il paradosso di questo movimento.
+%    - Shevlane (2022), "Structured Access: An Emerging Paradigm for Safe AI
+%      Deployment" \footcite{shevlane_2022_access} — framework tecnico su
+%      controllo/enforcement post-deployment, spiega il vincolo reale di
+%      Anthropic nella disputa contrattuale.
+%    - Per gli estremi normativi della designazione (41 U.S.C. § 4713;
+%      10 U.S.C. § 3252) e per la cronologia della causa, usa fonti
+%      giornalistiche primarie (Reuters, CNN, CNBC) — sono fatti, non
+%      letteratura tecnica, quindi footcite diretta al giornale, non al .bib
+%      accademico salvo tu preferisca uniformare tutto in bibliografia.bib.
+%
+% ❓ Domande Guida:
+%    - Se il rischio che il governo teme (backdoor persistenti) e'
+%      tecnicamente plausibile secondo la stessa ricerca Anthropic, la
+%      designazione di supply chain risk e' irrazionale o e' — paradossalmente
+%      — l'applicazione letterale (e ritorta) della logica di sicurezza che
+%      Anthropic stessa ha reso pubblica?
+%    - Un concetto di cybersecurity (supply chain risk) nato per fornitori
+%      legati a Stati ostili, usato contro un fornitore domestico per motivi
+%      contrattuali, e' ancora un concetto di sicurezza o e' diventato
+%      puro strumento di leva politica? Dove passa il confine?
+
+
+% ================= MOVIMENTO 4 — Chiusura: l'uso durante la causa ===========
+% 🎯 Obiettivo Concettuale: Chiudere mostrando che, nonostante il contenzioso,
+%    Claude ha continuato a operare per il Pentagono (operazioni contro
+%    l'Iran) durante la causa stessa — prova diretta e verificabile che la
+%    sospensione formale del vincolo etico non ha mai interrotto l'uso
+%    operativo, confermando in modo empirico la tesi teorica del capitolo.
+%
+% 🗺️ Scaletta Argomentativa (dialogica):
+%    [V-GIUR] Il paradosso — dirigenti che discutono etica in Vaticano mentre
+%    gli stessi algoritmi restano operativi in teatro — non e' piu' solo
+%    un'analisi retorica: e' un fatto processualmente accertato e riportato.
+%    [V-SEC] Il correlato tecnico spiega COME questo sia possibile anche
+%    sotto contenzioso legale attivo: il richiamo a \footcite{shevlane_2022_access}
+%    gia' usato nel Movimento 3 chiude qui il cerchio — la disputa e' quasi
+%    interamente contrattuale/legale, non tecnica, perche' il livello di
+%    integrazione raggiunto (structured access "profondo", non a livello di
+%    semplice API) ha di fatto trasferito il controllo effettivo all'
+%    integratore/cliente prima ancora che la causa iniziasse.
+%
+% 📚 Spunti e Citazioni:
+%    - Richiama \footcite{shevlane_2022_access} come chiusura del filo tecnico
+%      apertosi nel Movimento 3.
+%    - Fonti giornalistiche sull'uso continuato durante il contenzioso
+%      (CBS News, CNBC, gia' reperite: verifica estremi esatti prima di citare).
+%
+% ❓ Domande Guida:
+%    - Se il controllo tecnico e' gia' stato ceduto al momento dell'
+%      integrazione, la "battaglia etica" pubblica di Anthropic e' comunque
+%      significativa (perche' stabilisce un precedente legale) o e' un
+%      teatro simbolico rispetto a un fatto tecnico gia' consumato?
+
 Nell'alveo del dibattito contemporaneo, istituzioni globali e aziende Big Tech hanno tentato di rispondere alle ansie umanitarie attraverso l'adozione di framework di allineamento e autodisciplina. Questo sforzo ha trovato un'importante espressione dottrinale nell'``Algoretica'', recentemente riaffermata e codificata dal magistero di Papa Leone XIV con l'enciclica \textit{Magnifica Humanitas} del maggio 2026 \footcite{enciclica_2026}. Nei capitoli centrali del documento, il pontefice lancia un severo monito contro l'oligopolio delle Big Tech, avvertendo come la concentrazione del potere computazionale e dei dati in poche mani rischi di generare nuove forme di dominio asimmetrico. L'enciclica si scaglia soprattutto contro lo sviluppo di armi autonome, esigendo che l'Intelligenza Artificiale venga ``disarmata'' e riaffermando l'inaccettabilità morale di delegare a una macchina decisioni irreversibili di vita o di morte senza un'assunzione diretta di responsabilità umana.
 
 Tuttavia, l'appello vaticano solleva un profondo interrogativo critico: può il vertice spirituale di una singola confessione religiosa arrogarsi il diritto, o avere l'effettiva forza materiale, di tracciare i confini etici di una problematica tecno-militare di portata globale? In un assetto geopolitico multipolare e frammentato, dominato dal realismo e dalla mera sopravvivenza statale, l'autorità morale si rivela un argine strutturalmente insufficiente per contenere la proliferazione dei LAWS. 
@@ -491,7 +687,7 @@ La pressione esercitata dalla ragion di Stato ha rapidamente disinnescato ogni v
  
 % [SCRIVI QUI IL TESTO DELLA SEZIONE 2.5]
 
-\chapter{Analisi Sperimentale: Vulnerabilità e AI Security}
+\chapter{Adversarial Patch Attack e Vulnerabilità dei Sistemi di Targeting}
 \label{cap3}
 rischi tecnici \footcite{podar_2025}. vulnerabilità intrinseche delle reti neurali utilizzate nel targeting \footcite{feldman_2024}
 Aggiungo grafiici e risultati sperimentali sui computer vision e sugli adversarial attack (patching)
