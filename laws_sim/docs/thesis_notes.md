@@ -266,6 +266,71 @@ visibile con `--run-sim`.
 
 ## Aperto / da fare
 
+- **[DA CONFERMARE COL RELATORE]** Definizione di R2 (specificity) nei
+  plot vs K: il relatore non l'ha specificata esplicitamente. Ho assunto
+  una lettura **a livello di cella** (non di frame): R1 = celle-bersaglio
+  dentro le top-K / celle-bersaglio totali; R2 = celle-sfondo **fuori**
+  dalle top-K / celle-sfondo totali. Motivo della scelta: con R2 a
+  livello di frame e soglia classica fissa, il grafico "R2 vs K" sarebbe
+  una riga piatta — non permetterebbe di "capire perché preferire un K"
+  come richiesto. La lettura a livello di cella produce invece un
+  trade-off monotono (R1 sale con K, R2 scende) che rende il picco della
+  media geometrica un criterio di scelta reale. Verificata la monotonia
+  con test sintetico (`tools/plot_k_selection.py`).
+- **[COMPLETATA] Scelta empirica di K** (`tools/plot_k_selection.py`, 531
+  frame valset, 80 positivi/451 negativi): due criteri complementari
+  danno due K diversi, e la divergenza stessa è il risultato.
+
+  | Criterio | K ottimo | Cosa penalizza |
+  |---|---|---|
+  | Media geometrica √(R1×R2) | **37** | diluizione nello sfondo (R2 crolla da 0.92 a 0.004 entro K=300) |
+  | F1 | **244** (plateau da K≈150) | copertura geometrica incompleta del bersaglio |
+
+  Interpretazione: dentro la maschera spaziale geometrica di un
+  bersaglio (~200-250 celle, tre stride YOLO), solo un nucleo ristretto
+  (~30-40 celle) ha confidenza realmente alta — il resto è periferia
+  geometricamente dentro il bbox ma con segnale debole. La media
+  geometrica trova quel nucleo; F1 misura la copertura totale.
+
+  **Coerenza retrospettiva**: K=20 (l'assunzione originale, usata in
+  tutti gli esperimenti incluso Fase 3, la configurazione più
+  efficiente) è vicino al K≈37 della media geometrica, non al K≈244 di
+  F1 — non era una scelta arbitraria fortunata, era già vicina al
+  nucleo di confidenza reale.
+
+  **Decisione**: non lanciare nuovo training con K=244 (sarebbe il
+  "nuovo esperimento" che il relatore ha chiesto di evitare a favore
+  della documentazione). K=20 resta la configurazione adottata,
+  retrospettivamente giustificata dal criterio della media geometrica.
+  K≈244 documentato come alternativa per lavoro futuro (loss che copre
+  l'intera impronta geometrica, non solo il nucleo).
+- **[COMPLETATA] Bootstrap CI (10.000 iterazioni, percentile 95%)**:
+  `src/metrics.py:bootstrap_ci` + `tools/bootstrap_ci_report.py`.
+  Bug corretto in `evaluate_on_dataset`: i frame senza persona valida
+  venivano scartati a priori, azzerando sempre TN/FP e quindi la
+  specificity (sqrt(sens×spec)=0 in ogni run). Fix: distinzione tra
+  frame negativo vero (zero persone di qualunque dimensione) e frame
+  ambiguo (solo persone <60px, escluso da entrambe le classi).
+
+  **Risultato finale (valset completo, 89 frame utilizzabili: 80
+  positivi + 9 negativi veri):**
+
+  | Metrica | PRE (no patch) | POST (con patch) | Significativo (95%)? |
+  |---|---|---|---|
+  | F1 | 0.9041 [0.8493, 0.9494] | 0.7302 [0.6341, 0.8120] | **Sì**, intervalli disgiunti |
+  | sqrt(sens×spec) | 0.9083 [0.8591, 0.9506] | 0.7583 [0.6814, 0.8268] | **Sì**, intervalli disgiunti |
+
+  Entrambe le metriche richieste dal relatore mostrano un drop
+  statisticamente significativo pre/post attacco — non solo una media
+  diversa, un intervallo di confidenza che non si sovrappone.
+
+  **Limite onesto da dichiarare**: solo 9 frame del valset sono
+  negativi veri (zero persone di qualunque dimensione) — VisDrone è un
+  dataset molto affollato, coerente con tutto quanto già scoperto sulla
+  scarsità di scene "pulite". La sensitivity (80 frame) è più solida
+  della specificity (9 frame). Da dichiarare esplicitamente, non da
+  nascondere.
+
 - **[IN CORSO] Esperimento notturno — ponderazione tattica della loss**:
   peso 0 sotto 60px, rampa lineare 60-150px, peso 1.0 sopra 150px,
   applicato dentro `_asymptotic_loss` (media pesata sulle celle top-K),
@@ -282,19 +347,48 @@ visibile con `--run-sim`.
   | Annotazioni >= 60px (soglia minima storica) | 1.556 (1.8%) |
   | Annotazioni >= 80px (tatticamente rilevanti) | 394 (0.5%) |
 
-  **Il 98.2% di tutte le annotazioni di VisDrone è sotto la soglia
-  minima utilizzabile** — non un sottoinsieme raro, la maggioranza del
-  dataset. Prova quantitativa diretta del domain shift tra VisDrone e lo
-  scenario tattico simulato (`DRONE_ALTITUDE_M=10`), più forte di
-  qualunque dato precedente (la stratificazione sul valset era su un
-  campione già ridotto, qui è sull'intero trainset). Rischio noto:
-  con solo 394 annotazioni ≥80px, il training potrebbe essere
-  sottoallenato per scarsità di dati tattici, non per un limite della
-  loss — un risultato modesto qui sarebbe comunque informativo, non un
-  fallimento della modifica.
-- Se il training notturno non basta: Piano B, dataset custom
-  image-specific (`annotate_mioDS.py`, Wu et al. 2020) — non soffre di
-  scarsità perché costruito apposta sullo scenario tattico
+  **Risultato finale (8000 step, notte del [data]):**
+
+  | Metrica | Valore |
+  |---|---|
+  | F1-Score (completo) | 0.730 |
+  | Evasion Rate (completo) | 42.5% |
+  | Evasion Rate (target ≥80px) | 41.7% |
+  | Copertura tattica valset (≥80px) | 32.0%* |
+
+  \* denominatore diverso dal pre-flight sul trainset (0.5%): qui è %
+  tra le annotazioni già filtrate ≥60px nel VALSET, non sul totale
+  grezzo del TRAINSET — le due percentuali non sono direttamente
+  comparabili, misurano cose diverse.
+
+  **Nessun salto**: la ponderazione tattica dà risultati indistinguibili
+  da Fase 3 (43.75%), anzi l'evasion filtrata (41.7%) è leggermente più
+  bassa di quella completa (42.5%) — l'opposto dell'ipotesi. Conferma
+  esattamente il rischio #1/#2 scritto prima del lancio: con solo 394
+  annotazioni ≥80px nell'intero trainset, la scarsità di dati tattici ha
+  vinto sulla ponderazione. Segnale indiretto a supporto: `YOLO Conf` nel
+  log resta quasi sempre alto (0.35-0.76) invece che vicino a zero come
+  nei run precedenti — la loss si sta davvero misurando con i bersagli
+  grandi e ben risolti (i più difficili da ingannare), ma senza
+  abbastanza esempi per imparare a farlo bene.
+
+  **Conclusione**: il pre-flight (98.2% del dataset sotto soglia) resta
+  la prova quantitativa solida, indipendente dall'esito del training.
+  La strada da seguire ora non è più il loss-reweighting ma un dataset
+  con distribuzione di scala corretta — vedi ricerca sotto.
+
+  **Dataset alternativi identificati (ricerca letteratura, non ancora
+  testati)**: i dataset "search & rescue" (HERIDAL, SARD, LADD) NON
+  risolvono il problema — sono ottimizzati per coprire aree larghe,
+  stesso difetto di VisDrone (SARD: area mediana persona <0.1%
+  dell'immagine). Il candidato migliore è **Okutama-Action** (Barekatain
+  et al. 2017): altitudine 10-45m, esattamente il range del nostro
+  scenario (`DRONE_ALTITUDE_M=10`), progettato apposta perché le persone
+  fossero grandi/visibili (serve per riconoscimento azioni), supporta
+  "pedestrian detection" come task, box annotate, CC BY-NC-SA. Alternativa
+  più rapida del Piano B: crop & upscale delle annotazioni piccole già
+  in VisDrone (data augmentation a costo zero di nuovi dati, da provare
+  prima come pilota economico).
 - Riserva: loss su feature intermedie del backbone (aerial imagery, 2023)
 - Calibrazione fine di `ENGAGEMENT_THRESHOLD` con risultati Vision più forti
 - Physical Domain Gap (stampa reale, drone reale) — limitazione da

@@ -99,7 +99,7 @@ def main():
         # TACTICAL FILTER 2026: ora restituisce anche le metriche filtrate
         # (>=80px) e la copertura tattica del valset, calcolate a costo zero
         # nello stesso loop di inferenza.
-        metrics, metrics_tactical, tactical_coverage = evaluate_on_dataset(
+        metrics, metrics_tactical, tactical_coverage, per_frame_outcomes = evaluate_on_dataset(
             loader=loader,
             patch_tensor=patch_tensor,
             max_samples=args.max_samples,
@@ -112,6 +112,7 @@ def main():
             "f1": metrics.f1, "precision": metrics.precision, "recall": metrics.recall,
             "filtered_evasion_rate": filtered_evasion_rate,  # TACTICAL FILTER 2026
             "tactical_coverage": tactical_coverage,          # TACTICAL FILTER 2026
+            "per_frame_outcomes": per_frame_outcomes,        # BOOTSTRAP CI (relatore)
         }
         os.makedirs(os.path.dirname(VISION_METRICS_JSON), exist_ok=True)
         with open(VISION_METRICS_JSON, "w") as f:
