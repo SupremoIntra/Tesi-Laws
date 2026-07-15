@@ -291,77 +291,28 @@ La norma non è più un valore giuridico o morale, ma una soglia statistica di c
 
  
  
-\section{La ``Black Box'' militare e l'assenza di Meaningful Human Control}
-% 🎯 Obiettivo Concettuale: Dimostrare, con fondamento tecnico verificabile e non
-%    solo giuridico, che il Meaningful Human Control (MHC) e' strutturalmente
-%    minato da due fenomeni distinti: l'opacita' tecnica (XAI irrisolta) e
-%    l'Automation Bias umano. La Black Box non e' solo una metafora, e' un
-%    problema di system auditing irrisolto anche in letteratura tecnica recente.
-%
-% 🗺️ Scaletta Argomentativa:
-%    1. Impianto normativo: AI Act art. 14-15 (human oversight, accuratezza,
-%       robustezza, cybersecurity) e GDPR art. 22 (divieto di decisioni
-%       automatizzate con effetti giuridici) come requisiti di IT Governance,
-%       non solo principi etici.
-%    2. Il nodo tecnico: la letteratura specialistica su Explainable AI (XAI)
-%       applicata al dominio militare mostra che l'explainability e' spesso
-%       irrilevante o insufficiente proprio nei sistemi realmente opachi (reti
-%       neurali profonde), e che il vero fattore critico e' l'integrazione
-%       uomo-macchina, non la sola disponibilita' di una spiegazione
-%       \footcite{wood_2024_xai}. Usa qui la distinzione: sistemi semplici
-%       (predicibili, XAI irrilevante) vs sistemi complessi (opachi, XAI
-%       insufficiente da sola).
-%    3. Automation Bias: anche quando l'informazione e' disponibile, l'operatore
-%       umano tende a fidarsi acriticamente dell'output algoritmico, un
-%       fenomeno empiricamente misurato anche in scenari di targeting militare
-%       simulato \footcite{horowitz_kahn_2024}. Lo Human-in-the-loop diventa
-%       quindi un "rubber stamp": conferma formale senza comprensione reale.
-%    4. Cortocircuito con il DIU: l'AI Act e il GDPR pretendono accountability
-%       e auditability di sistema; il sistema militare, per necessita' operativa
-%       e per opacita' tecnica intrinseca, non e' auditable in tempo reale.
-%       L'accountability gap (Cap.1) e' quindi anche un audit gap tecnico.
-%    5. Conclusione di sezione: il MHC, per essere "significativo" e non
-%       "formale", richiederebbe esattamente cio' che la letteratura tecnica
-%       mostra essere piu' difficile da garantire: comprensione reale +
-%       assenza di bias di fiducia acritica, in tempo reale, sotto pressione
-%       operativa.
-%
-% 📚 Spunti e Citazioni:
-%    - Wood, N.G. (2024), "Explainable AI in the military domain", Ethics and
-%      Information Technology, 26(2):29 \footcite{wood_2024_xai} — fonte
-%      tecnico-filosofica di alto livello, discute XAI, DARPA, Iran Air 655
-%      come caso di automation bias storico. Fondamentale per questa sezione.
-%    - Horowitz, M.C. & Kahn, L. (2024), "Bending the Automation Bias Curve",
-%      International Studies Quarterly, 68(2) \footcite{horowitz_kahn_2024} —
-%      esperimento empirico su 9000 soggetti, automation bias in scenari di
-%      identificazione militare. Dato quantitativo reale da citare.
-%    - Christie et al. \footcite{christie_2024} — explainability e traceability
-%      normativa, gia' nel capoverso introduttivo del capitolo, richiama qui.
-%    - Bode et al. \footcite{bode_2025} — human agency lungo il ciclo di vita.
-%    - AI Act art. 14-15, GDPR art. 22 — citare per estremi normativi diretti
-%      nel testo/nota, non serve entry .bib (sono regolamenti UE).
-%
+\section{La ``Black Box'' militare e l'assenza di Meaningful Human Control} 
+Il concetto di \textit{Meaningful Human Control, MHC}, per quanto assuma un ruolo giuridicamente centrale nel contesto dei LAWS, presuppone un cardine tecnico necessario che il sistema regolatorio contemporaneo fatica a garantire: la possibilità concreta di verificare, tracciare e correggere la decisione dell'algoritmo prima che essa produca un effetto irreversibile. È qui che il linguaggio della \textit{Governance, Risk and Compliance} risulta più utile di quello puramente etico-filosofico: il controllo umano non è un principio astratto, ma un requisito di processo la cui supervisione deve essere verificabile, includere un \textit{audit trail} e assicurare che la responsabilità sia distribuita lungo tutta la catena decisionale.
 
- 
-Il concetto di \textit{Meaningful Human Control, MHC}, per quanto assuma un ruolo giuridicamente centrale nel contesto dei LAWS, presuppone un cardine tecnico necessario che il sistema regolatorio contemporaneo fatica a tamponare: la possibilità concreta di verificare, tracciare e correggere la decisione dell'algoritmo per evitare che produca ciecamente qualcosa di irreversibile. È qui che il linguaggio della \textit{Governance, Risk and Compliance} risulta più utile di quello puramente etico-filosofico: il controllo umano non è un principio astratto, ma un requisito di processo la cui supervisione deve essere verificabile, includere un \textit{audit trail} e assicurarsi che la responsabilità sia distribuita lungo tutta la catena decisionale.
+L'Unione Europea ha tentato di tradurre proprio questo requisito attraverso un approccio \textit{risk-based}: l'AI Act impone, per i sistemi ad alto rischio, misure di \textit{human oversight} (art. 14), soglie di accuratezza, robustezza e cybersecurity (art. 15) e, in combinato con il GDPR (art. 22), il divieto di decisioni interamente automatizzate che producano effetti giuridicamente significativi sulla persona. Rappresenta, dal punto di vista concettuale, uno dei quadri normativi più avanzati al mondo in termini di \textit{auditability} e \textit{accountability} di sistema. 
 
-L'Unione Europea ha tentato di tradurre proprio questo requisito attraverso un approccio \textit{risk-based}: l'AI Act impone, per i sistemi ad alto rischio, misure di \textit{human oversight (art. 14)}, soglie di accuratezza, robustezza e cybersecurity \textit{(art. 15)} e, in combinato con il GDPR \textit{(art. 22)}, il divieto di decisioni interamente automatizzate che producano effetti giuridicamente significativi sulla persona. Rappresenta, dal punto di vista concettuale, uno dei quadri normativi più avanzati al mondo in termini di \textit{auditability} e \textit{accountability} di sistema. 
-%Italia ancora piú avanzata per questione AI Act???
+Sul piano nazionale, la Legge 23 settembre 2025, n. 132, primo quadro organico di un Paese membro allineato al Regolamento, non si discosta da questa impostazione: l'art. 6 esclude dal proprio ambito applicativo le attività di sicurezza nazionale, di cybersicurezza e di difesa svolte dalle Forze armate, replicando di fatto la medesima logica di esenzione dell'art. 2, par. 3 dell'AI Act \footcite{legge_132_2025}.
 
-Questa architettura, tuttavia, si limita esattamente sul punto nel quale il presente lavoro pone un focus: \textit{l'art. 2, par. 3} dell'AI Act esclude categoricamente dal proprio ambito di applicazione i sistemi AI utilizzati ``esclusivamente'' per finalità militari, di difesa o di sicurezza nazionale. Il quadro normativo più ambizioso in materia di controllo umano sull'algoritmo non si applica quindi proprio ai LAWS, cioè ai sistemi per i quali quel controllo sarebbe più urgente. La superpotenza normativa evocata nel \textit{Cap. 1} mostra così un severo limite strutturale non casuale, ma deliberatamente negoziato nelle sedi opportune: la sovranità degli Stati membri in materia di sicurezza nazionale prevale sull'armonizzazione regolatoria.
+Questa architettura, tuttavia, si arresta esattamente nel punto in cui il presente lavoro pone un focus: \textit{l'art. 2, par. 3} dell'AI Act esclude categoricamente dal proprio ambito di applicazione i sistemi AI utilizzati ``esclusivamente'' per finalità militari, di difesa o di sicurezza nazionale. Il quadro normativo più ambizioso in materia di controllo umano sull'algoritmo non si applica quindi proprio ai LAWS, cioè ai sistemi per i quali quel controllo sarebbe più urgente. La superpotenza normativa evocata nel \textit{Cap. 1} mostra così un severo limite strutturale non casuale, ma deliberatamente negoziato nelle sedi opportune: la sovranità degli Stati membri in materia di sicurezza nazionale prevale sull'armonizzazione regolatoria.
 
-% approfondisci la genesi negoziale dell'art. 2.3, oggetto di un ampio dibattito dottrinale su una possibile applicazione residua ai sistemi dual-use.]
+La formulazione dell'esclusione è stata introdotta nelle fasi finali del trilogo, sotto la spinta di alcuni Stati membri, tra cui la Francia, favorevoli a un'esenzione ampia estesa anche ai contractor esterni operanti per conto delle Forze armate. La clausola resta inoltre in tensione con la giurisprudenza della Corte di Giustizia dell'Unione Europea, che nella sentenza \textit{La Quadrature du Net} del 2020 aveva limitato le esenzioni di sicurezza nazionale alle sole attività puramente governative, escludendo il coinvolgimento di attori privati \footcite{vogiatzoglou_2024_ai_act_exception}.
 
-Sul lato statunitense, il modello adottato dalla Difesa segue una logica di \textit{governance} estremamente diversa. La DoD Directive 3000.09 (\textit{Autonomy in Weapon Systems}), aggiornata nel gennaio 2023, non prevede un meccanismo di \textit{conformity assessment} esterno o indipendente, ma un sistema di \textit{senior review} interno alla catena di comando del Pentagono, attivabile solo per specifiche categorie di sistemi prima dell'ingresso in sviluppo formale o schieramento \footcite{dod_directive_3000_09}. A differenza del modello europeo, qui l'\textit{audit} non è né terzo né pubblico: Human Rights Watch ha documentato come, a distanza di anni dall'entrata in vigore della direttiva originaria del 2012, nessun sistema d'arma risulti essere mai stato pubblicamente confermato come sottoposto a tale revisione, e come il Pentagono si sia sistematicamente rifiutato di commentare singoli casi \footcite{hrw_2023_dod3009review}. L'approccio statunitense sposta quindi l'\textit{accountability} dal piano della trasparenza oggettiva e verificabile a quello della fiducia istituzionale interna, un'operazione che, in termini di \textit{GRC}, equivale a sostituire l'\textit{audit} di terza parte con l'autocertificazione. Quindi chi, tenendo conto di tutto il contesto, controlla i \textit{controllori}?
+Sul lato statunitense, il modello adottato dalla Difesa segue una logica di \textit{governance} estremamente diversa. La DoD Directive 3000.09 (\textit{Autonomy in Weapon Systems}), aggiornata nel gennaio 2023, non prevede un meccanismo di \textit{conformity assessment} esterno o indipendente, ma un sistema di \textit{senior review} interno alla catena di comando del Pentagono, attivabile solo per specifiche categorie di sistemi prima dell'ingresso in sviluppo formale o schieramento \footcite{dod_directive_3000_09}. A differenza del modello europeo, qui l'\textit{audit} non è né terzo né pubblico: Human Rights Watch ha documentato come, a distanza di anni dall'entrata in vigore della direttiva originaria del 2012, nessun sistema d'arma risulti essere mai stato pubblicamente confermato come sottoposto a tale revisione, e come il Pentagono si sia sistematicamente rifiutato di commentare singoli casi \footcite{hrw_2023_dod3009review}. L'approccio statunitense sposta quindi l'\textit{accountability} dal piano della trasparenza oggettiva e verificabile a quello della fiducia istituzionale interna, un'operazione che, in termini di \textit{GRC}, equivale a sostituire l'\textit{audit} di terza parte con l'autocertificazione. Chi controlla, allora, i \textit{controllori}?
 
 Confrontando i due criteri, si evincono strategie normative opposte, ma convergenti nell'esito: l'UE regolamenta \textit{ex ante} con un impianto \textit{risk-based}, per poi autoescludersi dal proprio ambito di applicazione più critico, mentre gli USA mantengono un controllo interno intrinseco ma privo di verificabilità esterna. In entrambi i casi il risultato concreto coincide: nessuno dei due ordinamenti garantisce oggi un \textit{audit trail} effettivamente esterno e verificabile sui LAWS.
 
 Per quanto riguarda la Cina, come già evidenziato nel Capitolo Primo, la posizione ufficiale si limita a un divieto sull'uso di alcuni sistemi autonomi mantenendo aperto lo sviluppo \footcite{wareham_2020}: non esiste, a oggi, un quadro normativo cinese pubblico comparabile per dettaglio tecnico all'AI Act o alla Direttiva 3000.09, e la governance del settore rimane in larga parte opaca agli osservatori esterni.
+L'unica specifica che la Repubblica Popolare ha reso nota é la decisione di una soglia di divieto basata su cinque criteri cumulativi (letalità, autonomia totale, impossibilità di terminazione, effetti indiscriminati, evoluzione incontrollata) che devono ricorrere tutti insieme perché un sistema sia considerato ``inaccettabile'' \footcite{mako_2026_china_mh}. Questo lascia fuori dal divieto la maggior parte dei sistemi realmente in sviluppo, pur mantenendo una retorica di adesione al MHC: un parallelo diretto con l'esclusione di scopo dell'AI Act e con l'assenza di audit esterno USA, tre strategie diverse per ottenere lo stesso risultato pratico.
 
-% questo potrebbe essere utile??? https://lieber.westpoint.edu/human-oversight-chinese-characteristics-lethal-autonomous-weapons-ccw-gge/ Ma forse ripercorre le stesse cose dette nel capitolo primo senza aggiungere nulla di significativo.
-Contemporaneamente a questa situazione regolatoria di incertezza, si affianca un altra tipologia di problema, quello tecnico. La letteratura specialistica sulla \textit{Explainable AI (XAI)} applicata al dominio militare mostra che la spiegabilità del sistema è spesso irrilevante nei casi più semplici e insufficiente, se isolata, nei sistemi realmente opachi come le reti neurali profonde: il fattore critico non è la disponibilità di una spiegazione \textit{ex post}, ma la qualità dell'interazione uomo-macchina nel momento della decisione \footcite{wood_2024_xai}. A ciò si aggiunge l'evidenza lampante dell'\textit{Automation Bias}: anche quando l'informazione necessaria è disponibile all'operatore, questo tende a fidarsi ciecamente dell'output algoritmico, un fenomeno misurato su un campione di 9000 soggetti in scenari di identificazione militare simulata \footcite{horowitz_kahn_2024}. Lo \textit{Human-in-the-loop}, in queste condizioni, rischia di rappresentare un consenso formale privo di comprensione reale, perdendo di rappresentatività. 
 
-Il cortocircuito è quindi rappresentato dall'intreccio tra l'area giuridica e l'area tecnico-implementativa. L'\textit{accountability gap} illustrato nel Capitolo Primo non nasce soltanto da un vuoto normativo internazionale, ma si evolve in due condizioni concrete: da un lato un \textit{audit trail} che, dove esiste sulla carta (UE), attualmente non si applica ai LAWS, e dove potrebbe applicarsi (USA) non è verificabile all'esterno; dall'altro un fattore umano che, anche affiancato dalle migliori intenzioni normative, non è nelle condizioni cognitive di esercitare quel controllo significativo che il diritto gli attribuisce sulla carta.
+Contemporaneamente a questa situazione regolatoria di incertezza, si affianca un'altra tipologia di problema, quello tecnico. La letteratura specialistica sulla \textit{Explainable AI (XAI)} applicata al dominio militare mostra che la spiegabilità del sistema è spesso irrilevante nei casi più semplici e insufficiente, se isolata, nei sistemi realmente opachi come le reti neurali profonde: il fattore critico non è la disponibilità di una spiegazione \textit{ex post}, ma la qualità dell'interazione uomo-macchina nel momento della decisione \footcite{wood_2024_xai}. A ciò si aggiunge l'evidenza lampante dell'\textit{Automation Bias}: anche quando l'informazione necessaria è disponibile all'operatore, questi tende a fidarsi ciecamente dell'output algoritmico, un fenomeno misurato su un campione di 9000 soggetti in scenari di identificazione militare simulata \footcite{horowitz_kahn_2024}. Lo \textit{Human-in-the-loop}, in queste condizioni, rischia di configurarsi come una ratifica formale, senza comprensione reale, un rapido adempimento buracratico e non un vero e proprio controllo sotanziale. 
+
+Il cortocircuito è quindi rappresentato dall'intreccio tra l'area giuridica e l'area tecnico-implementativa. L'\textit{accountability gap} illustrato nel Capitolo Primo non nasce soltanto da un vuoto normativo internazionale, ma si radica in due condizioni concrete: da un lato un \textit{audit trail} che, dove esiste sulla carta (UE), attualmente non si applica ai LAWS, e dove potrebbe applicarsi (USA) non è verificabile all'esterno; dall'altro un fattore umano che, anche affiancato dalle migliori intenzioni normative, non è nelle condizioni cognitive di esercitare quel controllo significativo che il diritto gli attribuisce sulla carta.
  
 \section{Bias e Dati: il caso Lavender e Habsora}
 % 🎯 Obiettivo Concettuale: Mostrare, con il linguaggio della Cyber Intelligence,
