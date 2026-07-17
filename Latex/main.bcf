@@ -2431,28 +2431,30 @@
     <bcf:citekey order="53" intorder="1">horowitz_kahn_2024</bcf:citekey>
     <bcf:citekey order="54" intorder="1">abraham_2023_gospel</bcf:citekey>
     <bcf:citekey order="55" intorder="1">abraham_2023_gospel</bcf:citekey>
-    <bcf:citekey order="56" intorder="1">abraham_2024_lavender</bcf:citekey>
-    <bcf:citekey order="57" intorder="1">cina_2023_poisoning</bcf:citekey>
-    <bcf:citekey order="58" intorder="1">guardian_2026_tzayad</bcf:citekey>
-    <bcf:citekey order="59" intorder="1">crootof_2026</bcf:citekey>
-    <bcf:citekey order="60" intorder="1">crootof_2026</bcf:citekey>
-    <bcf:citekey order="61" intorder="1">enciclica_2026</bcf:citekey>
-    <bcf:citekey order="62" intorder="1">enciclica_2026</bcf:citekey>
-    <bcf:citekey order="63" intorder="1">carter_2026</bcf:citekey>
-    <bcf:citekey order="64" intorder="1">bai_2022_cai</bcf:citekey>
-    <bcf:citekey order="65" intorder="1">ruzic_2026</bcf:citekey>
-    <bcf:citekey order="66" intorder="1">ruzic_2026</bcf:citekey>
-    <bcf:citekey order="66" intorder="2">carter_2026</bcf:citekey>
-    <bcf:citekey order="67" intorder="1">carter_2026</bcf:citekey>
-    <bcf:citekey order="68" intorder="1">hubinger_2024_sleeper</bcf:citekey>
-    <bcf:citekey order="69" intorder="1">ruzic_2026</bcf:citekey>
-    <bcf:citekey order="70" intorder="1">shevlane_2022_access</bcf:citekey>
-    <bcf:citekey order="71" intorder="1">podar_2025</bcf:citekey>
-    <bcf:citekey order="72" intorder="1">feldman_2024</bcf:citekey>
-    <bcf:citekey order="73" intorder="1">helkala_2023</bcf:citekey>
-    <bcf:citekey order="74" intorder="1">harvey_2010</bcf:citekey>
-    <bcf:citekey order="75" intorder="1">wu_2020</bcf:citekey>
-    <bcf:citekey order="75" intorder="2">hu_2022</bcf:citekey>
+    <bcf:citekey order="56" intorder="1">amodei_2016</bcf:citekey>
+    <bcf:citekey order="57" intorder="1">abraham_2024_lavender</bcf:citekey>
+    <bcf:citekey order="58" intorder="1">podar_2025</bcf:citekey>
+    <bcf:citekey order="59" intorder="1">cina_2023_poisoning</bcf:citekey>
+    <bcf:citekey order="60" intorder="1">guardian_2026_tzayad</bcf:citekey>
+    <bcf:citekey order="61" intorder="1">crootof_2026</bcf:citekey>
+    <bcf:citekey order="62" intorder="1">crootof_2026</bcf:citekey>
+    <bcf:citekey order="63" intorder="1">enciclica_2026</bcf:citekey>
+    <bcf:citekey order="64" intorder="1">enciclica_2026</bcf:citekey>
+    <bcf:citekey order="65" intorder="1">carter_2026</bcf:citekey>
+    <bcf:citekey order="66" intorder="1">bai_2022_cai</bcf:citekey>
+    <bcf:citekey order="67" intorder="1">ruzic_2026</bcf:citekey>
+    <bcf:citekey order="68" intorder="1">ruzic_2026</bcf:citekey>
+    <bcf:citekey order="68" intorder="2">carter_2026</bcf:citekey>
+    <bcf:citekey order="69" intorder="1">carter_2026</bcf:citekey>
+    <bcf:citekey order="70" intorder="1">hubinger_2024_sleeper</bcf:citekey>
+    <bcf:citekey order="71" intorder="1">ruzic_2026</bcf:citekey>
+    <bcf:citekey order="72" intorder="1">shevlane_2022_access</bcf:citekey>
+    <bcf:citekey order="73" intorder="1">podar_2025</bcf:citekey>
+    <bcf:citekey order="74" intorder="1">feldman_2024</bcf:citekey>
+    <bcf:citekey order="75" intorder="1">helkala_2023</bcf:citekey>
+    <bcf:citekey order="76" intorder="1">harvey_2010</bcf:citekey>
+    <bcf:citekey order="77" intorder="1">wu_2020</bcf:citekey>
+    <bcf:citekey order="77" intorder="2">hu_2022</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="none">
