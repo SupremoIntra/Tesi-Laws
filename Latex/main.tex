@@ -314,67 +314,11 @@ Contemporaneamente a questa situazione regolatoria di incertezza, si affianca un
 
 Il cortocircuito è quindi rappresentato dall'intreccio tra l'area giuridica e l'area tecnico-implementativa. L'\textit{accountability gap} illustrato nel Capitolo Primo non nasce soltanto da un vuoto normativo internazionale, ma si radica in due condizioni concrete: da un lato un \textit{audit trail} che, dove esiste sulla carta (UE), attualmente non si applica ai LAWS, e dove potrebbe applicarsi (USA) non è verificabile all'esterno; dall'altro un fattore umano che, anche affiancato dalle migliori intenzioni normative, non è nelle condizioni cognitive di esercitare quel controllo significativo che il diritto gli attribuisce sulla carta.
  
-\section{Bias e Dati: il caso Lavender e Habsora}
-% 🎯 Obiettivo Concettuale: Mostrare, con il linguaggio della Cyber Intelligence,
-%    come la vita umana venga ridotta a un punteggio probabilistico attraverso
-%    Data Fusion massiva su input non validati, e come questa stessa
-%    architettura sia strutturalmente vulnerabile ad attacco (OSINT Poisoning).
-%    Il cortocircuito etico e tecnico sono la stessa cosa vista da due lati.
-%
-% 🗺️ Scaletta Argomentativa:
-%    1. Habsora/"The Gospel": sistema di data fusion per target infrastrutturali.
-%       Inquadralo come pipeline di Cyber Intelligence: raccolta multi-fonte,
-%       fusione, output di targeting ad alta velocita' — enfasi sul bias di
-%       ottimizzazione (massimizzare il numero di target/tempo).
-%    2. Lavender: profiling comportamentale, punteggio 1-100 su metadati.
-%       Qui introduci il principio GIGO (Garbage In, Garbage Out): un sistema
-%       di profiling probabilistico eredita e amplifica qualunque distorsione
-%       presente nei dati di addestramento o nei segnali di input, senza
-%       possibilita' di validazione a valle in tempo di guerra.
-%    3. Il nodo tecnico-giuridico della soglia: fissare una soglia su un
-%       punteggio probabilistico significa accettare a monte un tasso di falsi
-%       positivi. Collega esplicitamente al Cap.3 (precision/recall, loss
-%       function ottimizzata per minimizzare falsi negativi a scapito dei civili).
-%    4. La vulnerabilita' strutturale — OSINT Poisoning: un sistema che fonda
-%       le proprie inferenze su fonti aperte e metadati e' per costruzione
-%       esposto ad attacchi di data poisoning, in cui un avversario inquina
-%       deliberatamente l'input (falsi segnali OSINT, pattern comportamentali
-%       fabbricati) per alterare l'output del classificatore. La letteratura
-%       tecnica sulla sicurezza del machine learning sistematizza esattamente
-%       questa superficie d'attacco \footcite{cina_2023_poisoning}. Il punto
-%       teorico forte: la stessa architettura che rende possibile Lavender
-%       rende Lavender manipolabile — e qui si apre il gancio diretto al
-%       C.A.R.E. Kit del Cap.4 (difesa passiva che sfrutta la stessa superficie).
-%    5. Cortocircuito epistemico: inferenza statistica su dato non validato
-%       != prova giuridica (mens rea, Cap.1). Nessuna quantita' di data fusion
-%       trasforma una correlazione probabilistica in un accertamento di fatto.
-%
-% 📚 Spunti e Citazioni:
-%    - Cinà, Grosse, Demontis et al. (2023), "Wild Patterns Reloaded: A Survey
-%      of Machine Learning Security against Training Data Poisoning", ACM
-%      Computing Surveys, 55(13s) \footcite{cina_2023_poisoning} — survey
-%      sistematica reale (100+ paper), massima autorevolezza per fondare
-%      tecnicamente il concetto di OSINT/data poisoning applicato qui.
-%    - Podar & Colijn \footcite{podar_2025}, Feldman et al. \footcite{feldman_2024}
-%      — rischi tecnici e bias nel targeting, ponte diretto al Cap.3.
-%    - Fonti primarie su Lavender/Habsora: inchieste +972 Magazine (Yuval
-%      Abraham, 2024) — DA VERIFICARE e aggiungere a parte (vedi nota sotto):
-%      qui la posta documentale e' massima, non fondarti solo su fonti tecniche
-%      generiche per l'esistenza/logica dei due sistemi.
-%
-% ❓ Domande Guida:
-%    - Se un sistema di profiling e' per costruzione vulnerabile a poisoning
-%      dell'input, quanto e' legittimo l'uso della sua "confidence" come base
-%      per una decisione letale?
-%    - Chi definisce la soglia di punteggio accettabile, e questa e' una
-%      decisione tecnica (system tuning) o politica (valore della vita civile)?
-%    - Il principio GIGO, ben noto in ingegneria del software, viene mai
-%      davvero sospeso quando il "garbage out" e' una condanna a morte?
 
 \section{Bias e Dati: il caso Lavender e Habsora}
 Il cortocircuito giuridico-tecnico descritto nel paragrafo precedente non vive solamente in un'ipotesi teorica, ma in due sistemi reali impiegati dalle forze armate israeliane nel conflitto di Gaza: Habsora (`The Gospel') e Lavender. Entrambi, pur avendo naturalmente obiettivi differenti, condividono la stessa architettura di fondo: un ciclo di \textit{Cyber Threat Intelligence} utile non alla difesa di un'infrastruttura o risorsa militare, ma alla produzione di un bersaglio umano o materiale. Il ciclo classico di raccolta (\textit{collection}), elaborazione (\textit{processing}), fusione (\textit{fusion}) e diffusione (\textit{dissemination}) dell'intelligence, strutturato appositamente per produrre in output una decisione, viene in questo contesto riorientato verso l'automazione della decisione stessa per attribuire all'operatore umano solamente un ruolo burocratico supervisionativo, rendendo alquanto impossibile comprendere le decisioni dettagliate prese dall'algoritmo. 
 
-Habsora è un sistema che adopera la \textit{data fusion} per ottenere pragmaticamente target infrastrutturali (edifici, tunnel, postazioni), che incrocia immagini satellitari, mappe digitali, archivi militari pregressi e dati provenienti da fonti aperte e intercettazioni \footcite{abraham_2023_gospel}. Esso non é in grado di osservare direttamente la presenza o l'assenza di un miliziano in un edificio, la può soltanto inferire da pattern indiretti: consumo elettrico anomalo, dati georeferenziati, movimenti sospetti e ricorrenti attorno alla struttura. \\
+Habsora è un sistema che adopera la \textit{data fusion} per ottenere pragmaticamente target infrastrutturali (edifici, tunnel, postazioni), che incrocia immagini satellitari, mappe digitali, archivi militari pregressi e dati provenienti da fonti aperte e intercettazioni \footcite{abraham_2023_gospel}. Esso non è in grado di osservare direttamente la presenza o l'assenza di un miliziano in un edificio, la può soltanto inferire da pattern indiretti: consumo elettrico anomalo, dati georeferenziati, movimenti sospetti e ricorrenti attorno alla struttura. \\
 Per comprendere l'evoluzione tecnica che ha portato a questa \textit{iper-automazione}, è sufficiente osservare il divario empirico nel tasso di generazione dei bersagli. Secondo le inchieste condotte su fonti interne all'intelligence militare israeliana \footcite{abraham_2023_gospel}, prima dell'adozione di architetture di \textit{Data Fusion} come Habsora, un team di analisti umani produceva in media 50 bersagli operativi all'anno. Con l'entrata a regime dell'infrastruttura algoritmica, la \textit{throughput} del sistema è arrivata a rappresentare un numero spaventoso di ben oltre 100 bersagli generati al giorno. Questa accelerazione improvvisa non rappresenta semplicemente un salto quantitativo, ma certifica il collasso qualitativo e cognitivo del \textit{targeting} militare: la supervisione umana passa in secondo piano, rappresentando un lento processo di facciata burocratica.
 
 Il punto tecnicamente rilevante non è che il sistema ignori gli effetti collaterali, ma che il suo ottimizzatore non li penalizzi esplicitamente. In termini di \textit{machine learning}, ciò che non compare nella \textit{loss function} non viene minimizzato: un modello addestrato a massimizzare il numero di target confermati, senza un termine di penalizzazione per il danno a non combattenti sufficientemente adeguato, genererà un \textit{bias} operativo, mirato all'efficienza. Non si tratta quindi di un errore contingente del sistema, ma diretta conseguenza della modalità con la quale è stato progettato, un caso di \textit{reward misspecification} applicato al dominio bellico. Analizzando questo complesso scenario, verrebbe da chiedersi se effetivamente possiamo parlare di un \textit{bias} effettivo o se, piuttosto, risulterebbe un ``addolcimento'', riscoprendosi in realtá un'ottimizzazione cinica e appositamente progettata per risultare cieca a quell'aspetto etico e non produttivo che è la vita umana.
@@ -389,16 +333,14 @@ In un classificatore statistico, massimizzare la \textit{Recall} significa ridur
 
 Questo meccanismo di ``sacrificio statistico'' cessa di essere un'astrazione teorica nel momento in cui viene calato nell'architettura del software. Come verrà analizzato e dimostrato empiricamente nel Capitolo Terzo, manipolando i parametri operativi in reti neurali di \textit{Computer Vision} come YOLO (\textit{You Only Look Once}), nello specifico abbassando la soglia di \textit{confidence} per forzare il riconoscimento dell'oggetto, si osserva sperimentalmente come la lampante alterazione di una singola variabile iper-parametrica ridefinisca radicalmente il perimetro della \textit{bbox} e l'entità delle vittime sacrificabili.
 
-La stessa architettura che rende operativo questo sistema di profiling ne costituisce, per costruzione, la superficie di attacco. Un sistema che fonda le proprie inferenze su fonti aperte e metadati non, o poco, validati è per definizione esposto a manipolazione dell'input: un punteggio di ``80'' costruito, in parte, sulla presenza fisica di un individuo in un determinato luogo, diventa privo di fondamento se quella presenza viene falsificata o mascherata. Non è propriamente un caso di \textit{data poisoning}, che corrompe i dati di addestramento a monte, ma di \textit{adversarial evasion}, la manipolazione dell'input a inferenza già avvenuta. Entrambe le tecniche appartengono alla stessa superficie di rischio documentata sistematicamente dalla letteratura sulla sicurezza del \textit{machine learning} \footcite{cina_2023_poisoning} .... %ma....
+La stessa architettura che rende operativo questo sistema di profiling ne costituisce, per costruzione, la superficie di attacco. Un sistema che fonda le proprie inferenze su fonti aperte e metadati non, o poco, validati è per definizione esposto a manipolazione dell'input: un punteggio di ``80'' costruito, in parte, sulla presenza fisica di un individuo in un determinato luogo, diventa privo di fondamento se quella presenza viene falsificata o mascherata. Non è propriamente un caso di \textit{data poisoning}, che corrompe i dati di addestramento a monte, ma di \textit{adversarial evasion}, la manipolazione dell'input a inferenza già avvenuta. Entrambe le tecniche appartengono alla stessa superficie di rischio documentata sistematicamente dalla letteratura sulla sicurezza del \textit{machine learning} \footcite{cina_2023_poisoning}.
 
-%richiamo al care kit rimandiamo....
+Il cortocircuito, è anzitutto epistemico prima che tecnico. Un punteggio generato da inferenza statistica su dati non validati non equivale, e non può equivalere, a una prova giuridica nel senso richiesto dal concetto di \textit{mens rea} discusso nel Capitolo Primo. Nessuna quantità di \textit{data fusion}, per quanto sofisticata, trasforma una correlazione probabilistica in un accertamento di fatto. Si passa così da un indizio, il metadato, a una condanna eseguita senza processo, un passaggio che il diritto penale, in qualunque altro contesto, non tollererebbe.
 
-Il cortocircuito, infine, è anzitutto epistemico prima che tecnico. Un punteggio generato da inferenza statistica su dati non validati non equivale, e non può equivalere, a una prova giuridica nel senso richiesto dal concetto di \textit{mens rea} discusso nel Capitolo Primo. Nessuna quantità di \textit{data fusion}, per quanto sofisticata, trasforma una correlazione probabilistica in un accertamento di fatto. Si passa così da un indizio, il metadato, a una condanna eseguita senza processo, un passaggio che il diritto penale, in qualunque altro contesto, non tollererebbe.
-
-Questa, tuttavia, non è una fragilità isolata al teatro di Gaza. Il 29 giugno 2026 Elbit Systems, principale fornitore israeliano di tecnologia militare, ha dichiarato in una presentazione alla Royal United Services Institute di Londra che il proprio programma Tzayad ha identificato 850.000 ``\textit{real-time intel targets}'' tra il 7 ottobre 2023 e la fine del 2025, comprimendo il tempo di coordinamento del fuoco di supporto da 40-50 minuti a un intervallo compreso tra uno e sette minuti \footcite{guardian_2026_tzayad}. Un ex consulente del Pentagono per la valutazione del danno collaterale ha definito la cifra ``estremamente allarmante'', osservando che nessuna organizzazione militare può caratterizzare adeguatamente 1000 bersagli al giorno in termini di rischio per i civili. Lavender e Habsora rappresentano la prova concettuale del meccanismo GIGO applicato al targeting, Tzayad rappresenta completamente la progressione a scala industriale.
+Questa, tuttavia, non è una fragilità isolata al teatro di Gaza. Il 29 giugno 2026 Elbit Systems, principale fornitore israeliano di tecnologia militare, ha dichiarato in una presentazione alla Royal United Services Institute di Londra che il proprio programma Tzayad ha identificato 850.000 ``\textit{real-time intel targets}'' tra il 7 ottobre 2023 e la fine del 2025, comprimendo il tempo di coordinamento del fuoco di supporto da 40-50 minuti a un intervallo compreso tra uno e sette minuti \footcite{guardian_2026_tzayad}. Un ex consulente del Pentagono per la valutazione del danno collaterale ha definito la cifra ``estremamente allarmante'', osservando che nessuna organizzazione militare può caratterizzare adeguatamente 1.000 bersagli al giorno in termini di rischio per i civili. Lavender e Habsora rappresentano la prova concettuale del meccanismo GIGO applicato al targeting, Tzayad rappresenta completamente la progressione a scala industriale.
 
 Un altro episodio ecclatante, non situato nel medioriente, consiste in uno strike statunitense, avvenuto nel marzo 2026 su una scuola elementare a Minab, in Iran. Ha causato la morte di almeno 175 persone, in gran parte bambine, giorni dopo una disputa pubblica tra Anthropic e il Dipartimento della Difesa già discussa nel Capitolo Secondo, sezione 4. La giurista Rebecca Crootof ha osservato, commentando l'episodio, che l'alimentazione di un sistema di targeting con dati insufficienti o inadeguati produce ingaggi non voluti, e che l'intelligenza artificiale non introduce un errore nuovo tanto quanto amplifica, a una velocità e una scala impressionanti, un errore di processo già esistente \footcite{crootof_2026}. È la stessa logica GIGO qui descritta per Lavender, applicata a un contesto e a un fornitore diversi: questa è esattamente la prova che il problema non è la nazionalità del sistema o il suo committente, ma l'architettura stessa dei sistemi di targeting assistiti da intelligenza artificiale, indipendentemente da chi li costruisca o li impieghi. \\
-In conclusione, se il meccanismo tecnico é lo stesso da Gaza a Minab, siamo veramente certi che il punto cardine che determina l'esito non sia più l'algoritmo, ma la cultura istituzionale di chi lo dispiega? Come sottolinea Crootof\footcite{crootof_2026}, è davvero un problema di tecnologia o è un disinteressamento lato governance?
+In conclusione, se il meccanismo tecnico è lo stesso da Gaza a Minab, siamo veramente certi che il punto cardine che determina l'esito non sia più l'algoritmo, ma la cultura istituzionale di chi lo dispiega? Come sottolinea Crootof\footcite{crootof_2026}, è davvero un problema di tecnologia o è un disinteressamento lato governance?
 
 
 \section{Il collasso dell'autoregolamentazione: il caso Claude-Anthropic e il Pentagono}
