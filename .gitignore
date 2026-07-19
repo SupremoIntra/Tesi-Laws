@@ -18,6 +18,8 @@
 *.fdb_latexmk
 *.synctex.gz
 *.pdf
+*.bcf
+*.run.xml
 
 # --- Python / YOLO ---
 __pycache__/
