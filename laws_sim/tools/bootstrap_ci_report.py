@@ -93,6 +93,10 @@ def main():
     f1_overlap = overlap(ci_f1_pre, ci_f1_post)
     gm_overlap = overlap(ci_gm_pre, ci_gm_post)
 
+    from metrics import paired_bootstrap_diff
+    res_f1 = paired_bootstrap_diff(outcomes_pre, outcomes_post, f1_from_counts, n_iter=args.n_iter)
+    res_gm = paired_bootstrap_diff(outcomes_pre, outcomes_post, gmean_from_counts, n_iter=args.n_iter)
+    
     print("\n" + "=" * 70)
     print("VERDETTO DI SIGNIFICATIVITA' (95%)")
     print("=" * 70)

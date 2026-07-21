@@ -181,6 +181,156 @@ def bootstrap_ci(
         "mean": float(boot_vals.mean()),
     }
 
+"""
+Bootstrap APPAIATO del delta PRE/POST — estensione di src/metrics.py.
+
+Aggiunge il test di significativita' che manca in bootstrap_ci_report.py:
+la' PRE e POST sono ricampionati come se fossero due gruppi indipendenti,
+qui invece si ricampiona UNA SOLA lista di indici di frame per iterazione
+e si applica a entrambi (PRE e POST sono le stesse foto, quindi vanno
+ricampionate "insieme": un frame difficile lo e' in entrambe le condizioni,
+e questa correlazione va sfruttata, non buttata via).
+
+Mantiene la stessa firma/stile di bootstrap_ci in src/metrics.py: liste di
+dict con chiavi tp/fp/tn/fn, metric_fn(tp,fp,tn,fn) -> float, percentile
+method (richiesta esplicita del relatore), n_iter=10000, seed=42.
+"""
+from typing import Callable, Dict, List
+
+import numpy as np
+
+
+def paired_bootstrap_diff(
+    outcomes_pre: List[Dict[str, int]],
+    outcomes_post: List[Dict[str, int]],
+    metric_fn: Callable[[int, int, int, int], float],
+    n_iter: int = 10000,
+    ci: float = 0.95,
+    seed: int = 42,
+) -> Dict[str, float]:
+    """
+    CI e p-value bootstrap per il delta = metrica_POST - metrica_PRE,
+    con ricampionamento APPAIATO (stessa lista di indici di frame usata
+    per PRE e per POST ad ogni iterazione).
+
+    Args:
+        outcomes_pre: lista di dict tp/fp/tn/fn, un elemento per frame,
+            valutati SENZA patch. Deve essere allineata a outcomes_post:
+            outcomes_pre[i] e outcomes_post[i] devono riferirsi allo
+            STESSO frame i (stesso ordine del loader in entrambe le
+            chiamate a evaluate_on_dataset).
+        outcomes_post: come sopra, CON patch.
+        metric_fn: es. f1_from_counts o gmean_from_counts, stessa firma
+            usata in bootstrap_ci_report.py.
+        n_iter: iterazioni bootstrap (default 10000, come richiesto).
+        ci: livello di confidenza (0.95 -> percentili 2.5/97.5).
+        seed: riproducibilita'.
+
+    Returns:
+        dict con:
+            pre, post: valori puntuali sul campione originale (non ricampionato)
+            delta: post - pre, valore puntuale
+            low, high: CI al 95% del delta
+            p_value: p-value bootstrap a due code (H0: delta=0)
+            significant: True se lo 0 NON e' dentro [low, high]
+
+    Raises:
+        ValueError: se le due liste non hanno la stessa lunghezza (non
+            appaiabili frame-per-frame).
+    """
+    n = len(outcomes_pre)
+    if n != len(outcomes_post):
+        raise ValueError(
+            f"outcomes_pre e outcomes_post devono avere la stessa lunghezza "
+            f"(stessi frame, stesso ordine): {n} vs {len(outcomes_post)}"
+        )
+    if n == 0:
+        return {"pre": 0.0, "post": 0.0, "delta": 0.0, "low": 0.0,
+                "high": 0.0, "p_value": 1.0, "significant": False}
+
+    tp_pre = np.array([o.get("tp", 0) for o in outcomes_pre])
+    fp_pre = np.array([o.get("fp", 0) for o in outcomes_pre])
+    tn_pre = np.array([o.get("tn", 0) for o in outcomes_pre])
+    fn_pre = np.array([o.get("fn", 0) for o in outcomes_pre])
+
+    tp_post = np.array([o.get("tp", 0) for o in outcomes_post])
+    fp_post = np.array([o.get("fp", 0) for o in outcomes_post])
+    tn_post = np.array([o.get("tn", 0) for o in outcomes_post])
+    fn_post = np.array([o.get("fn", 0) for o in outcomes_post])
+
+    # Valori puntuali sul campione originale (nessun ricampionamento)
+    point_pre = metric_fn(int(tp_pre.sum()), int(fp_pre.sum()), int(tn_pre.sum()), int(fn_pre.sum()))
+    point_post = metric_fn(int(tp_post.sum()), int(fp_post.sum()), int(tn_post.sum()), int(fn_post.sum()))
+    point_delta = point_post - point_pre
+
+    rng = np.random.default_rng(seed)
+    boot_delta = np.empty(n_iter, dtype=float)
+    for i in range(n_iter):
+        # UNA SOLA lista di indici per iterazione, usata per PRE e POST:
+        # questo e' il punto chiave del bootstrap appaiato.
+        idx = rng.integers(0, n, size=n)
+
+        m_pre = metric_fn(
+            int(tp_pre[idx].sum()), int(fp_pre[idx].sum()),
+            int(tn_pre[idx].sum()), int(fn_pre[idx].sum())
+        )
+        m_post = metric_fn(
+            int(tp_post[idx].sum()), int(fp_post[idx].sum()),
+            int(tn_post[idx].sum()), int(fn_post[idx].sum())
+        )
+        boot_delta[i] = m_post - m_pre
+
+    alpha = (1.0 - ci) / 2.0
+    low = float(np.percentile(boot_delta, alpha * 100))
+    high = float(np.percentile(boot_delta, (1.0 - alpha) * 100))
+
+    # p-value bootstrap a due code: quota di repliche che "smentiscono"
+    # la direzione osservata, raddoppiata (test a due code).
+    p_ge_zero = float(np.mean(boot_delta >= 0.0))
+    p_le_zero = float(np.mean(boot_delta <= 0.0))
+    p_value = float(min(1.0, 2.0 * min(p_ge_zero, p_le_zero)))
+
+    return {
+        "pre": float(point_pre),
+        "post": float(point_post),
+        "delta": float(point_delta),
+        "low": low,
+        "high": high,
+        "p_value": p_value,
+        "significant": bool(low > 0.0 or high < 0.0),
+    }
+
+
+if __name__ == "__main__":
+    # Verifica con numeri sintetici tarati sul risultato reale del briefing:
+    # F1 89 frame, PRE~0.90 -> POST~0.73 (calo netto, deve risultare
+    # significativo con margine ampio).
+    def f1_from_counts(tp, fp, tn, fn):
+        p = tp / (tp + fp) if (tp + fp) else 0.0
+        r = tp / (tp + fn) if (tp + fn) else 0.0
+        return 2 * p * r / (p + r) if (p + r) else 0.0
+
+    rng = np.random.default_rng(0)
+    outcomes_pre, outcomes_post = [], []
+    for _ in range(80):  # frame positivi
+        n_pers = rng.integers(1, 4)
+        tp_pre = sum(int(rng.random() < 0.92) for _ in range(n_pers))
+        tp_post = sum(int(rng.random() < 0.60) for _ in range(n_pers))
+        outcomes_pre.append({"tp": tp_pre, "fp": 0, "tn": 0, "fn": n_pers - tp_pre})
+        outcomes_post.append({"tp": tp_post, "fp": 0, "tn": 0, "fn": n_pers - tp_post})
+    for _ in range(9):  # frame negativi veri
+        fp_pre = int(rng.random() < 0.10)
+        fp_post = int(rng.random() < 0.25)
+        outcomes_pre.append({"tp": 0, "fp": fp_pre, "tn": 1 - fp_pre, "fn": 0})
+        outcomes_post.append({"tp": 0, "fp": fp_post, "tn": 1 - fp_post, "fn": 0})
+
+    res = paired_bootstrap_diff(outcomes_pre, outcomes_post, f1_from_counts, n_iter=10000)
+    print("F1  PRE={:.4f}  POST={:.4f}  DELTA={:+.4f}  CI95%=[{:+.4f},{:+.4f}]  p={:.4f}  signif={}".format(
+        res["pre"], res["post"], res["delta"], res["low"], res["high"], res["p_value"], res["significant"]
+    ))
+    # sanity check: la CI del delta appaiato deve essere piu' STRETTA
+    # (o uguale) di quella che si otterrebbe ricampionando PRE e POST
+    # in modo indipendente, perche' sfrutta la correlazione tra frame.
 
 def clae_costs() -> Dict[str, Optional[float]]:
     """
