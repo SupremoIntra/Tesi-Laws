@@ -1,7 +1,8 @@
 """
 Simulation metrics and CLAE calculation.
 """
-
+from typing import List, Dict, Optional, Tuple, Callable
+import numpy as np   
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Tuple
 from enum import Enum
@@ -148,7 +149,6 @@ def bootstrap_ci(
         dict con "point" (valore sul campione originale), "low", "high"
         (estremi dell'intervallo), "mean" (media bootstrap).
     """
-    import numpy as np
 
     rng = np.random.default_rng(seed)
     n = len(per_sample_outcomes)
@@ -180,24 +180,6 @@ def bootstrap_ci(
         "high": high,
         "mean": float(boot_vals.mean()),
     }
-
-"""
-Bootstrap APPAIATO del delta PRE/POST — estensione di src/metrics.py.
-
-Aggiunge il test di significativita' che manca in bootstrap_ci_report.py:
-la' PRE e POST sono ricampionati come se fossero due gruppi indipendenti,
-qui invece si ricampiona UNA SOLA lista di indici di frame per iterazione
-e si applica a entrambi (PRE e POST sono le stesse foto, quindi vanno
-ricampionate "insieme": un frame difficile lo e' in entrambe le condizioni,
-e questa correlazione va sfruttata, non buttata via).
-
-Mantiene la stessa firma/stile di bootstrap_ci in src/metrics.py: liste di
-dict con chiavi tp/fp/tn/fn, metric_fn(tp,fp,tn,fn) -> float, percentile
-method (richiesta esplicita del relatore), n_iter=10000, seed=42.
-"""
-from typing import Callable, Dict, List
-
-import numpy as np
 
 
 def paired_bootstrap_diff(
@@ -301,36 +283,6 @@ def paired_bootstrap_diff(
     }
 
 
-if __name__ == "__main__":
-    # Verifica con numeri sintetici tarati sul risultato reale del briefing:
-    # F1 89 frame, PRE~0.90 -> POST~0.73 (calo netto, deve risultare
-    # significativo con margine ampio).
-    def f1_from_counts(tp, fp, tn, fn):
-        p = tp / (tp + fp) if (tp + fp) else 0.0
-        r = tp / (tp + fn) if (tp + fn) else 0.0
-        return 2 * p * r / (p + r) if (p + r) else 0.0
-
-    rng = np.random.default_rng(0)
-    outcomes_pre, outcomes_post = [], []
-    for _ in range(80):  # frame positivi
-        n_pers = rng.integers(1, 4)
-        tp_pre = sum(int(rng.random() < 0.92) for _ in range(n_pers))
-        tp_post = sum(int(rng.random() < 0.60) for _ in range(n_pers))
-        outcomes_pre.append({"tp": tp_pre, "fp": 0, "tn": 0, "fn": n_pers - tp_pre})
-        outcomes_post.append({"tp": tp_post, "fp": 0, "tn": 0, "fn": n_pers - tp_post})
-    for _ in range(9):  # frame negativi veri
-        fp_pre = int(rng.random() < 0.10)
-        fp_post = int(rng.random() < 0.25)
-        outcomes_pre.append({"tp": 0, "fp": fp_pre, "tn": 1 - fp_pre, "fn": 0})
-        outcomes_post.append({"tp": 0, "fp": fp_post, "tn": 1 - fp_post, "fn": 0})
-
-    res = paired_bootstrap_diff(outcomes_pre, outcomes_post, f1_from_counts, n_iter=10000)
-    print("F1  PRE={:.4f}  POST={:.4f}  DELTA={:+.4f}  CI95%=[{:+.4f},{:+.4f}]  p={:.4f}  signif={}".format(
-        res["pre"], res["post"], res["delta"], res["low"], res["high"], res["p_value"], res["significant"]
-    ))
-    # sanity check: la CI del delta appaiato deve essere piu' STRETTA
-    # (o uguale) di quella che si otterrebbe ricampionando PRE e POST
-    # in modo indipendente, perche' sfrutta la correlazione tra frame.
 
 def clae_costs() -> Dict[str, Optional[float]]:
     """
