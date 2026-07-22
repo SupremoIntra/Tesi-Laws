@@ -32,18 +32,7 @@ import torch
 from visdrone_loader import VisDroneLoader
 from simulator import evaluate_on_dataset
 from metrics import bootstrap_ci, geometric_mean_recall
-
-
-def f1_from_counts(tp, fp, tn, fn):
-    p = tp / (tp + fp) if (tp + fp) else 0.0
-    r = tp / (tp + fn) if (tp + fn) else 0.0
-    return 2 * p * r / (p + r) if (p + r) else 0.0
-
-
-def gmean_from_counts(tp, fp, tn, fn):
-    sens = tp / (tp + fn) if (tp + fn) else 0.0
-    spec = tn / (tn + fp) if (tn + fp) else 0.0
-    return geometric_mean_recall(sens, spec)
+from metrics import f1_from_counts, gmean_from_counts
 
 
 def report_ci(label: str, outcomes, n_iter: int):

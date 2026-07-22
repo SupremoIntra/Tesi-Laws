@@ -116,6 +116,16 @@ def sensitivity_specificity(tp: int, fn: int, tn: int, fp: int) -> Tuple[float, 
     spec = tn / (tn + fp) if (tn + fp) else 0.0
     return float(sens), float(spec)
 
+def f1_from_counts(tp: int, fp: int, tn: int, fn: int) -> float:
+    """F1 da conteggi aggregati. Firma (tp,fp,tn,fn) compatibile con bootstrap_ci."""
+    p = tp / (tp + fp) if (tp + fp) else 0.0
+    r = tp / (tp + fn) if (tp + fn) else 0.0
+    return 2 * p * r / (p + r) if (p + r) else 0.0
+
+
+def gmean_from_counts(tp: int, fp: int, tn: int, fn: int) -> float:
+    """sqrt(sensitivity*specificity) da conteggi aggregati. Firma (tp,fp,tn,fn)."""
+    return geometric_mean_recall(*sensitivity_specificity(tp, fn, tn, fp))
 
 def bootstrap_ci(
     per_sample_outcomes: List[Dict[str, int]],
