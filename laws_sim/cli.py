@@ -46,7 +46,7 @@ def main():
                          help="Con --eval-report: aggiunge stratificazione per taglia, confidence drop e grafici K (piu' lento, rilancia i tool)")
     args = parser.parse_args()
 
-    # ===== Report Vision consolidato (un comando, tutte le metriche chiave) =====
+    # ===== Report Vision consolidato (un comando, metriche richieste dal relatore) =====
     if args.eval_report:
         if not args.patch:
             console.print("[red]Errore: --eval-report richiede --patch.[/red]")
@@ -56,7 +56,8 @@ def main():
         from simulator import evaluate_on_dataset
         from metrics import (
             bootstrap_ci, paired_bootstrap_diff,
-            f1_from_counts, gmean_from_counts,
+            evasion_rate_from_counts, sensitivity_from_counts,
+            specificity_from_counts, gmean_from_counts, f1_from_counts,
         )
         from rich.table import Table
 
@@ -64,7 +65,7 @@ def main():
         patch_tensor = torch.load(args.patch, map_location="cpu", weights_only=True)
 
         # Due sole passate di inferenza: PRE (senza patch) e POST (con patch),
-        # sullo stesso valset e nello stesso ordine -> outcomes appaiabili.
+        # stesso valset e stesso ordine -> per_frame_outcomes appaiabili.
         console.print("\n[bold cyan]PRE-attacco (YOLO naturale, nessuna patch)[/bold cyan]")
         _, _, _, outcomes_pre = evaluate_on_dataset(
             loader=loader, patch_tensor=None, max_samples=args.max_samples, verbose=False)
@@ -72,13 +73,16 @@ def main():
         _, _, _, outcomes_post = evaluate_on_dataset(
             loader=loader, patch_tensor=patch_tensor, max_samples=args.max_samples, verbose=False)
 
-        # CI a campione singolo (metodo storico, conservativo) + delta appaiato.
-        ci_f1_pre  = bootstrap_ci(outcomes_pre,  f1_from_counts,    n_iter=args.n_iter)
-        ci_gm_pre  = bootstrap_ci(outcomes_pre,  gmean_from_counts, n_iter=args.n_iter)
-        ci_f1_post = bootstrap_ci(outcomes_post, f1_from_counts,    n_iter=args.n_iter)
-        ci_gm_post = bootstrap_ci(outcomes_post, gmean_from_counts, n_iter=args.n_iter)
-        res_f1 = paired_bootstrap_diff(outcomes_pre, outcomes_post, f1_from_counts,    n_iter=args.n_iter)
-        res_gm = paired_bootstrap_diff(outcomes_pre, outcomes_post, gmean_from_counts, n_iter=args.n_iter)
+        # Ordine di priorita' del relatore: evasion rate (efficacia patch) in testa,
+        # poi R1/R2 e la loro media geometrica (metrica primaria), F1 in coda come
+        # secondaria ("la usano tutti ma fa caos").
+        metric_specs = [
+            ("Evasion rate (1-R1)", evasion_rate_from_counts),
+            ("Sensitivita' R1",     sensitivity_from_counts),
+            ("Specificita' R2",     specificity_from_counts),
+            ("sqrt(R1*R2)",         gmean_from_counts),
+            ("F1 (secondaria)",     f1_from_counts),
+        ]
 
         t = Table(title=f"Report Vision VisDrone (n={len(outcomes_pre)} frame, {args.n_iter} iter bootstrap)", style="cyan")
         t.add_column("Metrica", style="bold")
@@ -86,37 +90,37 @@ def main():
         t.add_column("POST [CI95%]", justify="right")
         t.add_column("Delta [CI95%]  p-value", justify="right")
         t.add_column("Signif.", justify="center")
-        for name, cp, cq, r in (("F1", ci_f1_pre, ci_f1_post, res_f1),
-                                ("sqrt(sens*spec)", ci_gm_pre, ci_gm_post, res_gm)):
+
+        report_metrics = {}
+        for name, fn in metric_specs:
+            cp = bootstrap_ci(outcomes_pre,  fn, n_iter=args.n_iter)
+            cq = bootstrap_ci(outcomes_post, fn, n_iter=args.n_iter)
+            dd = paired_bootstrap_diff(outcomes_pre, outcomes_post, fn, n_iter=args.n_iter)
+            report_metrics[name] = {"pre": cp, "post": cq, "paired_delta": dd}
             t.add_row(
                 name,
                 f"{cp['point']:.4f} [{cp['low']:.4f}, {cp['high']:.4f}]",
                 f"{cq['point']:.4f} [{cq['low']:.4f}, {cq['high']:.4f}]",
-                f"{r['delta']:+.4f} [{r['low']:+.4f}, {r['high']:+.4f}]  p={r['p_value']:.4f}",
-                "[green]SI[/green]" if r["significant"] else "[red]no[/red]",
+                f"{dd['delta']:+.4f} [{dd['low']:+.4f}, {dd['high']:+.4f}]  p={dd['p_value']:.4f}",
+                "[green]SI[/green]" if dd["significant"] else "[red]no[/red]",
             )
         console.print(t)
 
-        full_report = {
-            "n_frame": len(outcomes_pre), "n_iter": args.n_iter,
-            "f1":    {"pre": ci_f1_pre, "post": ci_f1_post, "paired_delta": res_f1},
-            "gmean": {"pre": ci_gm_pre, "post": ci_gm_post, "paired_delta": res_gm},
-        }
         out_path = "outputs/metrics/full_report.json"
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w") as f:
-            json.dump(full_report, f, indent=2)
+            json.dump({"n_frame": len(outcomes_pre), "n_iter": args.n_iter,
+                       "metrics": report_metrics}, f, indent=2)
         console.print(f"[green]✓ Report salvato in {out_path}[/green]")
 
-        # Extra opzionali: riusano i tool gia' validati (nuove passate di
-        # inferenza, unita' di misura diverse -> non fondibili nella stessa
-        # passata, per questo restano tool a se' lanciati qui in sequenza).
+        # Extra opzionali (stratificazione per taglia + grafici K). conf_drop
+        # RIMOSSO: il relatore ha chiesto il prima/dopo (evasion) significativo,
+        # non il calo di confidenza continuo.
         if args.full_report:
             import subprocess
-            console.print("\n[bold cyan]Extra: stratificazione per taglia, confidence drop, grafici K[/bold cyan]")
+            console.print("\n[bold cyan]Extra: stratificazione per taglia, grafici K[/bold cyan]")
             for cmd in (
                 [sys.executable, "tools/stratify_by_size.py", "--data", args.data, "--patch", args.patch],
-                [sys.executable, "tools/measure_confidence_drop.py", "--data", args.data, "--patch", args.patch],
                 [sys.executable, "tools/plot_k_selection.py", "--data", args.data, "--max-samples", "300"],
             ):
                 console.print(f"[dim]$ {' '.join(cmd)}[/dim]")

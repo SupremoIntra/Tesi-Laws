@@ -127,6 +127,21 @@ def gmean_from_counts(tp: int, fp: int, tn: int, fn: int) -> float:
     """sqrt(sensitivity*specificity) da conteggi aggregati. Firma (tp,fp,tn,fn)."""
     return geometric_mean_recall(*sensitivity_specificity(tp, fn, tn, fp))
 
+def sensitivity_from_counts(tp: int, fp: int, tn: int, fn: int) -> float:
+    """Sensitivita' R1 = recall sui positivi = TP/(TP+FN). Firma (tp,fp,tn,fn)."""
+    return tp / (tp + fn) if (tp + fn) else 0.0
+
+
+def specificity_from_counts(tp: int, fp: int, tn: int, fn: int) -> float:
+    """Specificita' R2 = recall sui negativi = TN/(TN+FP). Firma (tp,fp,tn,fn)."""
+    return tn / (tn + fp) if (tn + fp) else 0.0
+
+
+def evasion_rate_from_counts(tp: int, fp: int, tn: int, fn: int) -> float:
+    """Evasion rate = FN/(TP+FN) = 1 - sensitivita'. Efficacia della patch:
+    frazione di pedoni validi che YOLO NON rileva piu' sotto attacco."""
+    return fn / (tp + fn) if (tp + fn) else 0.0
+
 def bootstrap_ci(
     per_sample_outcomes: List[Dict[str, int]],
     metric_fn,
