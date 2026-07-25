@@ -275,33 +275,90 @@ visibile con `--run-sim`.
   trade-off monotono (R1 sale con K, R2 scende) che rende il picco della
   media geometrica un criterio di scelta reale. Verificata la monotonia
   con test sintetico (`tools/plot_k_selection.py`).
-- **[COMPLETATA] Scelta empirica di K** (`tools/plot_k_selection.py`, 531
-  frame valset, 80 positivi/451 negativi): due criteri complementari
-  danno due K diversi, e la divergenza stessa è il risultato.
+- **[COMPLETATA] Scelta empirica di K** (`tools/plot_k_selection.py`, valset
+  completo VisDrone-val, 531 frame: 80 positivi/451 negativi).
+
+  **Il problema che risolve**: `LOSS_TOP_K=20` era un'assunzione iniziale,
+  non una scelta misurata. Il relatore ha chiesto un metodo per
+  giustificarla (o correggerla) empiricamente.
+
+  **Metodo, in breve**: si passano tutti i frame positivi (senza patch,
+  comportamento naturale di YOLO) e per ognuno si ordinano le 8400 celle
+  pre-NMS per confidenza decrescente. Con una somma cumulativa si calcola,
+  per OGNI K da 1 a 8400 senza rifare l'inferenza: quante celle-bersaglio
+  finiscono nelle top-K (sensitivity R1(K), sale con K) e quante
+  celle-sfondo restano fuori (specificity R2(K), scende con K — la soglia
+  è tau(K), il valore di confidenza in posizione K sui frame positivi,
+  applicato ai negativi). Due criteri di scelta:
 
   | Criterio | K ottimo | Cosa penalizza |
   |---|---|---|
-  | Media geometrica √(R1×R2) | **37** | diluizione nello sfondo (R2 crolla da 0.92 a 0.004 entro K=300) |
   | F1 | **244** (plateau da K≈150) | copertura geometrica incompleta del bersaglio |
+  | Media geometrica √(R1×R2) | **37** | diluizione nello sfondo (R2 crolla rapidamente con K) |
 
-  Interpretazione: dentro la maschera spaziale geometrica di un
-  bersaglio (~200-250 celle, tre stride YOLO), solo un nucleo ristretto
-  (~30-40 celle) ha confidenza realmente alta — il resto è periferia
-  geometricamente dentro il bbox ma con segnale debole. La media
-  geometrica trova quel nucleo; F1 misura la copertura totale.
+  **Perché i due criteri divergono (il finding, non solo un numero)**:
+  dentro l'impronta geometrica di un bersaglio (~200-250 celle, tre stride
+  YOLO), solo un nucleo ristretto (~30-40 celle) ha confidenza realmente
+  alta — il resto è periferia dentro il bbox ma con segnale debole. F1
+  misura la copertura totale (premia K grande, arriva fino a 244 prima di
+  saturare). La media geometrica penalizza la diluizione nello sfondo
+  appena K supera il nucleo reale (crolla già a K=37).
 
-  **Coerenza retrospettiva**: K=20 (l'assunzione originale, usata in
-  tutti gli esperimenti incluso Fase 3, la configurazione più
-  efficiente) è vicino al K≈37 della media geometrica, non al K≈244 di
-  F1 — non era una scelta arbitraria fortunata, era già vicina al
-  nucleo di confidenza reale.
+  **La decisione, spiegata senza ambiguità**: `LOSS_TOP_K=20` (usato in
+  TUTTI gli esperimenti, inclusa la configurazione più efficiente) si
+  trova vicino a K=37 (media geometrica, il criterio primario del
+  relatore), non vicino a K=244 (F1, criterio secondario). Non era
+  un'assunzione fortunata a caso — era già dentro il nucleo di confidenza
+  reale. **Conseguenza pratica: NESSUN nuovo training.** Rilanciare con
+  K=244 significherebbe ottimizzare per il criterio SECONDARIO (F1),
+  aprendo un nuovo ciclo sperimentale che il relatore ha esplicitamente
+  chiesto di evitare in questa fase (priorità: documentare, non
+  sperimentare). K=244 resta annotato solo come possibile lavoro futuro
+  (una loss che copre l'intera impronta geometrica, non solo il nucleo),
+  non come azione da fare ora.
 
-  **Decisione**: non lanciare nuovo training con K=244 (sarebbe il
-  "nuovo esperimento" che il relatore ha chiesto di evitare a favore
-  della documentazione). K=20 resta la configurazione adottata,
-  retrospettivamente giustificata dal criterio della media geometrica.
-  K≈244 documentato come alternativa per lavoro futuro (loss che copre
-  l'intera impronta geometrica, non solo il nucleo).
+  **Definizione di R2 nei plot vs K — confermata**: R2 è calcolata a
+  livello di CELLA (non di frame), con soglia implicita tau(K). Scelta
+  necessaria: a livello di frame con soglia fissa il grafico "R2 vs K"
+  sarebbe una riga piatta, inutile per scegliere K. La lettura a livello
+  di cella produce il trade-off monotono che rende il picco della media
+  geometrica un criterio di scelta reale.
+
+- **[VALUTATO E RINVIATO] Espansione del campione negativo (9 → 451)**.
+  Diagnostica (`tools/count_negative_candidates.py`) su VisDrone-val:
+  80 frame positivi (≥1 persona ≥60px), 9 negativi veri (zero persone di
+  qualunque dimensione), **442 frame "ambigui"** (solo persone <60px,
+  oggi esclusi da entrambe le classi in `evaluate_on_dataset`).
+
+  **L'idea**: usare la stessa soglia tattica (60px) già applicata ai
+  positivi anche per definire "assenza di bersaglio" — un frame con solo
+  persone troppo piccole per essere un target valido è, dal punto di
+  vista operativo, equivalente a un frame senza bersaglio. Ridefinendo
+  così, n sui negativi salirebbe da 9 a 451: un guadagno enorme di
+  potenza statistica sulla specificità R2.
+
+  **Perché NON è stato implementato**: `evaluate_on_dataset` calcola
+  `detected_any` a livello di frame (YOLO vede una persona *da qualche
+  parte*), senza matching spaziale (IoU) tra detection e singola
+  annotazione. Sui 9 negativi veri questo è corretto (zero persone,
+  qualunque detection è per forza un falso allarme). Ma se un frame con
+  SOLO persone piccole venisse riclassificato come negativo, una
+  detection corretta di quella persona piccola verrebbe contata come
+  falso positivo — un artefatto della riclassificazione, non un vero
+  errore di YOLO, che gonfierebbe la specificità in modo scorretto
+  (nella direzione peggiore: farebbe apparire l'attacco più dannoso di
+  quanto sia). Il codice attuale esclude questi frame ambigui per
+  costruzione, deliberatamente (vedi commento in `evaluate_on_dataset`),
+  proprio per evitare questo bias.
+
+  **Cosa servirebbe per farlo bene**: un matching IoU per-detection, che
+  distingua "detection senza alcuna corrispondenza (nemmeno con persone
+  piccole) → falso positivo vero" da "detection che corrisponde a una
+  persona piccola ignorata → da scartare, non da contare". È una
+  funzionalità nuova nella logica di conteggio core, non una
+  rietichettatura — un lavoro di implementazione a sé, rinviato per non
+  aprire un nuovo fronte sperimentale in una fase dedicata alla
+  documentazione (indicazione esplicita del relatore).
 - **[COMPLETATA] Metriche del relatore + significatività statistica**
   (`src/metrics.py`, `tools/bootstrap_ci_report.py`, `cli.py --eval-report`).
 
