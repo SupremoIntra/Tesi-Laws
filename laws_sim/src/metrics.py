@@ -4,7 +4,6 @@ Simulation metrics and CLAE calculation.
 from typing import List, Dict, Optional, Tuple, Callable
 import numpy as np   
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
 from enum import Enum
 
 from config import PATCH_BBOX_COVERAGE, OSINT_FIELDS_TOTAL, OSINT_FIELDS_POISONED

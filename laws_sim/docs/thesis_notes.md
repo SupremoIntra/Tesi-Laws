@@ -1,8 +1,6 @@
 # Note di progetto — LAWS-SIM
 
-Log delle decisioni tecniche, degli esperimenti e dei risultati. Aggiornato
-a ogni modifica importante. Scopo: cronologia completa ma leggibile, da
-riusare nella tesi e nelle call col relatore.
+Log delle decisioni tecniche, degli esperimenti e dei risultati. 
 
 ---
 
@@ -304,34 +302,68 @@ visibile con `--run-sim`.
   retrospettivamente giustificata dal criterio della media geometrica.
   K≈244 documentato come alternativa per lavoro futuro (loss che copre
   l'intera impronta geometrica, non solo il nucleo).
-- **[COMPLETATA] Bootstrap CI (10.000 iterazioni, percentile 95%)**:
-  `src/metrics.py:bootstrap_ci` + `tools/bootstrap_ci_report.py`.
+- **[COMPLETATA] Metriche del relatore + significatività statistica**
+  (`src/metrics.py`, `tools/bootstrap_ci_report.py`, `cli.py --eval-report`).
+
   Bug corretto in `evaluate_on_dataset`: i frame senza persona valida
   venivano scartati a priori, azzerando sempre TN/FP e quindi la
   specificity (sqrt(sens×spec)=0 in ogni run). Fix: distinzione tra
   frame negativo vero (zero persone di qualunque dimensione) e frame
   ambiguo (solo persone <60px, escluso da entrambe le classi).
 
-  **Risultato finale (valset completo, 89 frame utilizzabili: 80
-  positivi + 9 negativi veri):**
+  **Metodo (due livelli, dal più conservativo al più potente):**
+  1. *CI indipendenti* — bootstrap percentile (10.000 iterazioni, 95%)
+     su PRE e POST separatamente; se gli intervalli non si sovrappongono
+     la differenza è significativa. Test corretto ma conservativo.
+  2. *Bootstrap appaiato del delta* — PRE e POST sono valutati sugli
+     STESSI frame, quindi sono misure appaiate. Si ricampiona una sola
+     lista di indici di frame per iterazione e la si applica a entrambe
+     le condizioni, calcolando Δ = POST − PRE. Sfrutta la correlazione
+     intra-frame (un frame difficile lo è in entrambe le condizioni),
+     dà una stima più precisa dell'effetto e un p-value a due code.
+     Riferimento: Efron & Tibshirani (1993), bootstrap appaiato.
 
-  | Metrica | PRE (no patch) | POST (con patch) | Significativo (95%)? |
-  |---|---|---|---|
-  | F1 | 0.9041 [0.8493, 0.9494] | 0.7302 [0.6341, 0.8120] | **Sì**, intervalli disgiunti |
-  | sqrt(sens×spec) | 0.9083 [0.8591, 0.9506] | 0.7583 [0.6814, 0.8268] | **Sì**, intervalli disgiunti |
+  **Risultato finale (valset completo, n=89: 80 positivi + 9 negativi
+  veri, 10.000 iterazioni, delta appaiato):**
 
-  Entrambe le metriche richieste dal relatore mostrano un drop
-  statisticamente significativo pre/post attacco — non solo una media
-  diversa, un intervallo di confidenza che non si sovrappone.
+  | Metrica | PRE (no patch) | POST (con patch) | Δ [CI 95%] | p | Signif. |
+  |---|---|---|---|---|---|
+  | Evasion rate (1−R1) | 0.1750 [0.096, 0.262] | 0.4250 [0.317, 0.536] | +0.250 [+0.161, +0.350] | <0.0001 | **Sì** |
+  | Sensitività R1 | 0.8250 [0.738, 0.904] | 0.5750 [0.464, 0.684] | −0.250 [−0.350, −0.161] | <0.0001 | **Sì** |
+  | Specificità R2 | 1.0000 [1.000, 1.000] | 1.0000 [1.000, 1.000] | 0.000 [0.000, 0.000] | 1.0000 | No |
+  | √(R1·R2) | 0.9083 [0.859, 0.951] | 0.7583 [0.681, 0.827] | −0.150 [−0.216, −0.094] | <0.0001 | **Sì** |
+  | F1 (secondaria) | 0.9041 [0.849, 0.949] | 0.7302 [0.634, 0.812] | −0.174 [−0.256, −0.107] | <0.0001 | **Sì** |
 
-  **Limite onesto da dichiarare**: solo 9 frame del valset sono
-  negativi veri (zero persone di qualunque dimensione) — VisDrone è un
-  dataset molto affollato, coerente con tutto quanto già scoperto sulla
-  scarsità di scene "pulite". La sensitivity (80 frame) è più solida
-  della specificity (9 frame). Da dichiarare esplicitamente, non da
-  nascondere.
+  **Lettura per il relatore.** L'efficacia della patch è dimostrata: il
+  prima/dopo che ha chiesto è statisticamente significativo su tutte le
+  metriche rilevanti. L'evasion rate sale di +25 punti (dal 17.5% di
+  base al 42.5% sotto attacco) — il 42.5% è coerente con il soffitto
+  strutturale ~44% documentato nella cronologia esperimenti. Sensitività
+  ed evasion rate sono speculari (evasion = 1 − R1), quindi condividono
+  la stessa significatività.
 
-- **[IN CORSO] Esperimento notturno — ponderazione tattica della loss**:
+  **Specificità R2 = 1.0 invariata, non significativa: è un risultato,
+  non un difetto.** In tutti e 9 i frame negativi veri, YOLO non produce
+  un solo falso positivo né PRE né POST → la patch fa sparire pedoni ma
+  NON genera allucinazioni sullo sfondo (attacco mirato, nessun danno
+  collaterale visivo). Coerente con la Precision 1.000 osservata fin dai
+  primi test. Il Δ=0 con p=1.0 è quindi il verdetto corretto.
+
+  **Limite onesto da dichiarare**: solo 9 frame del valset sono negativi
+  veri — VisDrone è un dataset molto affollato, coerente con la scarsità
+  di scene "pulite" già documentata. La sensitività (80 frame) è più
+  solida della specificità (9 frame); la CI di R2 degenera a [1,1] per
+  assenza di variabilità nel campione. Da dichiarare, non da nascondere.
+
+  **Nota su una metrica ritirata**: un tool di "confidence drop"
+  (calo continuo della confidenza per frame) era stato prototipato ma è
+  stato rimosso — su indicazione del relatore, che ha preferito il
+  prima/dopo binario (evasion rate significativo) al drop continuo, e
+  perché misurava il massimo per-frame (confrontando potenzialmente
+  detection diverse tra PRE e POST). Sostituito dal report consolidato
+  `cli.py --eval-report`.
+
+- **[COMPLETATA] Esperimento notturno — ponderazione tattica della loss**:
   peso 0 sotto 60px, rampa lineare 60-150px, peso 1.0 sopra 150px,
   applicato dentro `_asymptotic_loss` (media pesata sulle celle top-K),
   canvas/EoT invariati (patch posizionata su tutti i target comunque).
@@ -347,7 +379,7 @@ visibile con `--run-sim`.
   | Annotazioni >= 60px (soglia minima storica) | 1.556 (1.8%) |
   | Annotazioni >= 80px (tatticamente rilevanti) | 394 (0.5%) |
 
-  **Risultato finale (8000 step, notte del [data]):**
+  **Risultato finale (8000 step):**
 
   | Metrica | Valore |
   |---|---|
@@ -371,27 +403,58 @@ visibile con `--run-sim`.
   nei run precedenti — la loss si sta davvero misurando con i bersagli
   grandi e ben risolti (i più difficili da ingannare), ma senza
   abbastanza esempi per imparare a farlo bene.
+  **Esito**: nessun miglioramento dell'evasion rate rispetto al baseline
+  top-K=20. Coerente con la diagnosi di scarsità dati (98.2% delle
+  annotazioni VisDrone <60px): ponderare la loss verso i target grandi
+  non aiuta se i target grandi sono quasi assenti dal trainset. Risultato
+  negativo ma valido — rafforza la tesi del soffitto strutturale.
 
   **Conclusione**: il pre-flight (98.2% del dataset sotto soglia) resta
   la prova quantitativa solida, indipendente dall'esito del training.
   La strada da seguire ora non è più il loss-reweighting ma un dataset
   con distribuzione di scala corretta — vedi ricerca sotto.
 
-  **Dataset alternativi identificati (ricerca letteratura, non ancora
-  testati)**: i dataset "search & rescue" (HERIDAL, SARD, LADD) NON
-  risolvono il problema — sono ottimizzati per coprire aree larghe,
-  stesso difetto di VisDrone (SARD: area mediana persona <0.1%
-  dell'immagine). Il candidato migliore è **Okutama-Action** (Barekatain
-  et al. 2017): altitudine 10-45m, esattamente il range del nostro
-  scenario (`DRONE_ALTITUDE_M=10`), progettato apposta perché le persone
-  fossero grandi/visibili (serve per riconoscimento azioni), supporta
-  "pedestrian detection" come task, box annotate, CC BY-NC-SA. Alternativa
-  più rapida del Piano B: crop & upscale delle annotazioni piccole già
-  in VisDrone (data augmentation a costo zero di nuovi dati, da provare
-  prima come pilota economico).
-- Riserva: loss su feature intermedie del backbone (aerial imagery, 2023)
-- Calibrazione fine di `ENGAGEMENT_THRESHOLD` con risultati Vision più forti
-- Physical Domain Gap (stampa reale, drone reale) — limitazione da
-  menzionare in tesi, non da risolvere nel codice
-- Contributo originale possibile: ottimizzazione multi-dominio
-  Vision+OSINT sotto budget di attacco vincolato — idea da maturare
+  ---
+
+## Prossimo dataset — Okutama-Action (confronto, NON accorpamento)
+
+Richiesta del relatore: testare un dataset con pedoni ripresi più da
+vicino **separatamente** da VisDrone, e confrontare (anche filtrato/non
+filtrato per dimensione), senza unire i due dataset. Se statisticamente
+non migliora, è comunque un risultato valido da documentare.
+
+Candidato: **Okutama-Action** (Barekatain et al. 2017; altitudine 10–45m,
+coerente con `DRONE_ALTITUDE_M=10`; CC BY-NC-SA). SAR (HERIDAL, SARD,
+LADD) scartati: stesso problema di oggetti piccoli di VisDrone.
+
+**Prerequisito (una tantum)**: le annotazioni Okutama sono azione/video-based,
+non VisDrone-style. Serve una classe `OkutamaLoader` con la STESSA
+interfaccia di `VisDroneLoader` (`get_sample`, `__len__`, stesso formato
+bbox in pixel su 640×640). Fatto questo, tutto il resto della pipeline
+(training, eval, report) funziona senza modifiche.
+
+**Sequenza comandi** (dopo aver scritto il loader e messo i dati in
+`data/okutama_train` / `data/okutama_val`):
+
+1. Verifica a costo zero della distribuzione di scala PRIMA di allenare
+   (conferma quantitativa che Okutama ha davvero target più grandi):
+   `python tools/stratify_by_size.py --data data/okutama_val --patch outputs/patches/care_kit_patch_universal.pt`
+   (usa la patch VisDrone solo per popolare i bucket; guarda i totali per
+   bucket, non l'evasion rate).
+
+2. ⚠️ **Metti al sicuro la patch VisDrone prima di allenare** — `--train-patch`
+   sovrascrive `outputs/patches/care_kit_patch_universal.pt`:
+   `cp outputs/patches/care_kit_patch_universal.pt outputs/patches/patch_visdrone.pt`
+
+3. Training patch su Okutama (stessa pipeline validata: top-K=20,
+   TV_WEIGHT=0.1, EoT=16, accum=4, scheduler corretto — zero modifiche
+   architetturali, cambia solo il dataset):
+   `python cli.py --train-patch --train-dir data/okutama_train`
+   poi rinomina l'output: `mv outputs/patches/care_kit_patch_universal.pt outputs/patches/patch_okutama.pt`
+
+4. Report identico a VisDrone (stesse metriche, stesso bootstrap):
+   `python cli.py --eval-report --data data/okutama_val --patch outputs/patches/patch_okutama.pt`
+
+5. Confronto side-by-side con la tabella VisDrone già pronta (stesse
+   colonne: R1, R2, √(R1·R2), evasion, F1, con CI e p-value), versione
+   filtrata e non filtrata per dimensione. Non sostituire VisDrone: affiancare.
