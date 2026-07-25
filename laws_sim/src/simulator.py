@@ -109,7 +109,33 @@ class LAWSSim:
                     })
 
         return self.metrics
-    
+
+
+# CLASSE NEGATIVA ESTESA (IoU ignore-region): soglia permissiva rispetto
+# allo standard PASCAL VOC (IoU=0.5, Everingham et al. 2010), motivata
+# dalla sensibilita' della metrica IoU su bounding box piccoli (Yu et al.
+# 2020, "Scale Match for Tiny Person Detection"). Una detection che
+# supera questa soglia contro una persona sotto la soglia tattica (60px)
+# e' "ignore" (corretta ma irrilevante), non un falso positivo — stessa
+# convenzione delle ignore-region in CrowdHuman (Shao et al. 2018).
+IOU_IGNORE_THRESHOLD = 0.3
+
+
+def iou(boxA: Tuple[float, float, float, float],
+        boxB: Tuple[float, float, float, float]) -> float:
+    """Intersection over Union tra due bounding box (x1, y1, x2, y2)."""
+    xA1, yA1, xA2, yA2 = boxA
+    xB1, yB1, xB2, yB2 = boxB
+    ix1, iy1 = max(xA1, xB1), max(yA1, yB1)
+    ix2, iy2 = min(xA2, xB2), min(yA2, yB2)
+    iw, ih = max(0.0, ix2 - ix1), max(0.0, iy2 - iy1)
+    inter = iw * ih
+    areaA = max(0.0, xA2 - xA1) * max(0.0, yA2 - yA1)
+    areaB = max(0.0, xB2 - xB1) * max(0.0, yB2 - yB1)
+    union = areaA + areaB - inter
+    return inter / union if union > 0 else 0.0
+
+
 def evaluate_on_dataset(loader, patch_tensor=None,
                         model_path: str = "yolov8n.pt",
                         conf_threshold: float = 0.50,
@@ -134,6 +160,20 @@ def evaluate_on_dataset(loader, patch_tensor=None,
     ricampionata da `metrics.bootstrap_ci`. Riferita alla metrica
     COMPLETA (non quella tattica) — è quella su cui il relatore ha
     chiesto gli intervalli di confidenza.
+
+    # CLASSE NEGATIVA ESTESA (IoU ignore-region)
+    Un frame senza bersaglio tatticamente valido (has_person_gt=False)
+    e' negativo a pieno titolo, anche se contiene persone annotate sotto
+    i 60px. Le detection su questi frame sono classificate via matching
+    IoU (soglia IOU_IGNORE_THRESHOLD=0.3) contro TUTTE le persone
+    annotate, di qualunque dimensione: una detection che matcha una
+    persona piccola e' corretta ma irrilevante (ignorata, ne' TP ne' FP);
+    solo le detection senza alcun match sono falsi positivi veri.
+    Sostituisce la precedente esclusione dei frame "ambigui" (solo
+    persone <60px), che venivano scartati da entrambe le classi
+    riducendo la classe negativa a soli 9 frame su 531 nel valset.
+    La logica dei positivi (has_person_gt, TP/FN) e' invariata: nessun
+    matching IoU introdotto li'.
 
     Returns:
         (metrics_completo, metrics_filtrato_tattico, tactical_coverage, per_frame_outcomes)
@@ -167,18 +207,6 @@ def evaluate_on_dataset(loader, patch_tensor=None,
         valid_gt_bboxes = [b for b in gt_bboxes if (b[3] - b[1]) >= 60]
         has_person_gt = len(valid_gt_bboxes) > 0
 
-        # BOOTSTRAP CI / specificity: un frame senza persone valide (<60px)
-        # non e' automaticamente "negativo" in senso stretto -- potrebbe
-        # avere persone reali solo troppo piccole per essere un target
-        # valido. Serve la classe negativa VERA (zero persone di
-        # qualunque dimensione) per calcolare specificity in modo
-        # corretto; un frame "ambiguo" (solo persone sotto soglia) viene
-        # escluso da entrambe le classi, non forzato in una delle due.
-        is_truly_empty = len(gt_bboxes) == 0
-
-        if not has_person_gt and not is_truly_empty:
-            continue  # ambiguo: solo persone <60px, ne' positivo ne' negativo pulito
-
         # TACTICAL FILTER 2026: sottoinsieme "tatticamente rilevante" del frame
         tactical_gt_bboxes = [b for b in valid_gt_bboxes if (b[3] - b[1]) >= tactical_min_height]
         has_person_gt_tactical = len(tactical_gt_bboxes) > 0
@@ -197,30 +225,47 @@ def evaluate_on_dataset(loader, patch_tensor=None,
                     img_cv[py1:py2, px1:px2] = patch_resized
             img_pil = Image.fromarray(img_cv)
 
-        # inferenza YOLO
+        # inferenza YOLO — box delle detection person-class sopra soglia,
+        # necessarie per il matching IoU sui frame senza bersaglio valido.
         results = model(img_pil, verbose=False)
-        detected_any = any(
-            (r.boxes is not None and
-             (r.boxes.cls == PERSON_CLASS_ID).any() and
-             r.boxes.conf[(r.boxes.cls == PERSON_CLASS_ID)].max() >= conf_threshold)
-            for r in results if r.boxes is not None and len(r.boxes) > 0
-        )
+        person_det_boxes = []
+        for r in results:
+            if r.boxes is None or len(r.boxes) == 0:
+                continue
+            mask = (r.boxes.cls == PERSON_CLASS_ID) & (r.boxes.conf >= conf_threshold)
+            person_det_boxes.extend(r.boxes.xyxy[mask].tolist())
+        detected_any = len(person_det_boxes) > 0
 
-        if has_person_gt and detected_any: metrics.tp += 1
-        elif has_person_gt and not detected_any: metrics.fn += 1
-        elif not has_person_gt and detected_any: metrics.fp += 1
-        else: metrics.tn += 1
+        if has_person_gt and detected_any:
+            metrics.tp += 1
+            frame_tp, frame_fn, frame_fp, frame_tn = 1, 0, 0, 0
+        elif has_person_gt and not detected_any:
+            metrics.fn += 1
+            frame_tp, frame_fn, frame_fp, frame_tn = 0, 1, 0, 0
+        else:
+            # Frame senza bersaglio tatticamente valido (comprende sia i
+            # vecchi "negativi veri" - gt_bboxes vuoto, il matching sotto
+            # e' vacuo e ogni detection e' FP - sia i vecchi "ambigui" -
+            # persone <60px presenti, ora classificate via IoU).
+            n_fp_veri = sum(
+                1 for det in person_det_boxes
+                if not any(iou(det, gt) >= IOU_IGNORE_THRESHOLD for gt in gt_bboxes)
+            )
+            if n_fp_veri > 0:
+                metrics.fp += 1
+                frame_tp, frame_fn, frame_fp, frame_tn = 0, 0, 1, 0
+            else:
+                metrics.tn += 1
+                frame_tp, frame_fn, frame_fp, frame_tn = 0, 0, 0, 1
 
         # BOOTSTRAP CI: esito di questo frame, uno-hot, per il ricampionamento
         per_frame_outcomes.append({
-            "tp": int(has_person_gt and detected_any),
-            "fn": int(has_person_gt and not detected_any),
-            "fp": int((not has_person_gt) and detected_any),
-            "tn": int((not has_person_gt) and (not detected_any)),
+            "tp": frame_tp, "fn": frame_fn, "fp": frame_fp, "tn": frame_tn,
         })
 
         # TACTICAL FILTER 2026: stessa detection (detected_any), ma frame
-        # conteggiato solo se ha almeno un target >= tactical_min_height
+        # conteggiato solo se ha almeno un target >= tactical_min_height.
+        # Invariato: nessun matching IoU introdotto qui.
         if has_person_gt_tactical and detected_any: metrics_tactical.tp += 1
         elif has_person_gt_tactical and not detected_any: metrics_tactical.fn += 1
         elif not has_person_gt_tactical and detected_any: metrics_tactical.fp += 1
