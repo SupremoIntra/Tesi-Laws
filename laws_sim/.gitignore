@@ -17,6 +17,8 @@ outputs/metrics/*
 !outputs/checkpoints/.gitkeep
 !outputs/patches/.gitkeep
 !outputs/metrics/.gitkeep
+!outputs/metrics/full_report.json
+!outputs/metrics/k_selection_plots.png
 
 # Python
 __pycache__/

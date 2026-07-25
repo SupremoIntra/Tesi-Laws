@@ -1,7 +1,9 @@
 """
-Confronto F1 / Evasion Rate tra i run di training fatti finora.
-Aggiorna la lista RUNS ogni volta che completi un nuovo run
-(stessi numeri che vanno nella tabella di docs/thesis_notes.md).
+Confronto F1/Evasion Rate PUNTUALE (senza CI) tra le 6 configurazioni
+storiche di training — documenta la RICERCA DEGLI IPERPARAMETRI (perché
+K=20, perché accum=4), non la significatività dell'attacco finale.
+Per quella, vedi cli.py --eval-report (bootstrap + delta appaiato + p-value).
+
 
 Uso:
     python tools/plot_runs_comparison.py

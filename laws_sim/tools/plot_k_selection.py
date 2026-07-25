@@ -47,7 +47,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, required=True)
     parser.add_argument("--model", type=str, default="yolov8n.pt")
-    parser.add_argument("--max-samples", type=int, default=300,
+    parser.add_argument("--max-samples", type=int, default=None,
                          help="Frame da scandire (non serve l'intero dataset per una curva stabile)")
     parser.add_argument("--k-max-plot", type=int, default=300,
                          help="K massimo mostrato nei plot (i conteggi esatti restano disponibili fino a 8400)")

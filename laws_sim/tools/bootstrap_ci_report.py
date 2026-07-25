@@ -85,11 +85,6 @@ def main():
     from metrics import paired_bootstrap_diff
     res_f1 = paired_bootstrap_diff(outcomes_pre, outcomes_post, f1_from_counts, n_iter=args.n_iter)
     res_gm = paired_bootstrap_diff(outcomes_pre, outcomes_post, gmean_from_counts, n_iter=args.n_iter)
-    
-    
-    from metrics import paired_bootstrap_diff
-    res_f1 = paired_bootstrap_diff(outcomes_pre, outcomes_post, f1_from_counts, n_iter=args.n_iter)
-    res_gm = paired_bootstrap_diff(outcomes_pre, outcomes_post, gmean_from_counts, n_iter=args.n_iter)
 
     def _fmt(r):
         return (f"delta={r['delta']:+.4f}  CI95%=[{r['low']:+.4f}, {r['high']:+.4f}]  "
