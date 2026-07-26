@@ -236,6 +236,26 @@ def evaluate_on_dataset(loader, patch_tensor=None,
             person_det_boxes.extend(r.boxes.xyxy[mask].tolist())
         detected_any = len(person_det_boxes) > 0
 
+        # DANNO COLLATERALE (solo frame positivi, dove la patch e' realmente
+        # presente): una detection senza match IoU con NESSUNA persona
+        # annotata (di qualunque size) e' un'allucinazione introdotta dalla
+        # patch, non la detection corretta di un'altra persona reale nella
+        # scena. Stessa convenzione ignore-region usata per la classe
+        # negativa estesa, applicata qui al lato opposto del frame: non
+        # "manca il bersaglio" ma "appare qualcosa che non dovrebbe esserci".
+        #
+        # CONTEGGIO GREZZO, non indicatore binario: un frame con 3
+        # allucinazioni e uno con 1 non sono equivalenti — usare il
+        # conteggio invece di "presente/assente" sfrutta tutta
+        # l'informazione disponibile sugli stessi 80 frame positivi
+        # (piu' potenza statistica a costo zero, nessun frame in piu').
+        collateral_count = 0
+        if has_person_gt:
+            collateral_count = sum(
+                1 for det in person_det_boxes
+                if not any(iou(det, gt) >= IOU_IGNORE_THRESHOLD for gt in gt_bboxes)
+            )
+
         if has_person_gt and detected_any:
             metrics.tp += 1
             frame_tp, frame_fn, frame_fp, frame_tn = 1, 0, 0, 0
@@ -258,9 +278,13 @@ def evaluate_on_dataset(loader, patch_tensor=None,
                 metrics.tn += 1
                 frame_tp, frame_fn, frame_fp, frame_tn = 0, 0, 0, 1
 
-        # BOOTSTRAP CI: esito di questo frame, uno-hot, per il ricampionamento
+        # BOOTSTRAP CI: esito di questo frame, uno-hot, per il ricampionamento.
+        # "collateral_count" e' significativo solo per i frame positivi
+        # (has_person_gt=True); per i negativi resta 0 e va ignorato --
+        # il filtro sui frame positivi si fa a valle, in cli.py.
         per_frame_outcomes.append({
             "tp": frame_tp, "fn": frame_fn, "fp": frame_fp, "tn": frame_tn,
+            "collateral_count": collateral_count,
         })
 
         # TACTICAL FILTER 2026: stessa detection (detected_any), ma frame

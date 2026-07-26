@@ -1,6 +1,6 @@
 # Note di progetto — LAWS-SIM
 
-Log delle decisioni tecniche, degli esperimenti e dei risultati. 
+Log delle decisioni tecniche, degli esperimenti e dei risultati.
 
 ---
 
@@ -186,6 +186,9 @@ sull'ottimizzatore:
 | Hu et al. 2021 | Naturalistic Patch — GAN latent space (contributo originale) |
 | Shrestha, Pathak, Viegas 2023 | Patch UAV-specific su VisDrone (Car, 80% ASR) |
 | LFRAP 2025 | Conferma: pedoni scartati per dimensione da vista aerea |
+| Everingham et al. 2010 | Standard IoU=0.5 (PASCAL VOC), da cui ci discostiamo per la specificità estesa |
+| Yu et al. 2020 | "Scale Match for Tiny Person Detection" — IoU permissivo per small object |
+| Shao et al. 2018 | CrowdHuman — convenzione "ignore region" per bersagli di scala ambigua |
 
 DOI/URL completi in `config.py`.
 
@@ -275,6 +278,7 @@ visibile con `--run-sim`.
   trade-off monotono (R1 sale con K, R2 scende) che rende il picco della
   media geometrica un criterio di scelta reale. Verificata la monotonia
   con test sintetico (`tools/plot_k_selection.py`).
+
 - **[COMPLETATA] Scelta empirica di K** (`tools/plot_k_selection.py`, valset
   completo VisDrone-val, 531 frame: 80 positivi/451 negativi).
 
@@ -324,51 +328,11 @@ visibile con `--run-sim`.
   di cella produce il trade-off monotono che rende il picco della media
   geometrica un criterio di scelta reale.
 
-- **[VALUTATO E RINVIATO] Espansione del campione negativo (9 → 451)**.
-  Diagnostica (`tools/count_negative_candidates.py`) su VisDrone-val:
-  80 frame positivi (≥1 persona ≥60px), 9 negativi veri (zero persone di
-  qualunque dimensione), **442 frame "ambigui"** (solo persone <60px,
-  oggi esclusi da entrambe le classi in `evaluate_on_dataset`).
+- **[COMPLETATA] Metriche del relatore, significatività statistica, e
+  correzione della classe negativa** (`src/metrics.py`,
+  `src/simulator.py:evaluate_on_dataset`, `cli.py --eval-report`).
 
-  **L'idea**: usare la stessa soglia tattica (60px) già applicata ai
-  positivi anche per definire "assenza di bersaglio" — un frame con solo
-  persone troppo piccole per essere un target valido è, dal punto di
-  vista operativo, equivalente a un frame senza bersaglio. Ridefinendo
-  così, n sui negativi salirebbe da 9 a 451: un guadagno enorme di
-  potenza statistica sulla specificità R2.
-
-  **Perché NON è stato implementato**: `evaluate_on_dataset` calcola
-  `detected_any` a livello di frame (YOLO vede una persona *da qualche
-  parte*), senza matching spaziale (IoU) tra detection e singola
-  annotazione. Sui 9 negativi veri questo è corretto (zero persone,
-  qualunque detection è per forza un falso allarme). Ma se un frame con
-  SOLO persone piccole venisse riclassificato come negativo, una
-  detection corretta di quella persona piccola verrebbe contata come
-  falso positivo — un artefatto della riclassificazione, non un vero
-  errore di YOLO, che gonfierebbe la specificità in modo scorretto
-  (nella direzione peggiore: farebbe apparire l'attacco più dannoso di
-  quanto sia). Il codice attuale esclude questi frame ambigui per
-  costruzione, deliberatamente (vedi commento in `evaluate_on_dataset`),
-  proprio per evitare questo bias.
-
-  **Cosa servirebbe per farlo bene**: un matching IoU per-detection, che
-  distingua "detection senza alcuna corrispondenza (nemmeno con persone
-  piccole) → falso positivo vero" da "detection che corrisponde a una
-  persona piccola ignorata → da scartare, non da contare". È una
-  funzionalità nuova nella logica di conteggio core, non una
-  rietichettatura — un lavoro di implementazione a sé, rinviato per non
-  aprire un nuovo fronte sperimentale in una fase dedicata alla
-  documentazione (indicazione esplicita del relatore).
-- **[COMPLETATA] Metriche del relatore + significatività statistica**
-  (`src/metrics.py`, `tools/bootstrap_ci_report.py`, `cli.py --eval-report`).
-
-  Bug corretto in `evaluate_on_dataset`: i frame senza persona valida
-  venivano scartati a priori, azzerando sempre TN/FP e quindi la
-  specificity (sqrt(sens×spec)=0 in ogni run). Fix: distinzione tra
-  frame negativo vero (zero persone di qualunque dimensione) e frame
-  ambiguo (solo persone <60px, escluso da entrambe le classi).
-
-  **Metodo (due livelli, dal più conservativo al più potente):**
+  **Metodo statistico:**
   1. *CI indipendenti* — bootstrap percentile (10.000 iterazioni, 95%)
      su PRE e POST separatamente; se gli intervalli non si sovrappongono
      la differenza è significativa. Test corretto ma conservativo.
@@ -380,37 +344,93 @@ visibile con `--run-sim`.
      dà una stima più precisa dell'effetto e un p-value a due code.
      Riferimento: Efron & Tibshirani (1993), bootstrap appaiato.
 
-  **Risultato finale (valset completo, n=89: 80 positivi + 9 negativi
-  veri, 10.000 iterazioni, delta appaiato):**
+  **Problema di campione (risolto)**: con la sola classe negativa vera
+  (zero persone di qualunque dimensione), n=9 su 531 — troppo pochi per
+  una stima di specificità (R2) non degenere. Diagnostica
+  (`tools/count_negative_candidates.py`):
+
+  | Categoria | n | % |
+  |---|---|---|
+  | Positivo (≥1 bersaglio ≥60px) | 80 | 15.1% |
+  | Negativo vero (0 persone, qualunque size) | 9 | 1.7% |
+  | Ambiguo (solo persone <60px, escluso finora) | 442 | 83.2% |
+
+  **Correzione applicata — integrazione diretta in `evaluate_on_dataset`**:
+  i 442 frame "ambigui" sono ora negativi a pieno titolo. Una detection
+  in questi frame è classificata con matching IoU contro TUTTE le
+  persone annotate, anche quelle sotto i 60px: IoU ≥ 0.3 con una persona
+  di qualunque dimensione → detection corretta ma su un bersaglio non
+  tatticamente valido → **ignorata** (né TP né FP, convenzione "ignore
+  region"); nessun match sopra soglia → **falso positivo vero**.
+  Soglia IoU=0.3 (permissiva rispetto allo standard PASCAL VOC 0.5,
+  Everingham et al. 2010) motivata dalla sensibilità della metrica IoU
+  su bounding box piccoli (Yu et al. 2020, "Scale Match for Tiny Person
+  Detection"), stessa convenzione ignore-region di CrowdHuman (Shao et
+  al. 2018). La logica dei positivi (`has_person_gt`, TP/FN) è invariata.
+
+  **Risultato finale (valset completo, n=531: 80 positivi + 451
+  negativi, 10.000 iterazioni, bootstrap appaiato):**
 
   | Metrica | PRE (no patch) | POST (con patch) | Δ [CI 95%] | p | Signif. |
   |---|---|---|---|---|---|
-  | Evasion rate (1−R1) | 0.1750 [0.096, 0.262] | 0.4250 [0.317, 0.536] | +0.250 [+0.161, +0.350] | <0.0001 | **Sì** |
-  | Sensitività R1 | 0.8250 [0.738, 0.904] | 0.5750 [0.464, 0.684] | −0.250 [−0.350, −0.161] | <0.0001 | **Sì** |
-  | Specificità R2 | 1.0000 [1.000, 1.000] | 1.0000 [1.000, 1.000] | 0.000 [0.000, 0.000] | 1.0000 | No |
-  | √(R1·R2) | 0.9083 [0.859, 0.951] | 0.7583 [0.681, 0.827] | −0.150 [−0.216, −0.094] | <0.0001 | **Sì** |
-  | F1 (secondaria) | 0.9041 [0.849, 0.949] | 0.7302 [0.634, 0.812] | −0.174 [−0.256, −0.107] | <0.0001 | **Sì** |
+  | Evasion rate (1−R1) | 0.1750 [0.096, 0.264] | 0.4250 [0.317, 0.533] | +0.250 [+0.156, +0.346] | <0.0001 | **Sì** |
+  | Sensitività R1 | 0.8250 [0.736, 0.904] | 0.5750 [0.467, 0.683] | −0.250 [−0.346, −0.156] | <0.0001 | **Sì** |
+  | Specificità R2 | 0.9690 [0.952, 0.984] | 0.9690 [0.952, 0.984] | 0.000 [0.000, 0.000] | 1.0000 | No |
+  | √(R1·R2) | 0.8941 [0.844, 0.937] | 0.7464 [0.672, 0.814] | −0.148 [−0.210, −0.090] | <0.0001 | **Sì** |
+  | F1 (secondaria) | 0.8250 [0.755, 0.883] | 0.6571 [0.561, 0.744] | −0.168 [−0.242, −0.100] | <0.0001 | **Sì** |
 
-  **Lettura per il relatore.** L'efficacia della patch è dimostrata: il
-  prima/dopo che ha chiesto è statisticamente significativo su tutte le
-  metriche rilevanti. L'evasion rate sale di +25 punti (dal 17.5% di
-  base al 42.5% sotto attacco) — il 42.5% è coerente con il soffitto
-  strutturale ~44% documentato nella cronologia esperimenti. Sensitività
-  ed evasion rate sono speculari (evasion = 1 − R1), quindi condividono
-  la stessa significatività.
+  **Lettura per il relatore**: evasion rate, sensitività, √(R1·R2) e F1
+  restano tutti nettamente significativi (p<0.0001) con il campione
+  corretto — la patch degrada la detection in modo statisticamente
+  dimostrato, non un artefatto di rumore campionario.
 
-  **Specificità R2 = 1.0 invariata, non significativa: è un risultato,
-  non un difetto.** In tutti e 9 i frame negativi veri, YOLO non produce
-  un solo falso positivo né PRE né POST → la patch fa sparire pedoni ma
-  NON genera allucinazioni sullo sfondo (attacco mirato, nessun danno
-  collaterale visivo). Coerente con la Precision 1.000 osservata fin dai
-  primi test. Il Δ=0 con p=1.0 è quindi il verdetto corretto.
+  **⚠️ Finding critico su R2 — non un limite di campione, un limite
+  strutturale del disegno sperimentale.** Con n=531, R2 PRE e POST
+  risultano **identici fino alla sedicesima cifra decimale**
+  (0.9689578713968958 in entrambi i casi). Causa: la patch è disegnata
+  sull'immagine solo dentro il ciclo `for bbox in valid_gt_bboxes`, che
+  itera zero volte quando il frame non ha un bersaglio ≥60px — quindi
+  per TUTTI i frame negativi (i 9 originali e i 442 aggiunti) l'immagine
+  passata a YOLO è identica con o senza patch, e YOLO (deterministico in
+  inferenza) restituisce lo stesso identico output. **Espandere il
+  campione da 9 a 451 non rendeva R2 più informativo sull'effetto della
+  patch — lo ha reso più preciso su una quantità che per costruzione non
+  può muoversi.** Il vecchio risultato "R2=1.0 invariato" con n=9 non era
+  quindi la dimostrazione di un attacco pulito; era la stessa tautologia,
+  solo meno visibile con un valore rotondo.
 
-  **Limite onesto da dichiarare**: solo 9 frame del valset sono negativi
-  veri — VisDrone è un dataset molto affollato, coerente con la scarsità
-  di scene "pulite" già documentata. La sensitività (80 frame) è più
-  solida della specificità (9 frame); la CI di R2 degenera a [1,1] per
-  assenza di variabilità nel campione. Da dichiarare, non da nascondere.
+  **Reinterpretazione (da usare in tesi, non l'euristica precedente)**:
+  R2=0.9690 è una **caratterizzazione del detector** — il tasso di falso
+  allarme di base di YOLOv8n su sfondi VisDrone privi di bersaglio valido
+  (~3.1%), indipendente dalla patch, non un test dell'attacco su
+  quell'asse. La patch, essendo "indossata" su un bersaglio rilevato, non
+  esiste fisicamente nei frame senza bersaglio — non c'è modo, con questo
+  disegno, di verificare se la patch causa allucinazioni altrove nella
+  scena. Conseguenza diretta: **tutto il movimento di √(R1·R2) è
+  attribuibile a R1**; R2 agisce da moltiplicatore costante, non da
+  secondo asse indipendente in questo esperimento.
+
+  **Lavoro futuro proposto (non implementato per priorità di tempo)**:
+  la metrica corretta per il "danno collaterale della patch" dovrebbe
+  contare, DENTRO i frame positivi (dove la patch è realmente presente),
+  detection aggiuntive senza match IoU con il bersaglio reale — es. un
+  civile vicino erroneamente segnalato per rumore visivo introdotto dalla
+  patch. Stessa infrastruttura IoU già costruita, riusabile con un nuovo
+  contatore per-frame.
+
+  **Verifica di robustezza multi-soglia (0.3 / 0.5 / 0.7)**: evasion
+  rate, R1, √(R1·R2) e F1 restano tutti significativi (p tra 0.0002 e
+  <0.0001) a tutte e tre le soglie testate — il risultato primario non
+  dipende dalla scelta specifica di conf_threshold=0.50. R2 risulta
+  identico PRE/POST a TUTTE le soglie (0.8248, 0.9690, 1.0000
+  rispettivamente) — conferma indipendente che l'invarianza di R2 è una
+  proprietà strutturale del codice (la patch non è mai disegnata in
+  questi frame), non una coincidenza numerica legata a una soglia
+  specifica. **Scoperta laterale**: l'evasion rate PRE (senza alcun
+  attacco) passa da 3.75% (soglia 0.3) a 72.5% (soglia 0.7) — conferma
+  indipendente del soffitto strutturale (scarsità di target grandi/ben
+  risolti in VisDrone) e giustifica retroattivamente 0.50 come default
+  ragionevole, non arbitrario.
 
   **Nota su una metrica ritirata**: un tool di "confidence drop"
   (calo continuo della confidenza per frame) era stato prototipato ma è
@@ -419,6 +439,59 @@ visibile con `--run-sim`.
   perché misurava il massimo per-frame (confrontando potenzialmente
   detection diverse tra PRE e POST). Sostituito dal report consolidato
   `cli.py --eval-report`.
+
+- **[COMPLETATA E RITIRATA COME RISULTATO POSITIVO] Danno collaterale**
+  (stessa infrastruttura IoU di `evaluate_on_dataset`, sezione separata
+  in `cli.py --eval-report`).
+
+  **Perché è stata introdotta**: R2/specificità (sopra) misura solo
+  frame SENZA bersaglio valido, dove la patch non è mai disegnata — non
+  può per costruzione rilevare un effetto dell'attacco. Questa metrica
+  misura invece, DENTRO i frame positivi (dove la patch È realmente
+  presente), se l'attacco introduce detection spurie senza
+  corrispondenza IoU con nessuna persona reale nella stessa scena — una
+  domanda diversa e genuinamente testabile, non un tentativo di
+  "salvare" R2 (le due metriche rispondono a domande distinte e non si
+  sostituiscono a vicenda).
+
+  **Metodo (raffinato dopo revisione)**: conteggio grezzo di
+  allucinazioni per frame (non indicatore binario presente/assente) —
+  usa tutta l'informazione disponibile sugli stessi 80 frame positivi,
+  più potenza statistica a costo zero.
+
+  **Prima verifica (conf_threshold=0.50, n=80)**: PRE=0.100
+  [0.038,0.175] (8/80 frame), POST=0.050 [0.013,0.100] (4/80 frame),
+  Δ=−0.050 [−0.100,−0.013], p=0.0374 — significativo ma fragile (4
+  eventi assoluti di differenza; p un ordine di grandezza più debole di
+  tutte le altre metriche; non sopravvive a una correzione di Bonferroni
+  per 6 confronti multipli, soglia richiesta p<0.0083).
+
+  **Verifica di robustezza (richiesta esplicitamente prima di accettare
+  il risultato)**: stesso identico calcolo a conf_threshold=0.3 e 0.7:
+
+  | Soglia | PRE | POST | Δ | p | Signif. |
+  |---|---|---|---|---|---|
+  | 0.3 | 0.4625 | 0.4375 | −0.0250 | 0.535 | No |
+  | 0.5 | 0.1125 | 0.0500 | −0.0625 | 0.0136 | Sì |
+  | 0.7 | 0.0000 | 0.0000 | 0.0000 | 1.000 | No (nessun segnale in entrambe le condizioni) |
+
+  **Esito: il pattern non replica.** Il calo era significativo solo
+  esattamente a conf=0.50; a 0.3 la direzione è la stessa ma non
+  significativa, a 0.7 il segnale collassa a zero in entrambe le
+  condizioni. **Conclusione da scrivere in tesi**: il risultato non è
+  robusto al variare della soglia di confidenza — trattato come rumore
+  campionario, non come effetto dimostrato. Ritirato come risultato
+  positivo, documentato come esempio di verifica metodologica corretta
+  (un segnale debole è stato messo in dubbio, testato, e correttamente
+  respinto quando il test di robustezza non lo confermava) — un
+  risultato negativo verificato con rigore vale più di un risultato
+  positivo non controllato.
+
+  **Da rivedere con Okutama-Action**: se un secondo dataset indipendente
+  mostrasse lo stesso pattern (fragile, non robusto al threshold), sarebbe
+  un'ulteriore conferma che qui non c'è un effetto reale da misurare con
+  questo disegno sperimentale su questo bersaglio (persone in vista
+  aerea) — coerente con la diagnosi già scritta del soffitto strutturale.
 
 - **[COMPLETATA] Esperimento notturno — ponderazione tattica della loss**:
   peso 0 sotto 60px, rampa lineare 60-150px, peso 1.0 sopra 150px,
@@ -460,6 +533,7 @@ visibile con `--run-sim`.
   nei run precedenti — la loss si sta davvero misurando con i bersagli
   grandi e ben risolti (i più difficili da ingannare), ma senza
   abbastanza esempi per imparare a farlo bene.
+
   **Esito**: nessun miglioramento dell'evasion rate rispetto al baseline
   top-K=20. Coerente con la diagnosi di scarsità dati (98.2% delle
   annotazioni VisDrone <60px): ponderare la loss verso i target grandi
@@ -506,8 +580,7 @@ bbox in pixel su 640×640). Fatto questo, tutto il resto della pipeline
 3. Training patch su Okutama (stessa pipeline validata: top-K=20,
    TV_WEIGHT=0.1, EoT=16, accum=4, scheduler corretto — zero modifiche
    architetturali, cambia solo il dataset):
-   `python cli.py --train-patch --train-dir data/okutama_train`
-   poi rinomina l'output: `mv outputs/patches/care_kit_patch_universal.pt outputs/patches/patch_okutama.pt`
+   `python cli.py --train-patch --train-dir data/okutama_train --patch-out outputs/patches/patch_okutama.pt`
 
 4. Report identico a VisDrone (stesse metriche, stesso bootstrap):
    `python cli.py --eval-report --data data/okutama_val --patch outputs/patches/patch_okutama.pt`

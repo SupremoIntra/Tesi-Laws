@@ -44,6 +44,8 @@ def main():
     parser.add_argument("--n-iter", type=int, default=10000, help="Iterazioni bootstrap per --eval-report")
     parser.add_argument("--full-report", action="store_true",
                          help="Con --eval-report: aggiunge stratificazione per taglia, confidence drop e grafici K (piu' lento, rilancia i tool)")
+    parser.add_argument("--conf-threshold", type=float, default=0.50,
+                         help="Soglia di confidenza YOLO per --eval-report (default 0.50, per verifica di robustezza)")
     args = parser.parse_args()
 
     # ===== Report Vision consolidato (un comando, metriche richieste dal relatore) =====
@@ -68,10 +70,10 @@ def main():
         # stesso valset e stesso ordine -> per_frame_outcomes appaiabili.
         console.print("\n[bold cyan]PRE-attacco (YOLO naturale, nessuna patch)[/bold cyan]")
         _, _, _, outcomes_pre = evaluate_on_dataset(
-            loader=loader, patch_tensor=None, max_samples=args.max_samples, verbose=False)
+            loader=loader, patch_tensor=None, max_samples=args.max_samples, verbose=False, conf_threshold=args.conf_threshold)
         console.print("[bold cyan]POST-attacco (con patch)[/bold cyan]")
         _, _, _, outcomes_post = evaluate_on_dataset(
-            loader=loader, patch_tensor=patch_tensor, max_samples=args.max_samples, verbose=False)
+            loader=loader, patch_tensor=patch_tensor, max_samples=args.max_samples, verbose=False, conf_threshold=args.conf_threshold)
 
         # Ordine di priorita' del relatore: evasion rate (efficacia patch) in testa,
         # poi R1/R2 e la loro media geometrica (metrica primaria), F1 in coda come
@@ -106,6 +108,44 @@ def main():
             )
         console.print(t)
 
+        # DANNO COLLATERALE — media di conteggi per frame, non indicatore
+        # binario: usa tutta l'informazione disponibile sugli stessi 80
+        # frame positivi (piu' potenza statistica, zero frame aggiuntivi).
+        def _collateral_view(outcomes):
+            positivi = [o for o in outcomes if o["tp"] + o["fn"] == 1]
+            return [
+                {"tp": 0, "fn": 0, "fp": o["collateral_count"], "tn": 1}
+                for o in positivi
+            ]
+
+        collateral_pre  = _collateral_view(outcomes_pre)
+        collateral_post = _collateral_view(outcomes_post)
+        # media per frame = somma dei conteggi / numero di frame (tn=1 costante
+        # per ogni frame -> sum(tn) = n sempre, quindi fp/tn = media campionaria)
+        collateral_metric_fn = lambda tp, fp, tn, fn: fp / tn if tn else 0.0
+
+        cp_col = bootstrap_ci(collateral_pre,  collateral_metric_fn, n_iter=args.n_iter)
+        cq_col = bootstrap_ci(collateral_post, collateral_metric_fn, n_iter=args.n_iter)
+        dd_col = paired_bootstrap_diff(collateral_pre, collateral_post, collateral_metric_fn, n_iter=args.n_iter)
+
+        t2 = Table(title=f"Danno collaterale — media allucinazioni/frame, solo positivi "
+                         f"(n={len(collateral_pre)}, conf_threshold={args.conf_threshold})", style="yellow")
+        t2.add_column("Metrica", style="bold")
+        t2.add_column("PRE [CI95%]", justify="right")
+        t2.add_column("POST [CI95%]", justify="right")
+        t2.add_column("Delta [CI95%]  p-value", justify="right")
+        t2.add_column("Signif.", justify="center")
+        t2.add_row(
+            "Media collateral/frame",
+            f"{cp_col['point']:.4f} [{cp_col['low']:.4f}, {cp_col['high']:.4f}]",
+            f"{cq_col['point']:.4f} [{cq_col['low']:.4f}, {cq_col['high']:.4f}]",
+            f"{dd_col['delta']:+.4f} [{dd_col['low']:+.4f}, {dd_col['high']:+.4f}]  p={dd_col['p_value']:.4f}",
+            "[green]SI[/green]" if dd_col["significant"] else "[red]no[/red]",
+        )
+        console.print(t2)
+
+        report_metrics["Collateral (media/frame)"] = {"pre": cp_col, "post": cq_col, "paired_delta": dd_col}
+        
         out_path = "outputs/metrics/full_report.json"
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w") as f:
