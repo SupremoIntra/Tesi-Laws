@@ -1,6 +1,8 @@
 # Dataset (pesanti, non versionare)
 data/visdrone_train/
 data/visdrone_val/
+data/okutama_train/
+data/okutama_val/
 data/visdrone/
 data/_smoketest_tmp/
 custom_dataset/
