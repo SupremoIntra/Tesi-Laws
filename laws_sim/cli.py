@@ -46,6 +46,10 @@ def main():
                          help="Con --eval-report: aggiunge stratificazione per taglia, confidence drop e grafici K (piu' lento, rilancia i tool)")
     parser.add_argument("--conf-threshold", type=float, default=0.50,
                          help="Soglia di confidenza YOLO per --eval-report (default 0.50, per verifica di robustezza)")
+    parser.add_argument("--loader", choices=["visdrone", "okutama"], default="visdrone",
+                     help="Dataset loader per --train-patch (default: visdrone)")
+    parser.add_argument("--patch-out", type=str, default=None, metavar="FILE",
+                        help="Percorso di salvataggio patch per --train-patch (default: BEST_PATCH_FILE, sovrascrive care_kit_patch_universal.pt)")
     args = parser.parse_args()
 
     # ===== Report Vision consolidato (un comando, metriche richieste dal relatore) =====
@@ -172,6 +176,7 @@ def main():
         console.print("\n[bold green]Avvio Addestramento Universal Patch (SOTA Architecture)[/bold green]")
         try:
             from visdrone_loader import VisDroneLoader
+            from okutama_loader import OkutamaLoader
             from patch_optimizer import PatchOptimizer
             from config import CHECKPOINT_FILE
         except ImportError as e:
@@ -182,18 +187,29 @@ def main():
             os.remove(CHECKPOINT_FILE)
             console.print(f"[yellow]--fresh: rimosso checkpoint precedente ({CHECKPOINT_FILE})[/yellow]")
 
-        loader = VisDroneLoader(args.train_dir)
-
-        # TACTICAL FILTER 2026: pre-flight check obbligatorio prima del training
-        from patch_optimizer import tactical_preflight_check
-        tactical_preflight_check(loader, low=60.0, high=80.0)
+        if args.loader == "visdrone":
+            loader = VisDroneLoader(args.train_dir)
+            # TACTICAL FILTER 2026: pre-flight solo per VisDrone — usa API
+            # interna (loader._parse_annotation) specifica di VisDroneLoader,
+            # non portata su OkutamaLoader.
+            from patch_optimizer import tactical_preflight_check
+            tactical_preflight_check(loader, low=60.0, high=80.0)
+        else:
+            loader = OkutamaLoader(args.train_dir)
+            console.print(
+                "[dim]Pre-flight Okutama già fatto a mano con "
+                "count_negative_candidates.py / stratify_by_size.py "
+                "(87.6% frame positivi, vedi sessione precedente) — skip "
+                "tactical_preflight_check (API VisDrone-specifica).[/dim]"
+            )
 
         optimizer = PatchOptimizer(model_path="yolov8n.pt")
+        patch_out = args.patch_out or BEST_PATCH_FILE
 
         try:
             results = optimizer.optimize_universal(loader=loader, verbose=True)
-            torch.save(results["patch"], BEST_PATCH_FILE)
-            console.print(f"\n[bold green]✓ Universal Patch salvata in: {BEST_PATCH_FILE}[/bold green]")
+            torch.save(results["patch"], patch_out)
+            console.print(f"\n[bold green]✓ Universal Patch salvata in: {patch_out}[/bold green]")
         except KeyboardInterrupt:
             console.print("\n[yellow]Addestramento interrotto manualmente.[/yellow]")
         return

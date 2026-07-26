@@ -1,177 +1,163 @@
 """
 Okutama-Action DataLoader per LAWS-SIM.
 
-Stessa interfaccia di VisDroneLoader (get_sample, __len__, iter_batches),
-cosi' il resto della pipeline (training, eval, bootstrap CI) non richiede
-NESSUNA modifica — cambia solo il dataset (richiesta esplicita del
-relatore: confronto side-by-side, non accorpamento).
+Struttura reale confermata (drone1/2 x mattina/pomeriggio x frame estratti,
+label separate per risoluzione nativa):
+    okutama_root/
+    ├── Drone1/Morning/Extracted-Frames-1280x720/<video>/<frame_num>.jpg
+    ├── Drone1/Noon/Extracted-Frames-1280x720/<video>/<frame_num>.jpg
+    ├── Drone2/Morning/Extracted-Frames-1280x720/<video>/<frame_num>.jpg
+    ├── Drone2/Noon/Extracted-Frames-1280x720/<video>/<frame_num>.jpg
+    └── Labels/SingleActionLabels/3840x2160/<video>.txt
 
-Formato annotazioni Okutama (fonte: okutama-action.org, sezione Dataset
-Download — non VisDrone-style, quindi NON riusa il parser esistente):
+    <video> = "<drone>.<time>.<scenario>" (es. "1.1.7"): drone in {1,2},
+    time 1=Morning 2=Noon (doc ufficiale), scenario intero libero.
+    Frame file: "<frame_num>.jpg", nessun padding (confermato: 0.jpg, 1.jpg, ...).
+
+Formato annotazioni (fonte: okutama-action.org, SingleActionLabels — un'unica
+riga per persona per frame, colonne azione già escluse a monte scegliendo
+questo file invece di MultiActionLabels):
     TrackID xmin ymin xmax ymax frame lost occluded generated "label" [azioni...]
 
-    - label e' sempre "Person" (singola classe, come la nostra PERSON_CATEGORIES
-      di VisDrone, ma qui non serve nemmeno un filtro per categoria).
-    - lost=1 → bbox fuori dallo schermo (nessun contenuto visivo reale):
-      SCARTATA. Analogo concettuale del filtro MIN_BBOX_AREA di VisDrone
-      (una bbox "lost" non e' un bersaglio piu' piccolo, e' un bersaglio
-      assente — includerla vorrebbe dire disegnare la patch sul nulla).
-    - occluded, generated (interpolato): NON filtrati, stessa scelta di
-      VisDrone (che non filtra per truncation/occlusion, solo per area
-      minima) — parita' di trattamento tra i due dataset.
-    - Colonne azione (11+): ignorate. Confermato dalla documentazione
-      ufficiale ("For pedestrian detection task, the columns describing
-      the actions should be ignored") — non e' una nostra semplificazione,
-      e' l'uso previsto del dataset per detection puro.
+    - Coordinate in spazio NATIVO 3840x2160 (confermato dal nome cartella
+      label + "video resolution (3840x2160)" nella doc ufficiale) — NON
+      1280x720. Lo scaling verso il canvas finale usa 3840x2160 come
+      riferimento, saltando il passaggio intermedio 1280x720 (che serve
+      solo a leggere i pixel del frame, non a definire la scala bbox).
+    - label sempre "Person" (verificato comunque, difensivo).
+    - lost=1 → fuori schermo, SCARTATA (nessun contenuto visivo).
+    - occluded/generated → NON filtrati, stessa scelta di VisDroneLoader
+      (parita' di trattamento tra i due dataset).
+    - Colonne azione (11+) → ignorate (istruzione testuale della doc
+      ufficiale, non inferenza).
 
-RISOLUZIONE (decisione presa in sessione, NON assunta):
-    img_size=1280 (quadrato), stessa filosofia di resize "a stretch" di
-    VisDroneLoader (ignora aspect ratio nativo). Scelta deliberata per
-    PARITA' METODOLOGICA tra i due dataset (stesso tipo di preprocessing,
-    comparabilita' del metodo), non perche' sia la resa pixel ottimale
-    per Okutama — i frame nativi pre-estratti sono 1280x720 (16:9), quindi
-    lo stretch a 1280x1280 introduce un fattore di allungamento verticale
-    (~1.78x) che va tenuto a mente quando si ricalibrano le soglie
-    60px/80px (decisione lasciata al post-preflight, come stabilito).
+RISOLUZIONE (decisione di sessione): img_size=1280 quadrato, resize "a
+stretch" dal frame 1280x720 nativo — stessa filosofia di VisDroneLoader
+(ignora aspect ratio), per parita' metodologica tra i due dataset, non
+per fedelta' pixel ottimale. Fattore di stretch verticale ~1.78x da
+tenere a mente nella ricalibrazione soglie 60px/80px (decisione
+deferita al preflight, non ancora presa).
 
-STRUTTURA CARTELLE ASSUNTA (da verificare dopo unzip reale degli archivi
-ufficiali — non ho visibilita' diretta sul contenuto degli zip):
-    okutama_root/
-    ├── images/
-    │   └── <video_name>/          es. "1.1.7"/
-    │       └── <frame_pattern>    es. frame_000001.jpg (pattern configurabile)
-    └── annotations/
-        └── <video_name>.txt       una riga per bbox per frame, tutto il video
+NOTA su MIN_BBOX_AREA: il filtro e' applicato in spazio NATIVO (3840x2160),
+PRIMA dello scaling — stessa convenzione di VisDroneLoader (che filtra su
+pixel nativi dell'immagine originale, prima del resize a 640x640). Il
+significato assoluto della soglia dipende quindi dalla risoluzione nativa
+di ciascun dataset (non e' una scelta ottimale in senso assoluto), ma e'
+la stessa convenzione già in uso — coerenza di metodo, non ottimalita'
+per singolo dataset.
 
-Se la struttura reale differisce (es. frame in cartella flat con nome
-"<video>_<frame>.jpg"), va aggiornato solo _build_index/_frame_image_path
-— il resto della classe (parsing, scaling, interfaccia pubblica) resta
-valido.
-
-Uso base (identico a VisDroneLoader):
+Uso (identico a VisDroneLoader):
     loader = OkutamaLoader("data/okutama_train", img_size=1280)
     for img_pil, bboxes in loader.iter_batches(batch_size=4):
         ...
 """
 
-import re
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
 
-# Colonne del formato label Okutama (indice 0-based dopo lo split):
-# 0=TrackID 1=xmin 2=ymin 3=xmax 4=ymax 5=frame 6=lost 7=occluded 8=generated 9=label
+# Colonne del formato label Okutama (0-based dopo split su spazi)
 _COL_XMIN, _COL_YMIN, _COL_XMAX, _COL_YMAX = 1, 2, 3, 4
 _COL_FRAME, _COL_LOST = 5, 6
 _COL_LABEL = 9
 _MIN_COLUMNS = 10
 
-MIN_BBOX_AREA = 100  # stessa soglia di VisDrone (10x10 px), parita' di trattamento
+# Spazio nativo delle coordinate nei file label (confermato: cartella
+# "Labels/SingleActionLabels/3840x2160/" + doc ufficiale)
+NATIVE_LABEL_WIDTH = 3840
+NATIVE_LABEL_HEIGHT = 2160
+
+# Sottocartella dei frame estratti, fissa per questo dataset
+_EXTRACTED_FRAMES_DIRNAME = "Extracted-Frames-1280x720"
+
+# 1=Morning, 2=Noon — confermato da doc ufficiale ("1 indica morning, 2 noon")
+_TIME_OF_DAY = {"1": "Morning", "2": "Noon"}
+
+MIN_BBOX_AREA = 100  # stessa soglia (e stessa convenzione: nativa, pre-scale) di VisDrone
 
 
 class OkutamaLoader:
     """
     DataLoader per Okutama-Action (Barekatain et al., 2017), interfaccia
-    identica a VisDroneLoader per riuso zero-modifiche del resto della
-    pipeline (patch_optimizer, simulator, cli).
+    identica a VisDroneLoader (get_sample, __len__, iter_batches) per
+    riuso zero-modifiche di training/eval/bootstrap.
 
     Costruttore:
-        root_dir:      cartella con images/ e annotations/ (vedi docstring
-                        di modulo per la struttura assunta)
-        img_size:      lato del canvas quadrato dopo resize (default 1280,
-                        decisione di sessione — vedi nota metodologica sopra)
-        frame_glob:    pattern glob per i file immagine dentro ogni
-                        sottocartella video (default "*.jpg")
-        seed:          per riproducibilita' (usato da iter_batches)
-
-    Nota sul design (parita' con VisDroneLoader):
-        Il parsing e' per-video (un file label = tutte le righe di tutti i
-        frame di quel video), quindi l'indice interno raggruppa le bbox per
-        frame UNA SOLA VOLTA in __init__ (costo O(righe totali), non
-        O(frame x righe) come sarebbe ri-parsando il file ad ogni
-        get_sample) — stesso principio di efficienza di plot_k_selection.py
-        (cumulative sum invece di ricalcolo per ogni K).
+        root_dir: cartella con Drone1/, Drone2/, Labels/ (struttura ufficiale
+                   dell'archivio scaricato, confermata su disco)
+        img_size: lato del canvas quadrato finale (default 1280, decisione
+                   di sessione)
+        label_subdir: percorso relativo dentro Labels/ (default
+                   "SingleActionLabels/3840x2160" — quello effettivamente
+                   presente nell'archivio scaricato)
+        seed: per riproducibilita' di iter_batches
     """
 
     def __init__(self, root_dir: str, img_size: int = 1280,
-                 frame_glob: str = "*.jpg", seed: int = 42):
-        self.root       = Path(root_dir)
-        self.img_size   = img_size
-        self.frame_glob = frame_glob
-        self.seed       = seed
+                 label_subdir: str = "SingleActionLabels/3840x2160",
+                 seed: int = 42):
+        self.root     = Path(root_dir)
+        self.img_size = img_size
+        self.seed     = seed
 
-        self.img_dir = self.root / "images"
-        self.ann_dir  = self.root / "annotations"
-
-        if not self.img_dir.exists() or not self.ann_dir.exists():
+        self.label_dir = self.root / "Labels" / label_subdir
+        if not self.label_dir.exists():
             raise FileNotFoundError(
-                f"Struttura non trovata in {self.root}.\n"
-                f"Attese: {self.img_dir} e {self.ann_dir}\n"
-                f"Verifica la struttura reale dopo l'unzip degli archivi "
-                f"ufficiali (okutama-action.org) — questa classe assume "
-                f"images/<video>/<frame>.jpg e annotations/<video>.txt."
+                f"Cartella label non trovata: {self.label_dir}\n"
+                f"Struttura attesa: {self.root}/Labels/{label_subdir}/<video>.txt"
             )
 
-        # samples: lista di (video_dir, frame_path, [bbox,...]) — una entry
-        # per frame che ha almeno 1 bbox valida (bbox già in pixel nativi,
-        # scaling a img_size fatto lazy in get_sample per non duplicare
-        # memoria su migliaia di frame).
+        # samples: (frame_path, [bbox_nativa,...]) — bbox ancora in spazio
+        # 3840x2160, scaling fatto in get_sample (lazy, non duplica memoria)
         self.samples: List[Tuple[Path, List[Tuple[int, int, int, int]]]] = []
         self._build_index()
 
         if not self.samples:
             raise ValueError(
                 f"Nessun frame con bbox valida trovato in {self.root}. "
-                f"Verifica che i file .txt in annotations/ seguano il "
-                f"formato ufficiale Okutama (10+ colonne, vedi docstring)."
+                f"Verifica label_subdir e la presenza dei frame estratti."
             )
 
         print(f"OkutamaLoader: {len(self.samples)} frame validi in {self.root.name}")
 
-    def _build_index(self) -> None:
+    def _video_image_dir(self, video_name: str) -> Optional[Path]:
         """
-        Parsing per-video: un file .txt -> dict {frame_num: [bbox,...]},
-        poi merge con i file immagine realmente presenti su disco (un
-        video puo' avere piu' frame annotati di quanti estratti, o
-        viceversa — usiamo l'intersezione, mai un'assunzione silenziosa).
+        Ricostruisce il path della cartella frame da nome video, es.
+        "1.1.7" -> Drone1/Morning/Extracted-Frames-1280x720/1.1.7/
+        Ritorna None se il nome non ha il formato atteso (3 interi con
+        punti) — scartato senza sollevare eccezione, un video malformato
+        non deve fermare l'indicizzazione degli altri.
         """
-        video_dirs = sorted(d for d in self.img_dir.iterdir() if d.is_dir())
+        parts = video_name.split(".")
+        if len(parts) != 3 or parts[0] not in ("1", "2") or parts[1] not in _TIME_OF_DAY:
+            return None
+        drone_num, time_code = parts[0], parts[1]
+        return (self.root / f"Drone{drone_num}" / _TIME_OF_DAY[time_code]
+                / _EXTRACTED_FRAMES_DIRNAME / video_name)
 
-        for video_dir in video_dirs:
-            ann_path = self.ann_dir / f"{video_dir.name}.txt"
-            if not ann_path.exists():
-                continue  # video senza label: scartato, non e' un errore fatale
+    def _build_index(self) -> None:
+        """Parsing per-video: un .txt -> frame validi con bbox, merge con i frame reali su disco."""
+        for ann_path in sorted(self.label_dir.glob("*.txt")):
+            video_name = ann_path.stem
+            image_dir = self._video_image_dir(video_name)
+            if image_dir is None or not image_dir.exists():
+                continue  # video senza cartella frame corrispondente: scartato
 
             frame_boxes = self._parse_video_annotations(ann_path)
 
-            for frame_path in sorted(video_dir.glob(self.frame_glob)):
-                frame_num = self._frame_number_from_filename(frame_path.name)
-                if frame_num is None or frame_num not in frame_boxes:
-                    continue
-                bboxes = frame_boxes[frame_num]
-                if bboxes:  # skip frame senza bbox valide (tutte "lost" o area<soglia)
+            for frame_num, bboxes in frame_boxes.items():
+                frame_path = image_dir / f"{frame_num}.jpg"
+                if bboxes and frame_path.exists():
                     self.samples.append((frame_path, bboxes))
-
-    @staticmethod
-    def _frame_number_from_filename(filename: str) -> Optional[int]:
-        """
-        Estrae il numero di frame dal nome file (es. 'frame_000123.jpg' -> 123).
-        Pattern da CONFERMARE sulla struttura reale post-unzip — questo
-        regex cattura la prima sequenza di cifre nel nome, funziona per le
-        convenzioni piu' comuni ma va verificato sul primo video reale.
-        """
-        match = re.search(r"(\d+)", filename)
-        return int(match.group(1)) if match else None
 
     def _parse_video_annotations(
         self, ann_path: Path
     ) -> Dict[int, List[Tuple[int, int, int, int]]]:
         """
-        Legge un file label Okutama e raggruppa le bbox per numero di frame.
-        Bbox in pixel NATIVI (nessuno scaling qui — fatto in get_sample,
-        dove si conosce la dimensione reale dell'immagine caricata).
+        Legge un file SingleActionLabels e raggruppa le bbox per frame.
+        Bbox in pixel NATIVI 3840x2160 — nessuno scaling qui.
         """
         frame_boxes: Dict[int, List[Tuple[int, int, int, int]]] = {}
 
@@ -183,14 +169,14 @@ class OkutamaLoader:
 
                 label = parts[_COL_LABEL].strip('"')
                 if label != "Person":
-                    continue  # difensivo: il dataset ha una sola classe, ma verifichiamo
+                    continue  # difensivo: dataset a singola classe
 
                 try:
                     lost = int(parts[_COL_LOST])
                 except ValueError:
                     continue
                 if lost == 1:
-                    continue  # fuori schermo: nessun contenuto visivo reale
+                    continue  # fuori schermo
 
                 try:
                     x1 = int(float(parts[_COL_XMIN]))
@@ -202,7 +188,7 @@ class OkutamaLoader:
                     continue
 
                 if (x2 - x1) * (y2 - y1) < MIN_BBOX_AREA:
-                    continue  # stessa soglia rumore di VisDrone
+                    continue  # rumore, stessa soglia/convenzione di VisDrone
 
                 if x2 > x1 and y2 > y1:
                     frame_boxes.setdefault(frame_num, []).append((x1, y1, x2, y2))
@@ -213,17 +199,16 @@ class OkutamaLoader:
         """
         Restituisce (immagine PIL img_size×img_size, lista bbox persona).
 
-        Resize "a stretch" (ignora aspect ratio nativo 16:9), STESSA
-        convenzione di VisDroneLoader.get_sample — parita' metodologica
-        tra i due dataset, vedi nota nella docstring di modulo.
+        Scaling in un solo passaggio: da spazio nativo label (3840x2160)
+        al canvas finale img_size — non passa per 1280x720 intermedio,
+        che serve solo a caricare i pixel del frame.
         """
         frame_path, bboxes_native = self.samples[idx]
         img_pil = Image.open(frame_path).convert("RGB")
-        orig_w, orig_h = img_pil.size
         img_pil = img_pil.resize((self.img_size, self.img_size), Image.BILINEAR)
 
-        scale_x = self.img_size / max(orig_w, 1)
-        scale_y = self.img_size / max(orig_h, 1)
+        scale_x = self.img_size / NATIVE_LABEL_WIDTH
+        scale_y = self.img_size / NATIVE_LABEL_HEIGHT
 
         bboxes_scaled = []
         for x1, y1, x2, y2 in bboxes_native:

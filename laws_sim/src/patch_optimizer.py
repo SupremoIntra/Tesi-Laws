@@ -714,7 +714,7 @@ class PatchOptimizer:
                 img_t = torch.from_numpy(
                     np.array(img_pil).astype(np.float32) / 255.0
                 ).permute(2, 0, 1).contiguous().to(device)
-                
+                img_size = img_t.shape[-1]  # dinamico: 640 su VisDrone, 1280 su Okutama — nessuna regressione su VisDrone
                 # Area-based Sampling: prendi solo i target più grandi
                 if len(bboxes) > MAX_TARGETS_PER_FRAME:
                     bboxes = sorted(
@@ -724,8 +724,8 @@ class PatchOptimizer:
                     )[:MAX_TARGETS_PER_FRAME]
                 
                 # Canvas per composizione patch
-                global_canvas_rgb = torch.zeros(n_eot, 3, IMG_SIZE, IMG_SIZE, device=device)
-                global_canvas_mask = torch.zeros(n_eot, 1, IMG_SIZE, IMG_SIZE, device=device)
+                global_canvas_rgb = torch.zeros(n_eot, 3, img_size, img_size, device=device)
+                global_canvas_mask = torch.zeros(n_eot, 1, img_size, img_size, device=device)
                 global_spatial_mask_list = []
                 global_weight_list = []  # TACTICAL FILTER 2026
                 targets_in_image = 0
@@ -736,14 +736,14 @@ class PatchOptimizer:
                 
                 # Applica patch a tutti i target nell'immagine
                 for person_bbox in bboxes:
-                    patch_bbox = get_chest_bbox_proportional(person_bbox, IMG_SIZE, IMG_SIZE)
+                    patch_bbox = get_chest_bbox_proportional(person_bbox, img_size, img_size)
                     x1, y1, x2, y2 = patch_bbox
                     ph, pw = y2 - y1, x2 - x1
                     
                     if ph <= 0 or pw <= 0:
                         continue
                     
-                    spatial_mask = self._build_spatial_mask(person_bbox, IMG_SIZE, device)
+                    spatial_mask = self._build_spatial_mask(person_bbox, img_size, device)
                     if not spatial_mask.any():
                         continue
                     
