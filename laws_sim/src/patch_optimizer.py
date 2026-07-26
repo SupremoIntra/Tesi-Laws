@@ -771,8 +771,8 @@ class PatchOptimizer:
                     )
                     
                     # Padding per posizionare patch nell'immagine
-                    pad_left, pad_right = x1, IMG_SIZE - x2
-                    pad_top, pad_bottom = y1, IMG_SIZE - y2
+                    pad_left, pad_right = x1, img_size - x2
+                    pad_top, pad_bottom = y1, img_size - y2
                     
                     canvas_rgb = F.pad(
                         trans_rgb_res,
