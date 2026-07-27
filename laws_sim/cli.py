@@ -48,6 +48,7 @@ def main():
                          help="Soglia di confidenza YOLO per --eval-report (default 0.50, per verifica di robustezza)")
     parser.add_argument("--loader", choices=["visdrone", "okutama"], default="visdrone",
                      help="Dataset loader per --train-patch (default: visdrone)")
+    parser.add_argument("--img-size", type=int, default=960, help="Canvas per loader okutama")
     parser.add_argument("--patch-out", type=str, default=None, metavar="FILE",
                         help="Percorso di salvataggio patch per --train-patch (default: BEST_PATCH_FILE, sovrascrive care_kit_patch_universal.pt)")
     parser.add_argument("--img-size", type=int, default=1280,
@@ -95,7 +96,7 @@ def main():
             ("F1 (secondaria)",     f1_from_counts),
         ]
 
-        t = Table(title=f"Report Vision VisDrone (n={len(outcomes_pre)} frame, {args.n_iter} iter bootstrap)", style="cyan")
+        t = Table(title=f"Report Vision {args.loader.capitalize()} (n={len(outcomes_pre)} frame, {args.n_iter} iter bootstrap)", style="cyan")
         t.add_column("Metrica", style="bold")
         t.add_column("PRE [CI95%]", justify="right")
         t.add_column("POST [CI95%]", justify="right")
