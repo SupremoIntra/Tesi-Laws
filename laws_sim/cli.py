@@ -51,8 +51,8 @@ def main():
     parser.add_argument("--img-size", type=int, default=960, help="Canvas per loader okutama")
     parser.add_argument("--patch-out", type=str, default=None, metavar="FILE",
                         help="Percorso di salvataggio patch per --train-patch (default: BEST_PATCH_FILE, sovrascrive care_kit_patch_universal.pt)")
-    parser.add_argument("--img-size", type=int, default=1280,
-                     help="Risoluzione canvas per --loader okutama (default 1280)")
+    parser.add_argument("--stride", type=int, default=1,
+                     help="Usa 1 frame ogni N (decorrelazione per dataset video, es. Okutama)")
     args = parser.parse_args()
 
     # ===== Report Vision consolidato (un comando, metriche richieste dal relatore) =====
@@ -74,6 +74,9 @@ def main():
         LOADERS = {"visdrone": VisDroneLoader, "okutama": OkutamaLoader}
         loader = (LOADERS[args.loader](args.data, img_size=args.img_size)
                    if args.loader == "okutama" else LOADERS[args.loader](args.data))
+        if args.stride > 1:
+            loader.samples = loader.samples[::args.stride]
+            console.print(f"[dim]Stride={args.stride}: {len(loader)} frame dopo decorrelazione[/dim]")
         patch_tensor = torch.load(args.patch, map_location="cpu", weights_only=True)
 
         # Due sole passate di inferenza: PRE (senza patch) e POST (con patch),

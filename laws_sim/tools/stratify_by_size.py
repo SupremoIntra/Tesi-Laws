@@ -65,14 +65,15 @@ def main():
     parser.add_argument("--data", type=str, required=True)
     parser.add_argument("--patch", type=str, required=True)
     parser.add_argument("--loader", choices=["visdrone", "okutama"], default="visdrone")
+    parser.add_argument("--img-size", type=int, default=960, help="Canvas per loader okutama")
     parser.add_argument("--model", type=str, default="yolov8n.pt")
     parser.add_argument("--conf-threshold", type=float, default=0.50)
     parser.add_argument("--max-samples", type=int, default=None)
     args = parser.parse_args()
 
-    loader = LOADERS[args.loader](args.data)
-    model = YOLO(args.model)
-
+    loader = (LOADERS[args.loader](args.data, img_size=args.img_size)
+              if args.loader == "okutama" else LOADERS[args.loader](args.data))
+    model = YOLO(args.model) 
     patch_tensor = torch.load(args.patch, map_location="cpu", weights_only=True)
     patch_img = (patch_tensor.squeeze(0).permute(1, 2, 0).numpy() * 255).astype(np.uint8)
 
@@ -126,9 +127,6 @@ def main():
 
     print(f"\nRiferimento scenario: DRONE_ALTITUDE_M={DRONE_ALTITUDE_M}m, "
           f"YOLO_MAX_RANGE={YOLO_MAX_RANGE}m (ingaggio ravvicinato)")
-    if args.loader == "okutama":
-        print("[NOTA] Patch non addestrata su Okutama: guarda i TOTALI per "
-              "bucket (distribuzione di scala), non la evasion rate.")
 
 
 if __name__ == "__main__":
