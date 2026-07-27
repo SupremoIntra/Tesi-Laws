@@ -50,6 +50,8 @@ def main():
                      help="Dataset loader per --train-patch (default: visdrone)")
     parser.add_argument("--patch-out", type=str, default=None, metavar="FILE",
                         help="Percorso di salvataggio patch per --train-patch (default: BEST_PATCH_FILE, sovrascrive care_kit_patch_universal.pt)")
+    parser.add_argument("--img-size", type=int, default=1280,
+                     help="Risoluzione canvas per --loader okutama (default 1280)")
     args = parser.parse_args()
 
     # ===== Report Vision consolidato (un comando, metriche richieste dal relatore) =====
@@ -67,7 +69,10 @@ def main():
         )
         from rich.table import Table
 
-        loader = VisDroneLoader(args.data)
+        from okutama_loader import OkutamaLoader
+        LOADERS = {"visdrone": VisDroneLoader, "okutama": OkutamaLoader}
+        loader = (LOADERS[args.loader](args.data, img_size=args.img_size)
+                   if args.loader == "okutama" else LOADERS[args.loader](args.data))
         patch_tensor = torch.load(args.patch, map_location="cpu", weights_only=True)
 
         # Due sole passate di inferenza: PRE (senza patch) e POST (con patch),
@@ -164,7 +169,8 @@ def main():
             import subprocess
             console.print("\n[bold cyan]Extra: stratificazione per taglia, grafici K[/bold cyan]")
             for cmd in (
-                [sys.executable, "tools/stratify_by_size.py", "--data", args.data, "--patch", args.patch],
+                [sys.executable, "tools/stratify_by_size.py", "--data", args.data, "--patch", args.patch] +
+                (["--loader", "okutama"] if args.loader == "okutama" else []),
                 [sys.executable, "tools/plot_k_selection.py", "--data", args.data, "--max-samples", "300"],
             ):
                 console.print(f"[dim]$ {' '.join(cmd)}[/dim]")
@@ -195,7 +201,7 @@ def main():
             from patch_optimizer import tactical_preflight_check
             tactical_preflight_check(loader, low=60.0, high=80.0)
         else:
-            loader = OkutamaLoader(args.train_dir)
+            loader = OkutamaLoader(args.train_dir, img_size=args.img_size)
             console.print(
                 "[dim]Pre-flight Okutama già fatto a mano con "
                 "count_negative_candidates.py / stratify_by_size.py "

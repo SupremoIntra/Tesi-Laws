@@ -894,7 +894,7 @@ class PatchOptimizer:
                             img0 = torch.from_numpy(
                                 np.array(imgs_pil[0]).astype(np.float32) / 255.0
                             ).permute(2, 0, 1).to(device)
-                            pb = get_chest_bbox_proportional(bboxes_list[0][0], IMG_SIZE, IMG_SIZE)
+                            pb = get_chest_bbox_proportional(bboxes_list[0][0], img_size, img_size)
                             chk_img = img0.clone()
                             
                             eval_patch = torch.sigmoid(self.patch_logits).detach()
