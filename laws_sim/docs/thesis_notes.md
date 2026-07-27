@@ -1,12 +1,25 @@
 # Note di progetto — LAWS-SIM
 
-Log delle decisioni tecniche, degli esperimenti e dei risultati.
+Diario di lavoro: decisioni tecniche, esperimenti, risultati, errori e
+correzioni. Ordinato in senso **cronologico-narrativo** (fasi), non per
+categorie, perché la tesi deve raccontare un percorso di indagine: ipotesi →
+misura → smentita → nuova ipotesi.
+
+**Convenzioni del documento:**
+- `[VERIFICATO]` = misurato, riproducibile con un comando documentato qui.
+- `[IPOTESI]` = spiegazione plausibile **non** testata. Da non scrivere in
+  tesi come fatto.
+- `[RITIRATO]` = risultato ottenuto e poi respinto da un controllo di
+  robustezza. Documentato deliberatamente: è metodo, non fallimento.
+- `[APERTO]` = da decidere o da chiedere al relatore.
 
 ---
 
-## Architettura
+# Parte I — Il sistema
 
-Tre layer disaccoppiati, collegati da file JSON (non da chiamate dirette):
+## Architettura: tre layer disaccoppiati
+
+Collegati da file JSON, non da chiamate dirette:
 
 1. **Vision** (`patch_optimizer.py`) — training di una Universal Adversarial
    Patch contro YOLOv8n, EoT completo (16 trasformazioni), loss asintotica.
@@ -18,573 +31,889 @@ Tre layer disaccoppiati, collegati da file JSON (non da chiamate dirette):
 Il ponte JSON è deliberato: i bug di visione non bloccano il simulatore
 tattico, e permette esperimenti isolati (es. solo OSINT).
 
-## Decisioni chiave e perché
+## Decisioni di design e loro giustificazione
 
-- **Loss asintotica** (`-log(1 - conf + eps)`) invece di Hinge Loss: la
-  Hinge con soglia fissa ha derivata zero sotto soglia → gradiente morto.
+Queste scelte sono **congelate**: tutti gli esperimenti riportati in questo
+documento le condividono, ed è ciò che rende i confronti validi.
+
+- **Loss asintotica** (`-log(1 - conf + eps)`) invece di Hinge Loss: la Hinge
+  con soglia fissa ha derivata zero sotto soglia → gradiente morto.
   L'asintotica non ha soglia, converge sempre.
-- **Aggregazione top-K (K=20)** invece di media su tutte le celle
-  mascherate: generalizza la tecnica "max objectness" di Thys et al.
-  (2019) — concentra il gradiente sulle celle vicine a una detection
-  reale invece di diluirlo su celle di sfondo.
-- **TV_WEIGHT = 0.1**: un TV loss basso produce rumore ad alta frequenza
-  che l'interpolazione bilineare di `grid_sample` nell'EoT distrugge. Un
-  peso alto forza pattern a bassa frequenza che sopravvivono (Thys et
-  al. 2019).
-- **Parametrizzazione sigmoide** dei pixel patch (non `clamp`): clamp
-  uccide il gradiente ai pixel che toccano 0 o 1.
+- **Aggregazione top-K (K=20)** invece di media su tutte le celle mascherate:
+  generalizza la tecnica "max objectness" di Thys et al. (2019) — concentra il
+  gradiente sulle celle vicine a una detection reale invece di diluirlo su
+  celle di sfondo. Scelta poi **validata empiricamente** (Fase 4).
+- **TV_WEIGHT = 0.1**: un TV loss basso produce rumore ad alta frequenza che
+  l'interpolazione bilineare di `grid_sample` nell'EoT distrugge. Un peso alto
+  forza pattern a bassa frequenza che sopravvivono (Thys et al. 2019).
+- **Parametrizzazione sigmoide** dei pixel patch (non `clamp`): clamp uccide il
+  gradiente ai pixel che toccano 0 o 1.
 - **PATCH_BBOX_COVERAGE = 0.20**: coerente con `get_chest_bbox_proportional`
   (50% larghezza × 40% altezza = 0.20 dell'area del bersaglio).
+- **Float32, non bfloat16**: stabilità di `F.grid_sample` su MPS.
 - **N_TARGETS=3, N_CIVILIANS=30**: rapporto 1:10, scenario "Urban Clutter"
-  (Arkin 2009) per stressare il Fusion Agent sotto OSINT poisoning verso
-  falsi positivi sui civili.
+  (Arkin 2009) per stressare il Fusion Agent sotto OSINT poisoning verso falsi
+  positivi sui civili.
 - **ENGAGEMENT_THRESHOLD=0.58 / ALERT=0.38 / TRACK=0.22**: la soglia di
-  ingaggio volutamente vicina al 50% modella l'abbassamento degli standard
-  di certezza operativa osservato in scenari reali (Automation Bias).
-- **Train/val split VisDrone separati**: trainset (6471 img) per
-  `--train-patch`, valset (531 img) riservato a `--eval-vision`. Allenare
-  e valutare sulle stesse immagini avrebbe inflazionato l'evasion rate.
-- **Nessun modello analitico di decadimento distanza-based**: il degrado
-  visivo è solo data-driven, dal drop di F1 empirico.
+  ingaggio volutamente vicina al 50% modella l'abbassamento degli standard di
+  certezza operativa osservato in scenari reali (Automation Bias).
+- **Split train/val separati, su entrambi i dataset**: allenare e valutare
+  sulle stesse immagini avrebbe inflazionato l'evasion rate. Su Okutama il
+  vincolo è più forte — mai lo stesso *video*, non solo mai la stessa immagine.
+- **Nessun modello analitico di decadimento distanza-based**: il degrado visivo
+  è solo data-driven, dal drop di F1 empirico.
 
-## Glossario essenziale
+## Glossario
 
 - **Step raw**: un ciclo del training loop (immagine → EoT → forward →
   backward). `PATCH_STEPS` conta questi, non gli aggiornamenti dei pixel.
-- **Gradient Accumulation**: quanti step raw si sommano prima di un
-  update reale. `update_reali = step_raw / accumulation_steps`.
-- **Update reale**: la chiamata a `optimizer.step()` — il momento in cui
-  i pixel della patch cambiano davvero.
-- **EoT**: media della loss su N trasformazioni random della patch
-  (rotazione, scala, colore), per farla funzionare su una distribuzione
-  di condizioni realistiche, non su un'immagine esatta.
-- **Evasion Rate**: frazione di frame con persona reale in cui YOLO, sotto
-  attacco, non rileva nessuno.
-- **F1-Score sotto attacco**: media armonica di Precision e Recall sulla
-  detection frame-level; un calo indica un peggioramento del sensore.
+- **Gradient Accumulation**: quanti step raw si sommano prima di un update
+  reale. `update_reali = step_raw / accumulation_steps`.
+- **Update reale**: la chiamata a `optimizer.step()` — il momento in cui i
+  pixel della patch cambiano davvero.
+- **EoT**: media della loss su N trasformazioni random della patch (rotazione,
+  scala, colore), per farla funzionare su una distribuzione di condizioni
+  realistiche, non su un'immagine esatta.
+- **Evasion Rate** (= 1 − R1): frazione di frame con persona reale in cui YOLO
+  non rileva nessuno.
+- **R1 / Sensitività**: frazione di frame positivi in cui YOLO rileva.
+- **R2 / Specificità**: frazione di frame negativi in cui YOLO non allucina.
+- **√(R1·R2)**: media geometrica, metrica **primaria** indicata dal relatore.
+- **F1**: metrica **secondaria** ("la usano tutti ma fa caos").
+- **Frame positivo**: contiene ≥1 bersaglio ≥60px di altezza bbox.
+- **Frame ambiguo**: contiene persone, ma tutte <60px. Trattato come negativo
+  con convenzione ignore-region (Fase 4).
+- **Danno collaterale**: detection spurie **dentro i frame positivi**, dove la
+  patch è realmente presente. Metrica introdotta per rispondere alla domanda
+  che R2 per costruzione non può testare (Fase 5).
 
-## Bug tecnici risolti
+---
+
+# Parte II — Diario di viaggio
+
+## Fase 0 — Far funzionare la pipeline su Apple Silicon
+
+Hardware: MacBook Air M4, 16GB di memoria **unificata** (CPU e GPU la
+condividono — vincolo che tornerà decisivo in Fase 7).
+
+Bug risolti in questa fase, tutti di infrastruttura:
 
 | # | Problema | Causa | Fix |
 |---|---|---|---|
 | 1 | `grid_sampler_2d_backward` non implementato su MPS | EoT usa `F.grid_sample` per rotazione/scala | `PYTORCH_ENABLE_MPS_FALLBACK=1`: solo quell'operatore va su CPU, il resto resta su MPS |
 | 2 | `RuntimeError: view size is not compatible...` nel primo conv2d di YOLO | `.expand()` + `.permute()` lasciano un tensore non contiguo, MPS non lo tollera | `.contiguous()` dopo il permute dell'immagine e sul batch finale |
-| 3 | `config.py` senza `N_TARGETS`, `FUSION_WEIGHTS`, soglie ecc. | Costanti perse in un refactor precedente | Ricostruite con fonte citata per ognuna |
+| 3 | `config.py` senza `N_TARGETS`, `FUSION_WEIGHTS`, soglie | Costanti perse in un refactor precedente | Ricostruite con fonte citata per ognuna |
 | 4 | Nessuna detection nel simulatore (TP/FP sempre 0) | `DRONE_ALTITUDE_M=300` sempre oltre `YOLO_MAX_RANGE=150` | Altitudine realistica: 10m |
-| 5 | Patch copriva l'intera figura (incluso volto) | `PATCH_H/W` fissi in pixel assoluti | `get_chest_bbox_proportional`: patch scalata sul bbox reale della persona |
+| 5 | Patch copriva l'intera figura (incluso volto) | `PATCH_H/W` fissi in pixel assoluti | `get_chest_bbox_proportional`: patch scalata sul bbox reale |
 | 6 | Vanishing gradient con Hinge Loss | derivata zero sotto soglia | Sostituita con loss asintotica |
-| 7 | LR resta vicino al massimo per quasi tutta la durata del run invece di scendere con la curva coseno | `CosineAnnealingLR(T_max=n_steps)` usa gli step raw come T_max, ma `scheduler.step()` viene chiamato una volta per **update reale** — con accum=4 la curva si allunga di 4x | `T_max = n_steps // GRADIENT_ACCUMULATION_STEPS` (unità: update reali) |
+| 7 | LR resta al massimo per quasi tutto il run invece di scendere con la curva coseno | `CosineAnnealingLR(T_max=n_steps)` usa step raw, ma `scheduler.step()` è chiamato una volta per **update reale** — con accum=4 la curva si allunga 4× | `T_max = n_steps // GRADIENT_ACCUMULATION_STEPS` |
 
----
+Il bug #7 è metodologicamente importante: **tutti gli esperimenti prima della
+sua scoperta usavano uno scheduler allungato**, quindi i confronti nella
+cronologia sottostante indicano esplicitamente quali run avevano lo scheduler
+corretto e quali no.
 
-## Cronologia esperimenti — tabella completa
+## Fase 1–2 — Sei configurazioni e la scoperta del soffitto
+
+`[VERIFICATO]` VisDrone, 640×640.
 
 | # | Config | Update reali | Scheduler | F1 | Evasion Rate |
 |---|---|---|---|---|---|
 | 0 | Baseline storico (Hinge Loss) | 3000 | corretto | 0.760 | 38.7% |
-| 1 | Loss asintotica, mean, accum=4 | 375 | allungato 4x | 0.740 | 41.25% |
-| 2 | Loss asintotica, mean, accum=2 | 750 | allungato 2x | 0.750 | 40.0% |
+| 1 | Loss asintotica, mean, accum=4 | 375 | allungato 4× | 0.740 | 41.25% |
+| 2 | Loss asintotica, mean, accum=2 | 750 | allungato 2× | 0.750 | 40.0% |
 | 3 | Loss asintotica, mean, accum=4 | 2500 | corretto | 0.720 | **43.75%** |
 | 4 | Loss asintotica, mean, accum=16 | 625 | corretto | 0.740 | 41.25% |
 | 5 | **Loss asintotica, top-K=20, accum=4** | **1250** | **corretto** | **0.720** | **43.75%** |
 
-**Risultato di riferimento: riga 5.** Stesso massimo della riga 3, con
-metà del budget di calcolo — la configurazione più efficiente misurata,
-ed è essa stessa la prova del punto seguente.
+**Riga 5 è il riferimento**: stesso massimo della riga 3 con metà del budget di
+calcolo — la configurazione più efficiente misurata, ed è essa stessa la prova
+del punto seguente.
 
-### Interpretazione: soffitto strutturale, non un limite di ottimizzazione
+### Il finding: soffitto strutturale, non limite di ottimizzazione
 
-Sei configurazioni radicalmente diverse — due formule di loss, due
-aggregazioni (mean/top-K), accumulo da 1 a 16, scheduler corretto o
-meno — convergono tutte nella stessa banda stretta (38.7%-43.75%).
-Se il limite fosse "serve solo la loss giusta" o "servono solo più
-update", almeno una configurazione l'avrebbe superato nettamente.
+Sei configurazioni radicalmente diverse — due formule di loss, due aggregazioni
+(mean/top-K), accumulo da 1 a 16, scheduler corretto o meno — convergono nella
+stessa banda stretta (38.7%–43.75%). Se il limite fosse "serve la loss giusta"
+o "servono più update", almeno una configurazione l'avrebbe superato nettamente.
 
-**Diagnosi del gradiente** (misurata direttamente, non ipotizzata): la
-norma del gradiente per immagine singola è debole (0.0007-0.005), il
-gradient clipping (soglia 1.0) non è mai scattato in nessun run.
-Aumentare l'accumulo da 4 a 16 (media su più immagini) ha peggiorato il
-risultato, non migliorato: prova che il segnale utile condiviso tra
-scene diverse è intrinsecamente debole, non un problema di quantità di
-update.
+`[VERIFICATO]` **Diagnosi del gradiente, misurata direttamente:** la norma del
+gradiente per immagine singola è debole (0.0007–0.005); il gradient clipping
+(soglia 1.0) non è mai scattato in nessun run. Aumentare l'accumulo da 4 a 16
+ha **peggiorato** il risultato: prova che il segnale utile condiviso tra scene
+diverse è intrinsecamente debole, non un problema di quantità di update.
 
-**Causa più probabile, dalla letteratura UAV-specific** (non dai paper
-generici a livello del suolo — Thys, Brown, DPatch): i pedoni ripresi
-dall'alto occupano pochissimi pixel assoluti. Nessuno dei lavori con
-risultati forti su VisDrone attacca i pedoni:
+`[VERIFICATO]` **Conferma dalla letteratura UAV-specific** (non dai paper
+generici a livello del suolo): nessun lavoro con risultati forti su VisDrone
+attacca i pedoni.
 
 | Paper | Anno | Bersaglio su VisDrone | Perché |
 |---|---|---|---|
 | Shrestha, Pathak, Viegas — "Towards a Robust Adversarial Patch Attack Against UAV Object Detection" | 2023 | Car (80% ASR white-box) | Patch pensate per prospettiva/distanza UAV |
-| LFRAP (Multi-Dimensional Feature Optimization) | 2025 | Car, truck, van, bus — pedoni esplicitamente scartati | *"Given the small size of pedestrians under the overhead perspective of UAVs..."* |
-| Adversarial patch attacks against aerial imagery object detectors | 2023 | Aerei, loss su feature intermedie | Bersagli grandi + tecnica alternativa (feature-level) |
+| LFRAP (Multi-Dimensional Feature Optimization) | 2025 | Car, truck, van, bus — pedoni esplicitamente scartati | Dimensione ridotta dei pedoni in prospettiva overhead |
+| Adversarial patch attacks against aerial imagery object detectors | 2023 | Aerei, loss su feature intermedie | Bersagli grandi + tecnica feature-level |
 
-Il nostro soffitto al 44% è verosimilmente il prezzo di aver scelto il
-bersaglio più difficile del dominio (persone, non veicoli), non un
-limite generico del framework.
+Il soffitto al 44% è verosimilmente il prezzo di aver scelto il bersaglio più
+difficile del dominio (persone, non veicoli), non un limite del framework.
 
-### Verifica sui nostri dati: stratificazione per dimensione bersaglio
+### Prima stratificazione per dimensione (VisDrone, 640×640)
 
-`tools/stratify_by_size.py` misura l'evasion rate per altezza del bbox,
-usando la patch già addestrata (zero costo di training):
+`[VERIFICATO]` `tools/stratify_by_size.py`, patch VisDrone già addestrata:
 
 | Bucket altezza | Evasi/Totali | Evasion Rate |
 |---|---|---|
-| 60-100px | 34/314 | 10.8% |
-| 100-150px | 1/56 | 1.8% |
-| 150px+ | 5/11 | 45.5% |
+| 60–100px | 34/314 | 10.8% |
+| 100–150px | 1/56 | 1.8% |
+| 150px+ | 5/11 | **45.5%** |
 
-Pattern **non monotono** — più sfumato dell'ipotesi "più grande = più
-facile da evadere". Lettura più probabile: due effetti opposti in gioco.
-(1) Budget di pixel della patch: bersagli grandi danno più superficie
-reale all'attacco. (2) Margine di confidenza di partenza: bersagli
-piccoli/sfocati hanno già una confidenza YOLO bassa in partenza, basta
-poco per spingerli sotto soglia; bersagli medi ben risolti hanno
-confidenza alta e la patch (debole) non basta a scalfirla. Il bucket
-150px+ è promettente ma **statisticamente debole (11 casi totali)** —
-non conclusivo, da trattare come pista esplorativa, non come risultato
-confermato.
+Pattern **non monotono**, e il bucket promettente (150px+) ha **11 casi
+totali** — statisticamente inutilizzabile. Trattato all'epoca come pista
+esplorativa, non risultato. *Questa domanda aperta è quella che Okutama
+risolverà in Fase 7.*
+
+`[IPOTESI]` due effetti opposti: (1) budget di pixel — bersagli grandi danno
+più superficie all'attacco; (2) margine di confidenza di partenza — bersagli
+piccoli hanno già confidenza bassa e basta poco per spingerli sotto soglia,
+bersagli medi ben risolti hanno confidenza alta che una patch debole non
+scalfisce.
+
+## Fase 3 — Scelta empirica di K (validazione a posteriori di un'assunzione)
+
+`[VERIFICATO]` `tools/plot_k_selection.py`, valset VisDrone completo (531
+frame: 80 positivi / 451 negativi).
+
+**Il problema:** `LOSS_TOP_K=20` era un'assunzione iniziale, non una scelta
+misurata. Il relatore ha chiesto un metodo per giustificarla o correggerla.
+
+**Metodo:** per ogni frame positivo (senza patch — si caratterizza il
+comportamento *naturale* di YOLO) si ordinano le 8400 celle pre-NMS per
+confidenza decrescente. Con una somma cumulativa si ottengono TP/FP/TN/FN a
+livello di cella per **ogni** K da 1 a 8400 senza rifare l'inferenza: il costo
+è dominato dalla singola passata YOLO, non dal ciclo su K.
+
+| Criterio | K ottimo | Cosa penalizza |
+|---|---|---|
+| F1 | **244** (plateau da K≈150) | copertura geometrica incompleta del bersaglio |
+| Media geometrica √(R1·R2) | **37** | diluizione nello sfondo (R2 crolla rapidamente con K) |
+
+**Perché i due criteri divergono (questo è il finding, non il numero):** dentro
+l'impronta geometrica di un bersaglio (~200–250 celle, tre stride YOLO) solo un
+nucleo ristretto (~30–40 celle) ha confidenza realmente alta; il resto è
+periferia dentro il bbox con segnale debole. F1 premia la copertura totale
+(K grande); la media geometrica penalizza la diluizione appena K supera il
+nucleo reale.
+
+**Decisione:** `LOSS_TOP_K=20` è vicino a K=37 (media geometrica, criterio
+**primario** del relatore), non a K=244 (F1, secondario). Non era
+un'assunzione fortunata: era già dentro il nucleo di confidenza reale.
+**Conseguenza: nessun nuovo training.** K=244 resta annotato come lavoro
+futuro (una loss che copra l'intera impronta geometrica), non come azione.
+
+**Definizione di R2 nei plot vs K — risolta.** R2 è calcolata a livello di
+**cella**, con soglia implicita tau(K) = valore di confidenza in posizione K
+sui frame positivi, applicata ai negativi. Necessario: a livello di frame con
+soglia fissa il grafico "R2 vs K" sarebbe una riga piatta, inutile per
+scegliere K. La lettura cell-level produce il trade-off monotono che rende il
+picco della media geometrica un criterio reale.
+
+## Fase 4 — Le metriche del relatore, e un errore scoperto strada facendo
+
+`[VERIFICATO]` `src/metrics.py`, `src/simulator.py:evaluate_on_dataset`,
+`cli.py --eval-report`.
+
+### Metodo statistico
+
+1. **CI indipendenti** — bootstrap percentile (10.000 iterazioni, 95%) su PRE
+   e POST separatamente. Corretto ma conservativo.
+2. **Bootstrap appaiato del delta** — PRE e POST sono valutati sugli *stessi*
+   frame, quindi sono misure appaiate. Si ricampiona una sola lista di indici
+   per iterazione e la si applica a entrambe le condizioni, calcolando
+   Δ = POST − PRE. Sfrutta la correlazione intra-frame, dà stima più precisa e
+   p-value a due code. Riferimento: Efron & Tibshirani (1993).
+
+### Il problema del campione negativo, e la correzione
+
+`[VERIFICATO]` `tools/count_negative_candidates.py` su VisDrone-val (n=531):
+
+| Categoria | n | % |
+|---|---|---|
+| Positivo (≥1 bersaglio ≥60px) | 80 | 15.1% |
+| Negativo vero (0 persone, qualunque size) | 9 | 1.7% |
+| Ambiguo (solo persone <60px) | 442 | 83.2% |
+
+Con soli 9 negativi veri, R2 era una stima degenere. **Correzione:** i 442
+frame ambigui diventano negativi a pieno titolo, con matching IoU contro
+*tutte* le persone annotate (anche <60px): IoU ≥ 0.3 con una persona di
+qualunque dimensione → detection corretta su bersaglio non tatticamente valido
+→ **ignorata** (né TP né FP, convenzione ignore-region); nessun match →
+**falso positivo vero**. Soglia IoU=0.3 permissiva rispetto allo standard
+PASCAL VOC 0.5 (Everingham et al. 2010), motivata dalla sensibilità dell'IoU su
+bbox piccoli (Yu et al. 2020) e allineata a CrowdHuman (Shao et al. 2018).
+
+### Risultato consolidato VisDrone
+
+`[VERIFICATO]` n=531 (80 pos + 451 neg), conf=0.5, 10.000 iter, bootstrap
+appaiato:
+
+| Metrica | PRE | POST | Δ [CI 95%] | p | Signif. |
+|---|---|---|---|---|---|
+| Evasion rate (1−R1) | 0.1750 [0.096, 0.264] | 0.4250 [0.317, 0.533] | +0.250 [+0.156, +0.346] | <0.0001 | **Sì** |
+| Sensitività R1 | 0.8250 [0.736, 0.904] | 0.5750 [0.467, 0.683] | −0.250 [−0.346, −0.156] | <0.0001 | **Sì** |
+| Specificità R2 | 0.9690 [0.952, 0.984] | 0.9690 [0.952, 0.984] | 0.000 | 1.0000 | No (vedi sotto) |
+| √(R1·R2) | 0.8941 [0.844, 0.937] | 0.7464 [0.672, 0.814] | −0.148 [−0.210, −0.090] | <0.0001 | **Sì** |
+| F1 (secondaria) | 0.8250 [0.755, 0.883] | 0.6571 [0.561, 0.744] | −0.168 [−0.242, −0.100] | <0.0001 | **Sì** |
+
+### ⚠ Il finding più importante della fase: R2 è tautologico per costruzione
+
+`[VERIFICATO]` Con n=531, R2 PRE e POST risultano identici **fino alla
+sedicesima cifra decimale** (0.9689578713968958 in entrambi i casi).
+
+Causa: la patch è disegnata solo dentro il ciclo `for bbox in
+valid_gt_bboxes`, che itera **zero volte** quando il frame non ha bersagli
+≥60px. Per tutti i frame negativi l'immagine passata a YOLO è identica con o
+senza patch, e YOLO in inferenza è deterministico.
+
+**Espandere il campione da 9 a 451 non ha reso R2 più informativo sull'effetto
+della patch — l'ha reso più preciso su una quantità che per costruzione non
+può muoversi.** Il vecchio risultato "R2=1.0 invariato" con n=9 non era la
+dimostrazione di un attacco pulito: era la stessa tautologia, solo meno
+visibile con un valore rotondo.
+
+**Reinterpretazione da usare in tesi:** R2=0.9690 è una **caratterizzazione del
+detector** — tasso di falso allarme di base di YOLOv8n su sfondi VisDrone privi
+di bersaglio valido (~3.1%) — non un test dell'attacco. Conseguenza diretta:
+**tutto il movimento di √(R1·R2) è attribuibile a R1**; R2 agisce da
+moltiplicatore costante, non da secondo asse indipendente.
+
+### Robustezza multi-soglia
+
+`[VERIFICATO]` Evasion, R1, √(R1·R2), F1 restano significativi (p tra 0.0002 e
+<0.0001) a conf = 0.3 / 0.5 / 0.7. R2 identico PRE/POST a **tutte** le soglie
+(0.8248, 0.9690, 1.0000) — conferma indipendente che l'invarianza è strutturale,
+non una coincidenza numerica.
+
+**Scoperta laterale:** l'evasion rate PRE (senza attacco) passa da 3.75%
+(soglia 0.3) a 72.5% (soglia 0.7) — conferma indipendente del soffitto
+strutturale e giustifica retroattivamente 0.50 come default ragionevole.
+
+**Metrica ritirata:** un tool di "confidence drop" (calo continuo per frame) è
+stato rimosso su indicazione del relatore (preferito il prima/dopo binario) e
+perché misurava il massimo per-frame, confrontando potenzialmente detection
+diverse tra PRE e POST.
+
+## Fase 5 — Danno collaterale su VisDrone `[RITIRATO]`
+
+**Perché introdotta:** R2 non può testare l'attacco (Fase 4). Questa metrica
+misura invece, **dentro** i frame positivi dove la patch è realmente presente,
+se l'attacco introduce detection spurie senza corrispondenza IoU con nessuna
+persona reale. Domanda diversa e genuinamente testabile — non un tentativo di
+"salvare" R2.
+
+**Metodo:** conteggio grezzo di allucinazioni per frame (non indicatore
+binario) — più potenza statistica sugli stessi 80 frame positivi, a costo zero.
+Una prima versione a indicatore binario (PRE 8/80, POST 4/80, p=0.0374) è stata
+superata da questa e non va citata.
+
+`[VERIFICATO]` Verifica di robustezza, richiesta **prima** di accettare il
+risultato:
+
+| Soglia | PRE | POST | Δ | p | Signif. |
+|---|---|---|---|---|---|
+| 0.3 | 0.4625 | 0.4375 | −0.0250 | 0.535 | No |
+| 0.5 | 0.1125 | 0.0500 | −0.0625 | 0.0136 | Sì |
+| 0.7 | 0.0000 | 0.0000 | 0.0000 | 1.000 | No (nessun segnale in entrambe le condizioni) |
+
+**Esito: il pattern non replica.** Significativo solo esattamente a 0.50; a 0.3
+stessa direzione ma non significativo; a 0.7 segnale nullo. Inoltre p=0.0136
+non sopravvive a Bonferroni per 6 confronti (richiesto p<0.0083).
+
+**Conclusione: ritirato come risultato positivo.** Documentato come esempio di
+verifica metodologica corretta — un segnale debole è stato messo in dubbio,
+testato, e respinto quando il controllo non lo confermava. *Un risultato
+negativo verificato con rigore vale più di un risultato positivo non
+controllato.*
+
+## Fase 6 — Ponderazione tattica della loss `[RITIRATO]`
+
+Ipotesi: se il problema è la scarsità di bersagli grandi, pesare la loss verso
+di essi dovrebbe aiutare. Implementazione: peso 0 sotto 60px, rampa lineare
+60–150px, peso 1.0 sopra 150px, dentro `_asymptotic_loss`. Canvas/EoT
+invariati. 8000 step raw, accum=4, scheduler corretto.
+
+`[VERIFICATO]` **Pre-flight sul trainset VisDrone** — dato solido e
+indipendente dall'esito del training:
+
+| Metrica | Valore |
+|---|---|
+| Annotazioni persona totali | 86.958 |
+| Annotazioni ≥60px (soglia minima storica) | 1.556 (**1.8%**) |
+| Annotazioni ≥80px (tatticamente rilevanti) | 394 (**0.5%**) |
+
+`[VERIFICATO]` **Risultato:**
+
+| Metrica | Valore |
+|---|---|
+| F1 (completo) | 0.730 |
+| Evasion Rate (completo) | 42.5% |
+| Evasion Rate (target ≥80px) | 41.7% |
+| Copertura tattica valset (≥80px) | 32.0%* |
+
+\* denominatore diverso dal pre-flight (0.5%): qui è % tra le annotazioni già
+filtrate ≥60px nel **valset**, non sul totale grezzo del **trainset**. Le due
+percentuali misurano cose diverse.
+
+**Nessun salto.** Risultati indistinguibili da Fase 2 (43.75%); l'evasion
+filtrata (41.7%) è persino più bassa di quella completa (42.5%) — l'opposto
+dell'ipotesi. Con solo 394 annotazioni ≥80px in tutto il trainset, la scarsità
+di dati ha vinto sulla ponderazione. Segnale indiretto a supporto: `YOLO Conf`
+nel log resta alto (0.35–0.76) invece di crollare — la loss *si sta* misurando
+con i bersagli grandi, ma senza abbastanza esempi per imparare a batterli.
+
+**Conclusione operativa:** la strada non è il loss-reweighting ma un dataset
+con distribuzione di scala diversa. Il pre-flight (98.2% delle annotazioni
+VisDrone sotto 60px) resta la prova quantitativa che regge indipendentemente
+dall'esito del training.
+
+**VisDrone si chiude qui.** Pipeline validata, numeri definitivi, non più
+toccata.
 
 ---
 
-## Direzione futura
+## Fase 7 — Migrazione a Okutama-Action
 
-**Non ripetere la stessa configurazione più a lungo** — i 6 run già
-dimostrano rendimenti piatti scalando solo gli step raw a parità di
-resto. Le prossime leve agiscono sulla causa strutturale, non
-sull'ottimizzatore:
+Richiesta del relatore: testare un dataset con pedoni ripresi più da vicino
+**separatamente**, e confrontare. Non accorpare, non sostituire. Se
+statisticamente non migliora, è comunque un risultato valido.
 
-1. **Verifica con campione più ampio** della stratificazione per
-   dimensione (il bucket 150px+ ha solo 11 casi) prima di impegnare ore
-   di calcolo su quell'ipotesi.
-2. **Se confermata**: rifiltrare training+eval a un'altezza minima
-   coerente con `DRONE_ALTITUDE_M=10` (ingaggio ravvicinato, non
-   sorveglianza ad area larga) — non è cherry-picking, è allineamento
-   allo scenario già definito nel simulatore.
-3. **A quel punto** un budget lungo (≥20.000 step raw) con la loss
-   top-K ha una motivazione scientifica per rendere di più.
-4. **Riserva**: loss su feature intermedie del backbone invece che
-   sull'output finale (tecnica del paper 2023 su aerial imagery) — più
-   invasiva da implementare (hook sui layer intermedi di YOLO).
-5. **Piano B sempre disponibile**: dataset custom image-specific
-   (`tools/annotate_mioDS.py`, Wu et al. 2020) — converge più in fretta
-   perché non deve generalizzare su migliaia di scene eterogenee.
+Candidato scelto: **Okutama-Action** (Barekatain et al., CVPR-W 2017;
+altitudine 10–45m, coerente con `DRONE_ALTITUDE_M=10`; CC BY-NC-SA). Dataset
+SAR (HERIDAL, SARD, LADD) scartati: stesso problema di oggetti piccoli.
 
-## Letteratura citata
+### 7.1 Setup, e tre decisioni prese esplicitamente
+
+- **Dati:** frame pre-estratti a 1280×720 (train 5.3GB, test 1.5GB) — nessun
+  decoding dei video 4K.
+- **Label:** `SingleActionLabels/3840x2160/`. Una riga per persona per frame;
+  le colonne azione si ignorano (istruzione esplicita della documentazione
+  ufficiale per il task di pedestrian detection, non una nostra
+  semplificazione). Coordinate in spazio **nativo 3840×2160** — non 1280×720:
+  errore facile e silenzioso, gestito con rescale esplicito.
+- **Split:** ufficiale del dataset. Le label del test set **sono pubbliche**
+  (verificato sulla pagina ufficiale; una fonte secondaria del 2018 sosteneva
+  il contrario e si è rivelata superata). Nessuno split manuale necessario —
+  lo split ufficiale è già per scenario, quindi rispetta il criterio "mai lo
+  stesso video in train e in eval".
+- **Loader:** `src/okutama_loader.py`, interfaccia identica a `VisDroneLoader`
+  (`get_sample`, `__len__`, `iter_batches`) → il resto della pipeline funziona
+  senza modifiche.
+
+### 7.2 Il vincolo hardware, e perché la risoluzione è 960 e non 1280
+
+Decisione iniziale: 1280×1280, come compromesso tra preservare la scala dei
+bersagli e mantenere parità metodologica di preprocessing con VisDrone.
+
+`[VERIFICATO]` **1280 non è eseguibile su questo hardware.** Con EoT=16 e
+float32 il processo raggiunge **~17 GB residenti su 16 GB totali** →
+swap continuo (contatore `swapouts` in crescita costante, processo in stato
+`stuck`, throughput crollato: fermo allo step 40 dopo un'ora). Non
+"lento": non completabile.
+
+`[VERIFICATO]` **960×960 rientra nel budget:** ~12 GB residenti, delta
+`swapouts` = 0, processo `running`, 8000 step completati.
+
+**640×640 (parità esatta con VisDrone) scartato con un calcolo, non a
+sensazione:** a 640 ogni altezza bbox si dimezza rispetto a 1280, quindi una
+bbox resta ≥60px solo se era ≥120px a 1280. Dalla distribuzione misurata a
+1280 questo cancella l'intero bucket 60–100px (87.9% del totale): le bbox
+valide crollerebbero da 46.293 a ~2.400, **−95%**, riportando il problema che
+la migrazione doveva risolvere.
+
+`[VERIFICATO]` **Costo reale della scelta 960:** bbox valide ≥60px scese da
+46.293 (@1280) a 20.539 (@960), **−56%**. Da dichiarare come limitazione, non
+da nascondere.
+
+### 7.3 Pre-flight (costo zero, prima di allenare)
+
+`[VERIFICATO]` `count_negative_candidates.py --loader okutama` su
+`okutama_val`, n=14210:
+
+| Categoria | n | % |
+|---|---|---|
+| Positivo (≥1 bersaglio ≥60px) | 12.445 | **87.6%** |
+| Negativo vero (0 persone) | 0 | 0.0% * |
+| Ambiguo (solo persone <60px) | 1.765 | 12.4% |
+
+⚠ **Caveat da non dimenticare:** questa misura è stata fatta **a 1280×1280**,
+prima della decisione di scendere a 960 (`count_negative_candidates.py` non
+aveva ancora `--img-size`). Il valore 87.6% è un numero *a 1280*, non a 960 —
+non direttamente comparabile con training ed eval. `[APERTO]` rieseguire a 960
+per coerenza (comando in §7.7) prima di citarlo in tesi come dato della
+configurazione finale.
+
+\* Limite noto del loader: `_build_index` indicizza solo frame con ≥1
+annotazione, quindi i frame a zero persone non sono rappresentati. Non
+bloccante — la classe negativa estesa usa positivi+ambigui, e 1.765 ambigui
+superano già i 451 di VisDrone. Da dichiarare, non da correggere.
+
+**Confronto diretto con VisDrone: 87.6% vs 15.1% di frame positivi.** È la
+giustificazione quantitativa della migrazione: non un'ipotesi, una misura.
+
+### 7.4 Training
+
+`[VERIFICATO]` Comando:
+
+```bash
+python cli.py --train-patch --loader okutama --train-dir data/okutama_train \
+  --patch-out outputs/patches/patch_okutama.pt --img-size 960 --fresh
+```
+
+Config **invariata** rispetto a VisDrone: EoT=16, accum=4 (batch effettivo 4),
+top-K=20, TV_WEIGHT=0.1, PATCH_LR=0.01, 8000 step. Trainset: 54.664 frame
+validi. Esito: completato, nessun crash, nessuno swap.
+
+**Osservazione dal log:** TV Loss in discesa monotona (0.0628 → 0.0466) — la
+patch si smootha regolarmente. Loss totale oscillante 0.70–0.85 senza trend
+netto. Ultimo checkpoint "best" a step ~5973: **nessun miglioramento negli
+ultimi ~2000 step**, quindi plateau raggiunto prima della fine (coerente con
+Brown et al. 2017 sui rendimenti marginali). L'early stopping a pazienza 200
+non è scattato.
+
+### 7.5 Il problema della correlazione temporale, e come è stato risolto
+
+Okutama è video a ~30fps: i frame consecutivi sono quasi identici (verificato a
+occhio sui sample 0/1/2 — bbox che differiscono di 1–2 pixel). Il bootstrap
+appaiato tratta i frame come **indipendenti**: vero per le 531 immagini
+VisDrone, **falso** su un dataset video.
+
+Conseguenza: con n=14210 i CI95% sono artificialmente stretti e i p-value
+sovrastimati — pseudo-replicazione. Le *stime puntuali* restano valide; è
+l'incertezza a essere sottostimata.
+
+**Soluzione:** aggiunto `--stride` a `--eval-report` (sottocampionamento 1 frame
+ogni N). Stride=27 → 527 frame, separati da ~0.9s, numericamente comparabili al
+n=531 di VisDrone.
+
+`[VERIFICATO]` **La decorrelazione non cambia le conclusioni, corregge
+l'incertezza:**
+
+| Metrica | n=14210 (correlato) | n=527 (stride 27) |
+|---|---|---|
+| Evasion PRE | 0.4988 | 0.4967 |
+| Evasion POST | 0.7800 | 0.7767 |
+| Δ Evasion | +0.2812 [+0.2712, +0.2909] | +0.2800 [+0.2281, +0.3322] |
+
+Stima puntuale praticamente identica, **CI ~5× più largo** — esattamente
+l'effetto atteso rimuovendo la falsa indipendenza. Tutto resta significativo
+(p<0.0001). La conclusione non era un artefatto della pseudo-replicazione.
+
+**Il dato da citare in tesi è quello a n=527.**
+
+### 7.6 Risultato consolidato Okutama
+
+`[VERIFICATO]` n=527 (stride 27), 960×960, conf=0.5, 10.000 iter, bootstrap
+appaiato:
+
+| Metrica | PRE | POST | Δ [CI 95%] | p | Signif. |
+|---|---|---|---|---|---|
+| Evasion rate (1−R1) | 0.4967 [0.4406, 0.5531] | 0.7767 [0.7290, 0.8223] | +0.2800 [+0.2281, +0.3322] | <0.0001 | **Sì** |
+| Sensitività R1 | 0.5033 [0.4469, 0.5594] | 0.2233 [0.1777, 0.2710] | −0.2800 [−0.3322, −0.2281] | <0.0001 | **Sì** |
+| Specificità R2 | 0.9604 [0.9331, 0.9830] | 0.9604 [0.9331, 0.9830] | 0.0000 | 1.0000 | No (invariante per costruzione) |
+| √(R1·R2) | 0.6953 [0.6539, 0.7340] | 0.4631 [0.4125, 0.5103] | −0.2321 [−0.2783, −0.1881] | <0.0001 | **Sì** |
+| F1 (secondaria) | 0.6565 [0.6044, 0.7054] | 0.3564 [0.2936, 0.4169] | −0.3001 [−0.3578, −0.2440] | <0.0001 | **Sì** |
+
+**R2 invariante anche qui** — la stessa proprietà strutturale di Fase 4 si
+replica su un dataset indipendente. Conferma che è una caratteristica del
+disegno sperimentale, non un artefatto di VisDrone.
+
+### 7.7 Danno collaterale su Okutama — risultato **nuovo**, non replica
+
+`[VERIFICATO]` Frame positivi decorrelati, n=300:
+
+| Soglia | PRE | POST | Δ | p | Esito |
+|---|---|---|---|---|---|
+| 0.3 | 0.3700 [0.2933, 0.4500] | 0.2867 [0.2200, 0.3567] | −0.0833 [−0.1500, −0.0200] | 0.0108 | **Significativo** |
+| 0.5 | 0.0967 [0.0633, 0.1333] | 0.0433 [0.0200, 0.0700] | −0.0533 [−0.0833, −0.0267] | <0.0001 | **Significativo** |
+| 0.7 | 0.0000 | 0.0000 | 0.0000 | 1.0000 | Non misurabile (zero eventi) |
+
+Controprova sul campione pieno `[VERIFICATO]` (n=8095 positivi, correlato — CI
+non affidabili, ma utile per la *potenza*): 0.3 → Δ−0.1138 p<0.0001; 0.5 →
+Δ−0.0378 p<0.0001; 0.7 → Δ−0.0014 **p=0.0038**.
+
+**Lettura onesta — questo caso è diverso da VisDrone.** Su VisDrone il pattern
+non replicava *in direzione* (a 0.3 il calo svaniva): rumore. Qui il pattern è
+**monotono e coerente su entrambi i campioni**: l'effetto si assottiglia man
+mano che la soglia sale (−0.11 → −0.05 → ~0), fino a diventare un evento così
+raro che con 300 frame **non capita mai, né PRE né POST** — CI degenere per
+assenza di dati, non per assenza di effetto. Sul campione pieno lo stesso
+effetto minuscolo resta misurabile (p=0.0038) perché la potenza è sufficiente.
+
+**Formulazione da usare in tesi:** robusto a 0.3 e 0.5; a 0.7 l'effetto è
+presente e nella stessa direzione ma **sotto la soglia di rilevabilità** con
+questo campione — "non misurabile", non "assente". Il segno è **negativo**: la
+patch produce *meno* detection spurie, non più (stessa direzione osservata su
+VisDrone). Riportare la tabella completa a tre soglie: il solo valore a 0.5
+sovrastima l'effetto.
+
+### 7.8 Stratificazione per dimensione — la domanda di Fase 2 trova risposta
+
+`[VERIFICATO]` `stratify_by_size.py`, patch **addestrata su Okutama**, 960×960:
+
+| Bucket altezza (@960) | Evasi/Totali | Evasion Rate |
+|---|---|---|
+| 60–100px | 9155/19921 | 46.0% |
+| 100–150px | 598/618 | **96.8%** |
+| 150px+ | 0/0 | bucket vuoto |
+
+Il bucket 150px+ vuoto è **atteso, non un bug**: a 960 le altezze sono 0.75×
+quelle a 1280, quindi ≥150px@960 ≡ ≥200px@1280, e a 1280 c'erano solo 316 bbox
+≥150px in totale.
+
+**Controllo di coerenza indipendente** `[VERIFICATO]`: la stratificazione fatta
+in precedenza a 1280 con la patch **VisDrone** dava 60–100px: 52.2%
+(n=40683), 100–150px: 48.6% (n=5294), 150px+: **97.2%** (n=316). Convertendo le
+scale (960 → 1280 = ×1.333), il bucket 100–150@960 corrisponde a 133–200@1280 —
+cioè proprio la regione dove la misura a 1280 mostrava il salto al 97%. **Due
+misure indipendenti, patch diverse e risoluzioni diverse, individuano il salto
+nella stessa regione di scala.**
+
+**Cosa risolve:** la domanda lasciata aperta in Fase 2 (bucket 150px+
+promettente ma con soli 11 casi) ora ha n=618 con effetto molto ampio. La
+direzione dell'ipotesi di scala è confermata su grande campione.
+
+⚠ **Confound da dichiarare, non da nascondere.** `stratify_by_size` considera
+"rilevato" *qualsiasi* persona nel frame sopra soglia, non il bersaglio
+specifico con matching IoU. Su VisDrone (pochi soggetti per frame) era
+accettabile; su Okutama (fino a 9 attori simultanei) no: nei frame affollati
+basta che YOLO veda un altro attore perché il target conti come "non evaso".
+Probabile che il 46% del bucket dominante sia **sottostimato** e che il 96.8%
+del bucket medio corrisponda a frame con meno attori (bersagli grandi = drone
+più basso = meno gente inquadrata). **Da riportare come tendenza, non come
+misura pulita.** `[APERTO]` la versione IoU-matched è un miglioramento
+possibile e non costoso.
+
+### 7.9 Bug e debiti tecnici emersi in Fase 7
+
+| # | Problema | Causa | Fix |
+|---|---|---|---|
+| 8 | `RuntimeError: size of tensor a (1280) must match b (640)` in `optimize_universal` | `IMG_SIZE` importato da `config.py` come costante **fissa a 640** e usato per costruire canvas, padding e telemetria — mai emerso perché VisDrone è sempre stato 640 | `img_size = img_t.shape[-1]` derivato dal tensore reale; sostituito in **tre** punti distinti (canvas, padding, blocco telemetria a step%20) |
+| 9 | `F.interpolate ... output (H: -292, W: 11)` a step 140 | Terzo punto con lo stesso hardcode, nel blocco di telemetria visiva: bbox in spazio 960 clampata con `IMG_SIZE`=640 → rettangolo ad altezza negativa | stessa correzione, `img_size` dinamico |
+| 10 | `cli.py`: `--img-size` definito **due volte** (default 960 e 1280) | due patch successive applicate senza rimuovere la precedente | rimossa la duplicata |
+| 11 | Coordinate Okutama scalate male in modo silenzioso | label in 3840×2160, frame in 1280×720: applicare la scala dell'immagine caricata a coordinate native dava bbox clampate ai bordi senza errore | scaling in un passaggio da 3840×2160 al canvas finale |
+
+**Osservazione metodologica non banale (bug #8):** i risultati VisDrone erano
+implicitamente **legati alla risoluzione**. Il codice non era portabile ad altre
+scale, e nessun test lo aveva rivelato perché esisteva un solo dataset a una
+sola risoluzione. La migrazione ha reso la pipeline effettivamente
+multi-risoluzione — un risultato collaterale della Fase 7, citabile.
+
+**Debiti residui noti** `[APERTO]`:
+- `_save_checkpoint` (salvataggio d'emergenza su `Ctrl+C`) scrive su
+  `BEST_PATCH_FILE` fisso, non su `--patch-out`. Irrilevante per run
+  completati; da correggere se si prevede di interrompere a mano.
+- `tactical_preflight_check` è VisDrone-only (usa l'API interna
+  `_parse_annotation`), quindi su Okutama viene saltato con un messaggio
+  esplicito. Il pre-flight equivalente è fatto a mano (§7.3).
+- `count_negative_candidates.py` privo di `--img-size` al momento della misura
+  di §7.3 → il dato 87.6% è a 1280.
+
+### 7.10 Comandi per riprodurre tutta la Fase 7
+
+```bash
+# 1. Verifica loader
+python test_okutama_loader.py --data data/okutama_train
+
+# 2. Pre-flight (⚠ da rieseguire a 960 dopo aver aggiunto --img-size al tool)
+python tools/count_negative_candidates.py --data data/okutama_val --loader okutama
+
+# 3. Backup patch VisDrone PRIMA di allenare
+cp outputs/patches/care_kit_patch_universal.pt outputs/patches/patch_visdrone.pt
+
+# 4. Training (~8000 step)
+python cli.py --train-patch --loader okutama --train-dir data/okutama_train \
+  --patch-out outputs/patches/patch_okutama.pt --img-size 960 --fresh
+
+# 5. Report decorrelato (IL DATO DA CITARE)
+python cli.py --eval-report --data data/okutama_val \
+  --patch outputs/patches/patch_okutama.pt --loader okutama --img-size 960 --stride 27
+
+# 6. Robustezza multi-soglia (ripetere con --conf-threshold 0.3 e 0.7)
+python cli.py --eval-report --data data/okutama_val \
+  --patch outputs/patches/patch_okutama.pt --loader okutama --img-size 960 \
+  --stride 27 --conf-threshold 0.3
+
+# 7. Stratificazione per scala
+python tools/stratify_by_size.py --data data/okutama_val --loader okutama \
+  --img-size 960 --patch outputs/patches/patch_okutama.pt
+```
+
+---
+
+# Parte III — Risultati consolidati
+
+## Confronto side-by-side (conf=0.5, bootstrap appaiato 10.000 iter)
+
+| Metrica | VisDrone (n=531, 640px) | Okutama (n=527, 960px) |
+|---|---|---|
+| Evasion rate PRE | 0.175 | **0.497** |
+| Evasion rate POST | 0.425 | **0.777** |
+| **Δ Evasion** | **+0.250** [+0.156, +0.346] | **+0.280** [+0.228, +0.332] |
+| Sensitività R1 PRE → POST | 0.825 → 0.575 | 0.503 → 0.223 |
+| Specificità R2 | 0.969 invariante | 0.960 invariante |
+| √(R1·R2) Δ | −0.148 [−0.210, −0.090] | −0.232 [−0.278, −0.188] |
+| F1 Δ | −0.168 [−0.242, −0.100] | −0.300 [−0.358, −0.244] |
+| Danno collaterale | −0.063 a conf 0.5, **`[RITIRATO]`** (non replica a 0.3/0.7) | −0.053 a conf 0.5, **robusto** a 0.3 e 0.5 |
+| Frame positivi nel valset | 15.1% | 87.6% (misurato a 1280) |
+| Significatività metriche primarie | p<0.0001 | p<0.0001 |
+
+## ⚠ Valutazione onesta: cosa aggiunge davvero Okutama
+
+Questa sezione esiste per evitare di sovravendere il secondo dataset. Va letta
+prima di scrivere qualunque frase comparativa.
+
+### Cosa aggiunge (reale, difendibile)
+
+1. **Replica su dominio indipendente.** Il finding centrale — la patch degrada
+   la detection in modo statisticamente significativo — si riproduce su un
+   secondo dataset con condizioni di ripresa, altitudine e composizione
+   completamente diverse. Δ +0.280 vs +0.250: **notevolmente vicini**. Per una
+   tesi, un effetto replicato su due domini vale più di un numero più alto su
+   uno solo.
+
+2. **Risolve una domanda esplicitamente aperta.** In Fase 2 il bucket 150px+
+   aveva 11 casi e le note stesse lo definivano "non conclusivo, pista
+   esplorativa". Okutama porta il bucket rilevante a n=618 con un effetto
+   ampio (96.8% vs 46.0%), e due misure indipendenti collocano il salto nella
+   stessa regione di scala. **L'ipotesi di scala passa da speculazione a
+   evidenza** (con il confound di §7.8 dichiarato).
+
+3. **Un risultato positivo nuovo:** il danno collaterale, ritirato su
+   VisDrone, è significativo e robusto su Okutama a 0.3 e 0.5. È l'unico punto
+   in cui Okutama produce un risultato *nuovo* invece di una replica.
+
+4. **Portabilità dimostrata della pipeline** (bug #8): il framework non era
+   multi-risoluzione e ora lo è.
+
+### Cosa NON aggiunge (e va detto)
+
+1. **Non rompe il soffitto strutturale — lo conferma su un secondo dataset.**
+   L'evasion assoluta POST è molto più alta (77.7% vs 42.5%), ma **il
+   contributo dell'attacco è quasi identico** (+28pp vs +25pp). Ciò che cambia
+   è la *baseline*, non la potenza dell'attacco. Formulazione corretta: il
+   guadagno marginale di questo attacco appare **limitato a ~25–28 punti
+   percentuali attraverso due dataset, due risoluzioni e due distribuzioni di
+   scala diverse**. È una conclusione più forte di quella ottenibile con
+   VisDrone da solo — ma è una conferma del limite, non il suo superamento.
+
+2. **"27× più dati" è un'illusione.** 14.210 frame sono video correlato; una
+   volta decorrelati restano ~527 campioni quasi-indipendenti, cioè **la stessa
+   potenza statistica di VisDrone (531)**. Okutama non aumenta il campione
+   effettivo: cambia il *dominio*, non la *numerosità*. Da dire esplicitamente
+   prima che lo faccia notare un revisore.
+
+3. **Introduce un problema nuovo: la baseline PRE è debole.** YOLOv8n manca
+   metà delle persone su Okutama **senza alcun attacco** (49.7% di evasion
+   naturale contro 17.5% su VisDrone). Attaccare un detector già compromesso
+   è una condizione di test meno pulita.
+   `[IPOTESI, non verificata]` domain gap del detector (COCO è addestrato
+   prevalentemente su pose upright a livello del suolo, mentre molte azioni
+   Okutama sono viste dall'alto e includono posture come sdraiato/seduto),
+   oppure distorsione dovuta allo stretch 1280×720 → 960×960.
+   **Non risolvibile entro lo scope**: richiederebbe fine-tuning di YOLO su
+   dati aerei, cioè cambiare l'oggetto della tesi (si valuta la robustezza di
+   un detector dato, non se ne costruisce uno migliore).
+   `[APERTO]` verifica possibile a basso costo: stratificare la PRE-evasion per
+   taglia bbox — se concentrata sui piccoli ⇒ effetto scala; se uniforme ⇒
+   posa/dominio.
+
+4. **Il regime "bersaglio molto grande" resta non testato su entrambi i
+   dataset.** VisDrone: n=11. Okutama a 960: bucket vuoto. Qualunque
+   affermazione su bersagli >150px è **extrapolazione**, non misura.
+
+5. **Costo della limitazione hardware:** 960 invece di 1280 ha ridotto del 56%
+   le bbox utilizzabili. Il dataset avrebbe potuto dare di più con più memoria.
+
+### Formulazione consigliata per la tesi
+
+> L'attacco produce un degrado statisticamente significativo e di entità
+> comparabile su due dataset aerei indipendenti (+25 e +28 punti percentuali di
+> evasion rate, entrambi p<0.0001). La consistenza del guadagno marginale
+> attraverso domini, risoluzioni e distribuzioni di scala diverse supporta
+> l'interpretazione del limite osservato come **strutturale** — legato alla
+> dimensione in pixel del bersaglio in prospettiva aerea — piuttosto che come
+> insufficienza dell'ottimizzazione.
+
+**Da non scrivere:** "l'attacco è più efficace su Okutama". È attaccabile in
+difesa: il delta è simile, cambia la baseline.
+
+---
+
+# Parte IV — Per la call col relatore
+
+## La storia in 7 frasi
+
+1. Un attacco adversarial patch universale contro YOLOv8n su VisDrone porta
+   l'evasion rate dal 17.5% al 42.5% (Δ +0.250, p<0.0001) — effetto reale e
+   statisticamente solido, ma non un collasso del sensore.
+2. Sei configurazioni sistematicamente isolate (loss, aggregazione, accumulo,
+   scheduler) convergono nella stessa banda stretta: il limite non è
+   nell'ottimizzatore. La diagnosi diretta del gradiente (0.0007–0.005,
+   clipping mai scattato) e la letteratura UAV-specific (nessun lavoro forte su
+   VisDrone attacca i pedoni) indicano una causa strutturale: i pedoni in vista
+   aerea occupano troppi pochi pixel.
+3. La loss top-K raggiunge lo stesso massimo con metà del budget di calcolo, e
+   una validazione a posteriori (`plot_k_selection.py`) mostra che K=20 era già
+   dentro il nucleo di confidenza reale — non un'assunzione fortunata.
+4. Due risultati sono stati **ritirati dopo verifica**: il danno collaterale su
+   VisDrone (non robusto multi-soglia) e la ponderazione tattica della loss
+   (nessun miglioramento, coerente con il 98.2% di annotazioni sotto soglia).
+5. È emerso un limite strutturale del disegno sperimentale: **R2 non può
+   rilevare l'attacco per costruzione**, perché la patch non viene mai disegnata
+   nei frame senza bersaglio valido. R2 va riportato come caratterizzazione del
+   detector, non come test dell'attacco.
+6. La migrazione a Okutama-Action **replica** il risultato su un dominio
+   indipendente (Δ +0.280, p<0.0001) e **risolve** la domanda aperta sulla scala
+   (bucket 100–150px: 96.8% di evasion su n=618, contro 46.0% su n=19.921 nel
+   bucket 60–100px).
+7. Il contributo dell'attacco è quasi identico sui due dataset (+25 vs +28pp)
+   pur con baseline e distribuzioni di scala molto diverse: **conferma** del
+   soffitto strutturale su un secondo dominio, non suo superamento.
+
+## Domande plausibili e risposte
+
+**"Perché l'evasion rate non supera il 44% su VisDrone?"**
+→ VisDrone è aereo, multi-scala, con pedoni di pochi pixel. Gradiente misurato
+direttamente (debole), sei configurazioni convergenti, e la letteratura
+UAV-specific conferma che nessun lavoro forte su VisDrone attacca i pedoni.
+
+**"Come sapete che non è un bug del codice?"**
+→ Il gradient clipping non è mai scattato (esclude esplosioni/errori di scala),
+sei configurazioni metodologicamente diverse convergono nella stessa banda, e
+il risultato si replica su un secondo dataset indipendente con la stessa
+pipeline. Un bug isolato non produrrebbe quella coerenza.
+
+**"Su Okutama l'evasion arriva al 78%: l'attacco è molto più forte?"**
+→ No, e va detto chiaramente. Il *delta* è +28pp contro +25pp su VisDrone: quasi
+identico. Ciò che cambia è la baseline — YOLO su Okutama parte già dal 49.7% di
+evasion naturale. Il guadagno marginale dell'attacco appare limitato a ~25–28pp
+su entrambi i domini.
+
+**"Perché il detector fallisce già metà delle volte su Okutama senza attacco?"**
+→ È un dato verificato (49.7%, CI [0.441, 0.553]). L'ipotesi più plausibile è un
+domain gap di YOLOv8n/COCO sulle pose aeree overhead, ma **non l'ho verificata**
+e non la presento come dimostrata. È un limite del detector sul dominio, non
+dell'attacco, e risolverlo richiederebbe fine-tuning — fuori dallo scope di una
+valutazione di robustezza su un detector dato.
+
+**"Avete 14.210 frame di validation ma ne usate 527: perché?"**
+→ Sono frame video a 30fps, quindi fortemente correlati: il bootstrap appaiato
+li tratterebbe come indipendenti, restituendo CI artificialmente stretti
+(pseudo-replicazione). Con stride 27 (~0.9s tra frame) le stime puntuali
+restano invariate e i CI si allargano di ~5×, onestamente. Il campione
+effettivo è quindi comparabile a VisDrone.
+
+**"Perché 960×960 e non la risoluzione nativa o 1280?"**
+→ Vincolo hardware verificato: a 1280 con EoT=16 il processo supera i 16GB di
+memoria unificata e va in swap, rendendo il training non completabile. A 960
+rientra (~12GB). 640 (parità esatta con VisDrone) è stato scartato con un
+calcolo: avrebbe eliminato il 95% delle bbox valide, annullando il motivo della
+migrazione. Il costo di 960 è dichiarato: −56% di bbox utilizzabili rispetto a
+1280.
+
+**"Avete provato ad aumentare ancora il training?"**
+→ Sì: da 375 a 2500 update (6.6×), +2.5 punti con rendimenti già decrescenti.
+Su Okutama, con 8000 step, l'ultimo miglioramento è avvenuto intorno allo step
+5973: plateau prima della fine del budget.
+
+**"Il framework serve solo per questo attacco?"**
+→ No — la Vision alimenta un simulatore multi-agente (Fusion bayesiano
+Vision+OSINT+Behavioral, soglie IHL) tramite un bridge JSON, visibile con
+`--run-sim`.
+
+## Punti di forza da rivendicare
+
+- **Metodo sistematico**: configurazioni isolate una variabile alla volta, non
+  tuning casuale fino al numero migliore.
+- **Diagnosi quantitativa, non intuitiva**: norma del gradiente misurata, non
+  dedotta.
+- **Due risultati ritirati dopo verifica di robustezza.** È il punto di forza
+  meno ovvio e più solido: dimostra che i risultati positivi riportati hanno
+  superato controlli che altri non hanno superato.
+- **Un limite strutturale del proprio disegno sperimentale scoperto e
+  documentato** (R2 tautologico), invece di riportare "R2 invariato = attacco
+  pulito" come farebbe una lettura superficiale.
+- **Replica su dominio indipendente**, con confronto side-by-side e senza
+  accorpamento dei dataset.
+- **Correzione della pseudo-replicazione** su dati video, prima che diventasse
+  un risultato pubblicato.
+- **Framework multi-dominio**: la Vision è un layer di un sistema più ampio
+  (Fusion bayesiano, OSINT poisoning, soglie IHL) che la letteratura sulle
+  adversarial patch generalmente non modella.
+
+---
+
+# Parte V — Aperto / da fare
+
+Solo elementi **effettivamente aperti**. Tutto ciò che è completato sta nel
+diario (Parte II).
+
+## Da chiedere/confermare col relatore
+
+- `[APERTO]` **Grafico "a candela" per le metriche bootstrap.** Il relatore lo
+  aveva menzionato durante la fase VisDrone (punto con baffi = stima puntuale +
+  CI95%); non era stato annotato all'epoca, quindi la formulazione esatta della
+  richiesta va riconfermata. Implementabile a costo quasi nullo: i dati sono già
+  in `outputs/metrics/full_report.json`, non serve nessun nuovo esperimento.
+  Applicabile a entrambi i dataset, affiancati sullo stesso asse.
+- `[APERTO]` Verificare che il confronto side-by-side nella forma della Parte III
+  sia quello atteso (colonne, versione filtrata/non filtrata per dimensione).
+
+## Verifiche a basso costo, non bloccanti
+
+- `[APERTO]` Rieseguire il pre-flight Okutama **a 960** (`--img-size` da
+  aggiungere a `count_negative_candidates.py`) — il valore 87.6% attuale è
+  misurato a 1280 e va reso coerente con la configurazione finale.
+- `[APERTO]` Stratificare la **PRE**-evasion di Okutama per taglia bbox: test
+  diretto dell'ipotesi domain-gap (uniforme) contro effetto scala (concentrato
+  sui piccoli). Chiarirebbe §7.8 e la nota su §"cosa non aggiunge" punto 3.
+- `[APERTO]` Versione **IoU-matched** di `stratify_by_size.py`: eliminerebbe il
+  confound "altri attori nel frame" che su Okutama (fino a 9 soggetti) è
+  significativo.
+- `[APERTO]` R2 bootstrap con i 1.765 frame ambigui come classe negativa
+  estesa su Okutama, per parità con il trattamento VisDrone.
+
+## Lavoro futuro (non per questa tesi)
+
+- Loss che copra l'intera impronta geometrica del bersaglio (K≈244) invece del
+  solo nucleo di confidenza — nuovo ciclo sperimentale, esplicitamente
+  rinviato.
+- Loss su feature intermedie del backbone invece dell'output finale (tecnica
+  del paper 2023 su aerial imagery) — richiede hook sui layer intermedi.
+- Dataset custom image-specific (`tools/annotate_mioDS.py`, Wu et al. 2020):
+  converge più in fretta perché non deve generalizzare su scene eterogenee.
+- Correggere `_save_checkpoint` per rispettare `--patch-out`.
+
+---
+
+# Letteratura citata
 
 | Fonte | Uso nel progetto |
 |---|---|
+| Barekatain et al. 2017 | Okutama-Action: dataset aereo, altitudine 10–45m (Fase 7) |
 | Sodhro et al. 2025 | Baseline YOLOv8 outdoor 99.1% confidence |
 | Carlini & Wagner 2017 | Margine di robustezza nella loss |
 | Wu et al. 2020 | Domain-Specific Attacks > Universal Attacks (Piano B) |
 | Athalye et al. 2017 | EoT |
 | Thys et al. 2019 | TV Loss, aggregazione max/top-K |
-| Brown et al. 2017 | Adversarial Patch, convergenza |
+| Brown et al. 2017 | Adversarial Patch, convergenza e rendimenti marginali |
 | Arkin 2009 | Principio di Distinzione IHL, scenario Urban Clutter |
-| Liu et al. 2019 | DPatch — loss congiunta box+classe (riserva Fase 2) |
-| Huang et al. 2020 | Universal Physical Camouflage Attacks — design region-aware |
-| Hu et al. 2021 | Naturalistic Patch — GAN latent space (contributo originale) |
+| Liu et al. 2019 | DPatch — loss congiunta box+classe (riserva) |
+| Huang et al. 2020 | Universal Physical Camouflage — design region-aware |
+| Hu et al. 2021 | Naturalistic Patch — GAN latent space |
 | Shrestha, Pathak, Viegas 2023 | Patch UAV-specific su VisDrone (Car, 80% ASR) |
 | LFRAP 2025 | Conferma: pedoni scartati per dimensione da vista aerea |
-| Everingham et al. 2010 | Standard IoU=0.5 (PASCAL VOC), da cui ci discostiamo per la specificità estesa |
-| Yu et al. 2020 | "Scale Match for Tiny Person Detection" — IoU permissivo per small object |
-| Shao et al. 2018 | CrowdHuman — convenzione "ignore region" per bersagli di scala ambigua |
+| Everingham et al. 2010 | Standard IoU=0.5 (PASCAL VOC), da cui ci discostiamo |
+| Yu et al. 2020 | "Scale Match for Tiny Person Detection" — IoU permissivo |
+| Shao et al. 2018 | CrowdHuman — convenzione "ignore region" |
+| Efron & Tibshirani 1993 | Bootstrap appaiato |
 
 DOI/URL completi in `config.py`.
-
-## Punti di forza del lavoro
-
-- **Metodo sistematico**: sei configurazioni isolate una variabile alla
-  volta, non un tuning casuale fino al numero migliore.
-- **Diagnosi quantitativa, non intuitiva**: norma del gradiente misurata
-  direttamente, non dedotta — la decisione di provare il top-K viene da
-  un dato, non da un'idea generica.
-- **Confronto con la letteratura specifica**, non solo generica: il
-  soffitto trova conferma in paper UAV-specific su VisDrone, non solo
-  nei paper "classici" a livello del suolo.
-- **Framework multi-dominio**: la parte Vision è un layer di un sistema
-  più ampio (Fusion bayesiano, OSINT poisoning, soglie IHL) che la
-  maggior parte della letteratura sulle adversarial patch non modella.
-
----
-
-## Sintesi per la call col relatore
-
-### La storia in 5 frasi
-
-1. Un attacco adversarial patch universale contro YOLOv8 su VisDrone
-   riduce l'F1-Score da 0.760 a 0.720, portando l'Evasion Rate dal 38.7%
-   al 43.75% — un effetto reale ma modesto, non un collasso del sensore.
-2. Sei configurazioni sistematicamente isolate (update reali, scheduling
-   LR, accumulo, formula della loss, aggregazione mean/top-K) convergono
-   tutte nella stessa banda stretta di evasion rate.
-3. La loss top-K (ispirata a Thys et al. 2019, validata da una diagnosi
-   diretta sul gradiente) raggiunge lo stesso massimo con metà del
-   budget di calcolo — prova che il limite non è nell'ottimizzatore.
-4. La letteratura UAV-specific su VisDrone conferma: nessun lavoro con
-   risultati forti attacca i pedoni, tutti scelgono veicoli, perché i
-   pedoni da vista aerea sono strutturalmente troppo piccoli per un
-   budget di patch limitato.
-5. La prossima leva è allineare i dati allo scenario tattico già
-   definito (ingaggio ravvicinato, non sorveglianza ad area larga), non
-   continuare a scalare l'ottimizzatore.
-
-### Domande plausibili e risposte
-
-**"Perché l'evasion rate non supera il 44%?"**
-→ VisDrone è aereo, multi-scala, con pedoni che occupano pochi pixel.
-Ho misurato il gradiente direttamente (debole, 0.0007-0.005) e
-confrontato con letteratura UAV-specific: nessun lavoro forte su
-VisDrone attacca i pedoni per lo stesso motivo.
-
-**"Come sapete che non è un bug del codice?"**
-→ Il gradient clipping non è mai scattato in nessun run (esclude
-esplosioni/errori di scala grossolani), e sei configurazioni
-metodologicamente diverse convergono nella stessa banda — un bug
-isolato non produrrebbe quella coerenza.
-
-**"Avete provato ad aumentare ancora il training?"**
-→ Sì: da 375 a 2500 update (6.6x), +2.5 punti con rendimenti già
-decrescenti. Continuare senza cambiare la causa (dimensione del
-bersaglio) avrebbe un ritorno sempre più basso.
-
-**"Cosa fareste con più tempo?"**
-→ Allineare i dati allo scenario tattico già definito (persone di
-dimensione realistica per un ingaggio a 10m, non l'intero range
-eterogeneo di VisDrone), poi eventualmente un budget di calcolo lungo
-sulla loss top-K già validata come più efficiente.
-
-**"Perché non un dataset più piccolo/omogeneo?"**
-→ È il Piano B già pronto (`annotate_mioDS.py`, Wu et al. 2020),
-tenuto come alternativa esplicita fin dall'inizio, non come ripiego.
-
-**"Il framework serve solo per questo attacco?"**
-→ No — la Vision alimenta un simulatore multi-agente (Fusion
-bayesiano Vision+OSINT+Behavioral, soglie IHL) tramite un bridge JSON,
-visibile con `--run-sim`.
-
----
-
-## Aperto / da fare
-
-- **[DA CONFERMARE COL RELATORE]** Definizione di R2 (specificity) nei
-  plot vs K: il relatore non l'ha specificata esplicitamente. Ho assunto
-  una lettura **a livello di cella** (non di frame): R1 = celle-bersaglio
-  dentro le top-K / celle-bersaglio totali; R2 = celle-sfondo **fuori**
-  dalle top-K / celle-sfondo totali. Motivo della scelta: con R2 a
-  livello di frame e soglia classica fissa, il grafico "R2 vs K" sarebbe
-  una riga piatta — non permetterebbe di "capire perché preferire un K"
-  come richiesto. La lettura a livello di cella produce invece un
-  trade-off monotono (R1 sale con K, R2 scende) che rende il picco della
-  media geometrica un criterio di scelta reale. Verificata la monotonia
-  con test sintetico (`tools/plot_k_selection.py`).
-
-- **[COMPLETATA] Scelta empirica di K** (`tools/plot_k_selection.py`, valset
-  completo VisDrone-val, 531 frame: 80 positivi/451 negativi).
-
-  **Il problema che risolve**: `LOSS_TOP_K=20` era un'assunzione iniziale,
-  non una scelta misurata. Il relatore ha chiesto un metodo per
-  giustificarla (o correggerla) empiricamente.
-
-  **Metodo, in breve**: si passano tutti i frame positivi (senza patch,
-  comportamento naturale di YOLO) e per ognuno si ordinano le 8400 celle
-  pre-NMS per confidenza decrescente. Con una somma cumulativa si calcola,
-  per OGNI K da 1 a 8400 senza rifare l'inferenza: quante celle-bersaglio
-  finiscono nelle top-K (sensitivity R1(K), sale con K) e quante
-  celle-sfondo restano fuori (specificity R2(K), scende con K — la soglia
-  è tau(K), il valore di confidenza in posizione K sui frame positivi,
-  applicato ai negativi). Due criteri di scelta:
-
-  | Criterio | K ottimo | Cosa penalizza |
-  |---|---|---|
-  | F1 | **244** (plateau da K≈150) | copertura geometrica incompleta del bersaglio |
-  | Media geometrica √(R1×R2) | **37** | diluizione nello sfondo (R2 crolla rapidamente con K) |
-
-  **Perché i due criteri divergono (il finding, non solo un numero)**:
-  dentro l'impronta geometrica di un bersaglio (~200-250 celle, tre stride
-  YOLO), solo un nucleo ristretto (~30-40 celle) ha confidenza realmente
-  alta — il resto è periferia dentro il bbox ma con segnale debole. F1
-  misura la copertura totale (premia K grande, arriva fino a 244 prima di
-  saturare). La media geometrica penalizza la diluizione nello sfondo
-  appena K supera il nucleo reale (crolla già a K=37).
-
-  **La decisione, spiegata senza ambiguità**: `LOSS_TOP_K=20` (usato in
-  TUTTI gli esperimenti, inclusa la configurazione più efficiente) si
-  trova vicino a K=37 (media geometrica, il criterio primario del
-  relatore), non vicino a K=244 (F1, criterio secondario). Non era
-  un'assunzione fortunata a caso — era già dentro il nucleo di confidenza
-  reale. **Conseguenza pratica: NESSUN nuovo training.** Rilanciare con
-  K=244 significherebbe ottimizzare per il criterio SECONDARIO (F1),
-  aprendo un nuovo ciclo sperimentale che il relatore ha esplicitamente
-  chiesto di evitare in questa fase (priorità: documentare, non
-  sperimentare). K=244 resta annotato solo come possibile lavoro futuro
-  (una loss che copre l'intera impronta geometrica, non solo il nucleo),
-  non come azione da fare ora.
-
-  **Definizione di R2 nei plot vs K — confermata**: R2 è calcolata a
-  livello di CELLA (non di frame), con soglia implicita tau(K). Scelta
-  necessaria: a livello di frame con soglia fissa il grafico "R2 vs K"
-  sarebbe una riga piatta, inutile per scegliere K. La lettura a livello
-  di cella produce il trade-off monotono che rende il picco della media
-  geometrica un criterio di scelta reale.
-
-- **[COMPLETATA] Metriche del relatore, significatività statistica, e
-  correzione della classe negativa** (`src/metrics.py`,
-  `src/simulator.py:evaluate_on_dataset`, `cli.py --eval-report`).
-
-  **Metodo statistico:**
-  1. *CI indipendenti* — bootstrap percentile (10.000 iterazioni, 95%)
-     su PRE e POST separatamente; se gli intervalli non si sovrappongono
-     la differenza è significativa. Test corretto ma conservativo.
-  2. *Bootstrap appaiato del delta* — PRE e POST sono valutati sugli
-     STESSI frame, quindi sono misure appaiate. Si ricampiona una sola
-     lista di indici di frame per iterazione e la si applica a entrambe
-     le condizioni, calcolando Δ = POST − PRE. Sfrutta la correlazione
-     intra-frame (un frame difficile lo è in entrambe le condizioni),
-     dà una stima più precisa dell'effetto e un p-value a due code.
-     Riferimento: Efron & Tibshirani (1993), bootstrap appaiato.
-
-  **Problema di campione (risolto)**: con la sola classe negativa vera
-  (zero persone di qualunque dimensione), n=9 su 531 — troppo pochi per
-  una stima di specificità (R2) non degenere. Diagnostica
-  (`tools/count_negative_candidates.py`):
-
-  | Categoria | n | % |
-  |---|---|---|
-  | Positivo (≥1 bersaglio ≥60px) | 80 | 15.1% |
-  | Negativo vero (0 persone, qualunque size) | 9 | 1.7% |
-  | Ambiguo (solo persone <60px, escluso finora) | 442 | 83.2% |
-
-  **Correzione applicata — integrazione diretta in `evaluate_on_dataset`**:
-  i 442 frame "ambigui" sono ora negativi a pieno titolo. Una detection
-  in questi frame è classificata con matching IoU contro TUTTE le
-  persone annotate, anche quelle sotto i 60px: IoU ≥ 0.3 con una persona
-  di qualunque dimensione → detection corretta ma su un bersaglio non
-  tatticamente valido → **ignorata** (né TP né FP, convenzione "ignore
-  region"); nessun match sopra soglia → **falso positivo vero**.
-  Soglia IoU=0.3 (permissiva rispetto allo standard PASCAL VOC 0.5,
-  Everingham et al. 2010) motivata dalla sensibilità della metrica IoU
-  su bounding box piccoli (Yu et al. 2020, "Scale Match for Tiny Person
-  Detection"), stessa convenzione ignore-region di CrowdHuman (Shao et
-  al. 2018). La logica dei positivi (`has_person_gt`, TP/FN) è invariata.
-
-  **Risultato finale (valset completo, n=531: 80 positivi + 451
-  negativi, 10.000 iterazioni, bootstrap appaiato):**
-
-  | Metrica | PRE (no patch) | POST (con patch) | Δ [CI 95%] | p | Signif. |
-  |---|---|---|---|---|---|
-  | Evasion rate (1−R1) | 0.1750 [0.096, 0.264] | 0.4250 [0.317, 0.533] | +0.250 [+0.156, +0.346] | <0.0001 | **Sì** |
-  | Sensitività R1 | 0.8250 [0.736, 0.904] | 0.5750 [0.467, 0.683] | −0.250 [−0.346, −0.156] | <0.0001 | **Sì** |
-  | Specificità R2 | 0.9690 [0.952, 0.984] | 0.9690 [0.952, 0.984] | 0.000 [0.000, 0.000] | 1.0000 | No |
-  | √(R1·R2) | 0.8941 [0.844, 0.937] | 0.7464 [0.672, 0.814] | −0.148 [−0.210, −0.090] | <0.0001 | **Sì** |
-  | F1 (secondaria) | 0.8250 [0.755, 0.883] | 0.6571 [0.561, 0.744] | −0.168 [−0.242, −0.100] | <0.0001 | **Sì** |
-
-  **Lettura per il relatore**: evasion rate, sensitività, √(R1·R2) e F1
-  restano tutti nettamente significativi (p<0.0001) con il campione
-  corretto — la patch degrada la detection in modo statisticamente
-  dimostrato, non un artefatto di rumore campionario.
-
-  **⚠️ Finding critico su R2 — non un limite di campione, un limite
-  strutturale del disegno sperimentale.** Con n=531, R2 PRE e POST
-  risultano **identici fino alla sedicesima cifra decimale**
-  (0.9689578713968958 in entrambi i casi). Causa: la patch è disegnata
-  sull'immagine solo dentro il ciclo `for bbox in valid_gt_bboxes`, che
-  itera zero volte quando il frame non ha un bersaglio ≥60px — quindi
-  per TUTTI i frame negativi (i 9 originali e i 442 aggiunti) l'immagine
-  passata a YOLO è identica con o senza patch, e YOLO (deterministico in
-  inferenza) restituisce lo stesso identico output. **Espandere il
-  campione da 9 a 451 non rendeva R2 più informativo sull'effetto della
-  patch — lo ha reso più preciso su una quantità che per costruzione non
-  può muoversi.** Il vecchio risultato "R2=1.0 invariato" con n=9 non era
-  quindi la dimostrazione di un attacco pulito; era la stessa tautologia,
-  solo meno visibile con un valore rotondo.
-
-  **Reinterpretazione (da usare in tesi, non l'euristica precedente)**:
-  R2=0.9690 è una **caratterizzazione del detector** — il tasso di falso
-  allarme di base di YOLOv8n su sfondi VisDrone privi di bersaglio valido
-  (~3.1%), indipendente dalla patch, non un test dell'attacco su
-  quell'asse. La patch, essendo "indossata" su un bersaglio rilevato, non
-  esiste fisicamente nei frame senza bersaglio — non c'è modo, con questo
-  disegno, di verificare se la patch causa allucinazioni altrove nella
-  scena. Conseguenza diretta: **tutto il movimento di √(R1·R2) è
-  attribuibile a R1**; R2 agisce da moltiplicatore costante, non da
-  secondo asse indipendente in questo esperimento.
-
-  **Lavoro futuro proposto (non implementato per priorità di tempo)**:
-  la metrica corretta per il "danno collaterale della patch" dovrebbe
-  contare, DENTRO i frame positivi (dove la patch è realmente presente),
-  detection aggiuntive senza match IoU con il bersaglio reale — es. un
-  civile vicino erroneamente segnalato per rumore visivo introdotto dalla
-  patch. Stessa infrastruttura IoU già costruita, riusabile con un nuovo
-  contatore per-frame.
-
-  **Verifica di robustezza multi-soglia (0.3 / 0.5 / 0.7)**: evasion
-  rate, R1, √(R1·R2) e F1 restano tutti significativi (p tra 0.0002 e
-  <0.0001) a tutte e tre le soglie testate — il risultato primario non
-  dipende dalla scelta specifica di conf_threshold=0.50. R2 risulta
-  identico PRE/POST a TUTTE le soglie (0.8248, 0.9690, 1.0000
-  rispettivamente) — conferma indipendente che l'invarianza di R2 è una
-  proprietà strutturale del codice (la patch non è mai disegnata in
-  questi frame), non una coincidenza numerica legata a una soglia
-  specifica. **Scoperta laterale**: l'evasion rate PRE (senza alcun
-  attacco) passa da 3.75% (soglia 0.3) a 72.5% (soglia 0.7) — conferma
-  indipendente del soffitto strutturale (scarsità di target grandi/ben
-  risolti in VisDrone) e giustifica retroattivamente 0.50 come default
-  ragionevole, non arbitrario.
-
-  **Nota su una metrica ritirata**: un tool di "confidence drop"
-  (calo continuo della confidenza per frame) era stato prototipato ma è
-  stato rimosso — su indicazione del relatore, che ha preferito il
-  prima/dopo binario (evasion rate significativo) al drop continuo, e
-  perché misurava il massimo per-frame (confrontando potenzialmente
-  detection diverse tra PRE e POST). Sostituito dal report consolidato
-  `cli.py --eval-report`.
-
-- **[COMPLETATA E RITIRATA COME RISULTATO POSITIVO] Danno collaterale**
-  (stessa infrastruttura IoU di `evaluate_on_dataset`, sezione separata
-  in `cli.py --eval-report`).
-
-  **Perché è stata introdotta**: R2/specificità (sopra) misura solo
-  frame SENZA bersaglio valido, dove la patch non è mai disegnata — non
-  può per costruzione rilevare un effetto dell'attacco. Questa metrica
-  misura invece, DENTRO i frame positivi (dove la patch È realmente
-  presente), se l'attacco introduce detection spurie senza
-  corrispondenza IoU con nessuna persona reale nella stessa scena — una
-  domanda diversa e genuinamente testabile, non un tentativo di
-  "salvare" R2 (le due metriche rispondono a domande distinte e non si
-  sostituiscono a vicenda).
-
-  **Metodo (raffinato dopo revisione)**: conteggio grezzo di
-  allucinazioni per frame (non indicatore binario presente/assente) —
-  usa tutta l'informazione disponibile sugli stessi 80 frame positivi,
-  più potenza statistica a costo zero.
-
-  **Prima verifica (conf_threshold=0.50, n=80)**: PRE=0.100
-  [0.038,0.175] (8/80 frame), POST=0.050 [0.013,0.100] (4/80 frame),
-  Δ=−0.050 [−0.100,−0.013], p=0.0374 — significativo ma fragile (4
-  eventi assoluti di differenza; p un ordine di grandezza più debole di
-  tutte le altre metriche; non sopravvive a una correzione di Bonferroni
-  per 6 confronti multipli, soglia richiesta p<0.0083).
-
-  **Verifica di robustezza (richiesta esplicitamente prima di accettare
-  il risultato)**: stesso identico calcolo a conf_threshold=0.3 e 0.7:
-
-  | Soglia | PRE | POST | Δ | p | Signif. |
-  |---|---|---|---|---|---|
-  | 0.3 | 0.4625 | 0.4375 | −0.0250 | 0.535 | No |
-  | 0.5 | 0.1125 | 0.0500 | −0.0625 | 0.0136 | Sì |
-  | 0.7 | 0.0000 | 0.0000 | 0.0000 | 1.000 | No (nessun segnale in entrambe le condizioni) |
-
-  **Esito: il pattern non replica.** Il calo era significativo solo
-  esattamente a conf=0.50; a 0.3 la direzione è la stessa ma non
-  significativa, a 0.7 il segnale collassa a zero in entrambe le
-  condizioni. **Conclusione da scrivere in tesi**: il risultato non è
-  robusto al variare della soglia di confidenza — trattato come rumore
-  campionario, non come effetto dimostrato. Ritirato come risultato
-  positivo, documentato come esempio di verifica metodologica corretta
-  (un segnale debole è stato messo in dubbio, testato, e correttamente
-  respinto quando il test di robustezza non lo confermava) — un
-  risultato negativo verificato con rigore vale più di un risultato
-  positivo non controllato.
-
-  **Da rivedere con Okutama-Action**: se un secondo dataset indipendente
-  mostrasse lo stesso pattern (fragile, non robusto al threshold), sarebbe
-  un'ulteriore conferma che qui non c'è un effetto reale da misurare con
-  questo disegno sperimentale su questo bersaglio (persone in vista
-  aerea) — coerente con la diagnosi già scritta del soffitto strutturale.
-
-- **[COMPLETATA] Esperimento notturno — ponderazione tattica della loss**:
-  peso 0 sotto 60px, rampa lineare 60-150px, peso 1.0 sopra 150px,
-  applicato dentro `_asymptotic_loss` (media pesata sulle celle top-K),
-  canvas/EoT invariati (patch posizionata su tutti i target comunque).
-  8000 step raw, accum=4, scheduler corretto — nessun vincolo tecnico
-  precedente violato.
-
-  **Pre-flight check sul trainset (dato già solido, indipendente dal
-  risultato del training):**
-
-  | Metrica | Valore |
-  |---|---|
-  | Annotazioni persona totali | 86.958 |
-  | Annotazioni >= 60px (soglia minima storica) | 1.556 (1.8%) |
-  | Annotazioni >= 80px (tatticamente rilevanti) | 394 (0.5%) |
-
-  **Risultato finale (8000 step):**
-
-  | Metrica | Valore |
-  |---|---|
-  | F1-Score (completo) | 0.730 |
-  | Evasion Rate (completo) | 42.5% |
-  | Evasion Rate (target ≥80px) | 41.7% |
-  | Copertura tattica valset (≥80px) | 32.0%* |
-
-  \* denominatore diverso dal pre-flight sul trainset (0.5%): qui è %
-  tra le annotazioni già filtrate ≥60px nel VALSET, non sul totale
-  grezzo del TRAINSET — le due percentuali non sono direttamente
-  comparabili, misurano cose diverse.
-
-  **Nessun salto**: la ponderazione tattica dà risultati indistinguibili
-  da Fase 3 (43.75%), anzi l'evasion filtrata (41.7%) è leggermente più
-  bassa di quella completa (42.5%) — l'opposto dell'ipotesi. Conferma
-  esattamente il rischio #1/#2 scritto prima del lancio: con solo 394
-  annotazioni ≥80px nell'intero trainset, la scarsità di dati tattici ha
-  vinto sulla ponderazione. Segnale indiretto a supporto: `YOLO Conf` nel
-  log resta quasi sempre alto (0.35-0.76) invece che vicino a zero come
-  nei run precedenti — la loss si sta davvero misurando con i bersagli
-  grandi e ben risolti (i più difficili da ingannare), ma senza
-  abbastanza esempi per imparare a farlo bene.
-
-  **Esito**: nessun miglioramento dell'evasion rate rispetto al baseline
-  top-K=20. Coerente con la diagnosi di scarsità dati (98.2% delle
-  annotazioni VisDrone <60px): ponderare la loss verso i target grandi
-  non aiuta se i target grandi sono quasi assenti dal trainset. Risultato
-  negativo ma valido — rafforza la tesi del soffitto strutturale.
-
-  **Conclusione**: il pre-flight (98.2% del dataset sotto soglia) resta
-  la prova quantitativa solida, indipendente dall'esito del training.
-  La strada da seguire ora non è più il loss-reweighting ma un dataset
-  con distribuzione di scala corretta — vedi ricerca sotto.
-
-  ---
-
-## Prossimo dataset — Okutama-Action (confronto, NON accorpamento)
-
-Richiesta del relatore: testare un dataset con pedoni ripresi più da
-vicino **separatamente** da VisDrone, e confrontare (anche filtrato/non
-filtrato per dimensione), senza unire i due dataset. Se statisticamente
-non migliora, è comunque un risultato valido da documentare.
-
-Candidato: **Okutama-Action** (Barekatain et al. 2017; altitudine 10–45m,
-coerente con `DRONE_ALTITUDE_M=10`; CC BY-NC-SA). SAR (HERIDAL, SARD,
-LADD) scartati: stesso problema di oggetti piccoli di VisDrone.
-
-**Prerequisito (una tantum)**: le annotazioni Okutama sono azione/video-based,
-non VisDrone-style. Serve una classe `OkutamaLoader` con la STESSA
-interfaccia di `VisDroneLoader` (`get_sample`, `__len__`, stesso formato
-bbox in pixel su 640×640). Fatto questo, tutto il resto della pipeline
-(training, eval, report) funziona senza modifiche.
-
-**Sequenza comandi** (dopo aver scritto il loader e messo i dati in
-`data/okutama_train` / `data/okutama_val`):
-
-1. Verifica a costo zero della distribuzione di scala PRIMA di allenare
-   (conferma quantitativa che Okutama ha davvero target più grandi):
-   `python tools/stratify_by_size.py --data data/okutama_val --patch outputs/patches/care_kit_patch_universal.pt`
-   (usa la patch VisDrone solo per popolare i bucket; guarda i totali per
-   bucket, non l'evasion rate).
-
-2. ⚠️ **Metti al sicuro la patch VisDrone prima di allenare** — `--train-patch`
-   sovrascrive `outputs/patches/care_kit_patch_universal.pt`:
-   `cp outputs/patches/care_kit_patch_universal.pt outputs/patches/patch_visdrone.pt`
-
-3. Training patch su Okutama (stessa pipeline validata: top-K=20,
-   TV_WEIGHT=0.1, EoT=16, accum=4, scheduler corretto — zero modifiche
-   architetturali, cambia solo il dataset):
-   `python cli.py --train-patch --train-dir data/okutama_train --patch-out outputs/patches/patch_okutama.pt`
-
-4. Report identico a VisDrone (stesse metriche, stesso bootstrap):
-   `python cli.py --eval-report --data data/okutama_val --patch outputs/patches/patch_okutama.pt`
-
-5. Confronto side-by-side con la tabella VisDrone già pronta (stesse
-   colonne: R1, R2, √(R1·R2), evasion, F1, con CI e p-value), versione
-   filtrata e non filtrata per dimensione. Non sostituire VisDrone: affiancare.

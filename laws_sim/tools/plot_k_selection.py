@@ -39,8 +39,9 @@ import matplotlib.pyplot as plt
 from ultralytics import YOLO
 
 from visdrone_loader import VisDroneLoader
+from okutama_loader import OkutamaLoader
 from patch_optimizer import PatchOptimizer
-from config import PERSON_CLASS_ID, IMG_SIZE
+from config import PERSON_CLASS_ID
 
 
 def main():
@@ -52,10 +53,16 @@ def main():
     parser.add_argument("--k-max-plot", type=int, default=300,
                          help="K massimo mostrato nei plot (i conteggi esatti restano disponibili fino a 8400)")
     parser.add_argument("--out-dir", type=str, default="outputs/metrics")
+    parser.add_argument("--loader", choices=["visdrone", "okutama"], default="visdrone")
+    parser.add_argument("--img-size", type=int, default=960, help="Canvas per loader okutama")
+    args = parser.parse_args()
     args = parser.parse_args()
 
     device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
-    loader = VisDroneLoader(args.data)
+    LOADERS = {"visdrone": VisDroneLoader, "okutama": OkutamaLoader}
+    loader = (LOADERS[args.loader](args.data, img_size=args.img_size)
+              if args.loader == "okutama" else LOADERS[args.loader](args.data))
+    img_size = args.img_size if args.loader == "okutama" else 640
     model = YOLO(args.model)
     model.to(device)
     torch_model = model.model
@@ -105,7 +112,7 @@ def main():
             # Maschera bersaglio: OR di tutte le persone valide nel frame
             target_mask = np.zeros(n_cells, dtype=bool)
             for bbox in valid_bboxes:
-                m = PatchOptimizer._build_spatial_mask(bbox, IMG_SIZE, device="cpu").numpy()
+                m = PatchOptimizer._build_spatial_mask(bbox, img_size, device="cpu").numpy()
                 target_mask |= m
 
             n_target = int(target_mask.sum())
