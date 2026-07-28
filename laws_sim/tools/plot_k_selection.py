@@ -211,7 +211,7 @@ def main():
     axes[1, 1].set_ylabel("R2")
 
     plt.tight_layout()
-    out_path = os.path.join(args.out_dir, "k_selection_plots.png")
+    out_path = os.path.join(args.out_dir, f"k_selection_plots_{args.loader}.png")
     plt.savefig(out_path, dpi=150)
     print(f"\nPlot salvati in: {out_path}")
     print(f"Dati grezzi (tutti i K fino a {n_cells}) salvati in: k_selection_raw.npz")
