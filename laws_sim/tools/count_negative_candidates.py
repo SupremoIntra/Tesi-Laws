@@ -12,7 +12,7 @@ src/simulator.py) e' necessaria anche sul nuovo dataset.
 
 Uso:
     python tools/count_negative_candidates.py --data data/visdrone_val
-    python tools/count_negative_candidates.py --data data/okutama_val --loader okutama
+    python tools/count_negative_candidates.py --data data/okutama_val --loader okutama --img-size 960
 """
 import argparse
 import os
@@ -27,6 +27,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, required=True)
     parser.add_argument("--loader", choices=["visdrone", "okutama"], default="visdrone")
+    parser.add_argument("--img-size", type=int, default=960,
+                         help="Canvas per loader okutama (default 960, coerente con training/eval)")
     parser.add_argument("--min-height", type=float, default=60.0,
                          help="Soglia altezza (px) per bersaglio 'valido' (default 60, anti-downsampling)")
     args = parser.parse_args()
@@ -40,15 +42,14 @@ def main():
         # escluderebbe a monte, falsando il conteggio.
         loader = VisDroneLoader(args.data, min_persons=0)
     else:
-        loader = OkutamaLoader(args.data)
+        loader = OkutamaLoader(args.data, img_size=args.img_size)
         print(
             "[ATTENZIONE] OkutamaLoader attuale indicizza solo frame con "
             ">=1 persona annotata: i frame a zero persone NON sono "
             "rappresentati in loader.samples. Il conteggio 'Negativo vero' "
-            "qui sotto sara' sistematicamente 0, non un dato reale — serve "
-            "un'estensione dell'indice (scan di tutti i frame immagine per "
-            "video, non solo quelli con annotazioni) prima di fidarsi di "
-            "questo numero su Okutama."
+            "qui sotto sara' sistematicamente 0, non un dato reale — non "
+            "bloccante (la classe negativa estesa usa positivi+ambigui, "
+            "vedi thesis_notes.md §7.3), ma da tenere a mente."
         )
 
     n_positivo = n_negativo_vero = n_ambiguo = 0
@@ -65,7 +66,9 @@ def main():
 
     n_tot = max(len(loader), 1)
     h = int(args.min_height)
-    print(f"\n{'Categoria':<45}{'n':>8}{'%':>10}")
+    size_note = f" (img_size={args.img_size})" if args.loader == "okutama" else ""
+    print(f"\nLoader: {args.loader}{size_note} | dati: {args.data}")
+    print(f"{'Categoria':<45}{'n':>8}{'%':>10}")
     print("-" * 63)
     print(f"{'Positivo (>=1 bersaglio >=' + str(h) + 'px)':<45}{n_positivo:>8}{n_positivo/n_tot*100:>9.1f}%")
     print(f"{'Negativo vero (0 persone, qualunque size)':<45}{n_negativo_vero:>8}{n_negativo_vero/n_tot*100:>9.1f}%")
