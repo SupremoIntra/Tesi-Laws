@@ -246,13 +246,16 @@ def main():
         console.print(f"\n[bold cyan]Avvio Validazione Visiva su: {args.eval_vision}[/bold cyan]")
         try:
             from visdrone_loader import VisDroneLoader
+            from okutama_loader import OkutamaLoader
             from simulator import evaluate_on_dataset
         except ImportError as e:
             console.print(f"[red]Errore importazione PyTorch/YOLO: {e}[/red]")
             return
 
-        loader = VisDroneLoader(args.eval_vision)
-        console.print(f"VisDroneLoader: {len(loader)} frame validi.")
+        LOADERS = {"visdrone": VisDroneLoader, "okutama": OkutamaLoader}
+        loader = (LOADERS[args.loader](args.eval_vision, img_size=args.img_size)
+                  if args.loader == "okutama" else LOADERS[args.loader](args.eval_vision))
+        console.print(f"Loader ({args.loader}): {len(loader)} frame validi.")
 
         pt_path = args.patch
         try:

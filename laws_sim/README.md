@@ -158,8 +158,7 @@ Athalye et al. 2017, Arkin 2009).
 
 ## Note per la commissione
 
-Il capitolo "Limitations and Future Work" della tesi deve menzionare
-esplicitamente: (1) il Physical Domain Gap (tutto l'attacco è digitale,
+Il capitolo "Limitations and Future Work" menziona: (1) il Physical Domain Gap (tutto l'attacco è digitale,
 non testato su stampa CMYK reale); (2) la stabilità di `F.grid_sample`
 su backend MPS in sessioni di training molto lunghe; (3) la necessità di
 calibrazione fine dell'`ENGAGEMENT_THRESHOLD` nel Fusion Agent multi-agente;

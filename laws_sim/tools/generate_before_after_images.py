@@ -79,12 +79,16 @@ def main():
     parser.add_argument("--n-examples", type=int, default=4)
     parser.add_argument("--conf-threshold", type=float, default=0.50)
     parser.add_argument("--out-dir", type=str, default="outputs/metrics/before_after")
-    parser.add_argument("--max-samples", type=int, default=200,
-                         help="Quanti frame scandire in cerca di buoni esempi (non l'intero dataset, per velocità)")
+    parser.add_argument("--max-samples", type=int, default=14210)
+    parser.add_argument("--loader", choices=["visdrone", "okutama"], default="visdrone")
+    parser.add_argument("--img-size", type=int, default=960)
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
-    loader = VisDroneLoader(args.data)
+    from okutama_loader import OkutamaLoader
+    LOADERS = {"visdrone": VisDroneLoader, "okutama": OkutamaLoader}
+    loader = (LOADERS[args.loader](args.data, img_size=args.img_size)
+              if args.loader == "okutama" else LOADERS[args.loader](args.data))
     model = YOLO(args.model)
 
     patch_tensor = torch.load(args.patch, map_location="cpu", weights_only=True)
