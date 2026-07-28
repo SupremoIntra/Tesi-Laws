@@ -1,6 +1,6 @@
 """
 Okutama-Action DataLoader per LAWS-SIM.
-
+ 
 Struttura reale confermata (drone1/2 x mattina/pomeriggio x frame estratti,
 label separate per risoluzione nativa):
     okutama_root/
@@ -9,16 +9,16 @@ label separate per risoluzione nativa):
     ├── Drone2/Morning/Extracted-Frames-1280x720/<video>/<frame_num>.jpg
     ├── Drone2/Noon/Extracted-Frames-1280x720/<video>/<frame_num>.jpg
     └── Labels/SingleActionLabels/3840x2160/<video>.txt
-
+ 
     <video> = "<drone>.<time>.<scenario>" (es. "1.1.7"): drone in {1,2},
     time 1=Morning 2=Noon (doc ufficiale), scenario intero libero.
     Frame file: "<frame_num>.jpg", nessun padding (confermato: 0.jpg, 1.jpg, ...).
-
+ 
 Formato annotazioni (fonte: okutama-action.org, SingleActionLabels — un'unica
 riga per persona per frame, colonne azione già escluse a monte scegliendo
 questo file invece di MultiActionLabels):
     TrackID xmin ymin xmax ymax frame lost occluded generated "label" [azioni...]
-
+ 
     - Coordinate in spazio NATIVO 3840x2160 (confermato dal nome cartella
       label + "video resolution (3840x2160)" nella doc ufficiale) — NON
       1280x720. Lo scaling verso il canvas finale usa 3840x2160 come
@@ -30,14 +30,15 @@ questo file invece di MultiActionLabels):
       (parita' di trattamento tra i due dataset).
     - Colonne azione (11+) → ignorate (istruzione testuale della doc
       ufficiale, non inferenza).
-
-RISOLUZIONE (decisione di sessione): img_size=1280 quadrato, resize "a
-stretch" dal frame 1280x720 nativo — stessa filosofia di VisDroneLoader
-(ignora aspect ratio), per parita' metodologica tra i due dataset, non
-per fedelta' pixel ottimale. Fattore di stretch verticale ~1.78x da
-tenere a mente nella ricalibrazione soglie 60px/80px (decisione
-deferita al preflight, non ancora presa).
-
+ 
+RISOLUZIONE: img_size viene passato dal chiamante (default costruttore
+1280, ma la pipeline effettiva usa 960 — vedi cli.py --img-size). Il
+vincolo hardware che ha portato a 960 e' stato scoperto DOPO aver scritto
+questo loader: a 1280 con EoT=16 il training va in swap su un Mac M4
+16GB (thesis_notes.md, Fase 7.2). Resize "a stretch" dal frame 1280x720
+nativo, stessa filosofia di VisDroneLoader (parita' metodologica tra i
+due dataset, non fedelta' pixel ottimale).
+ 
 NOTA su MIN_BBOX_AREA: il filtro e' applicato in spazio NATIVO (3840x2160),
 PRIMA dello scaling — stessa convenzione di VisDroneLoader (che filtra su
 pixel nativi dell'immagine originale, prima del resize a 640x640). Il
@@ -45,9 +46,9 @@ significato assoluto della soglia dipende quindi dalla risoluzione nativa
 di ciascun dataset (non e' una scelta ottimale in senso assoluto), ma e'
 la stessa convenzione già in uso — coerenza di metodo, non ottimalita'
 per singolo dataset.
-
+ 
 Uso (identico a VisDroneLoader):
-    loader = OkutamaLoader("data/okutama_train", img_size=1280)
+    loader = OkutamaLoader("data/okutama_train", img_size=960)
     for img_pil, bboxes in loader.iter_batches(batch_size=4):
         ...
 """
