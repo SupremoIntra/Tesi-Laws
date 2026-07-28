@@ -181,9 +181,11 @@ fig.tight_layout()
 # =============================================================================
 # 6. SALVATAGGIO (raster ad alta risoluzione + vettoriale per la tesi)
 # =============================================================================
-OUT_PNG = "fig_candele_527.png"
+_stem = Path(PATH_REPORT).stem                       # es. "full_report_okutama_960_stride27"
+_suffix = _stem.replace("full_report", "").lstrip("_") or "output"
+OUT_PNG = PROJECT_ROOT / "outputs" / "metrics" / f"fig_candele_{_suffix}.png"
 fig.savefig(OUT_PNG, dpi=300, bbox_inches="tight")
-print(f"Salvato: {os.path.abspath(OUT_PNG)}")
+print(f"Salvato: {OUT_PNG}")
 plt.show()
 
 # =============================================================================

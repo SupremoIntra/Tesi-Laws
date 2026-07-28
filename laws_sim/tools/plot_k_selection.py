@@ -177,9 +177,10 @@ def main():
     print(f"K che massimizza F1: {k_best_f1} (valore={f1.max():.4f})")
     print(f"R2 a K=1: {R2[0]:.4f} | R2 a K={min(300,n_cells)}: {R2[min(300,n_cells)-1]:.4f} | R2 a K={n_cells}: {R2[-1]:.4f}")
 
+    suffix = args.loader if args.loader == "visdrone" else f"{args.loader}_{args.img_size}"
     os.makedirs(args.out_dir, exist_ok=True)
     np.savez(
-        os.path.join(args.out_dir, "k_selection_raw.npz"),
+        os.path.join(args.out_dir, f"k_selection_raw_{suffix}.npz"),
         K=K, R1=R1, R2=R2, F1=f1, gmean=gmean
     )
 

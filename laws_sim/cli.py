@@ -159,13 +159,17 @@ def main():
 
         report_metrics["Collateral (media/frame)"] = {"pre": cp_col, "post": cq_col, "paired_delta": dd_col}
         
-        out_path = "outputs/metrics/full_report.json"
+        suffix = "visdrone" if args.loader == "visdrone" else f"okutama_{args.img_size}"
+        if args.loader == "okutama" and args.stride > 1:
+            suffix += f"_stride{args.stride}"
+        out_path = f"outputs/metrics/full_report_{suffix}.json"
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w") as f:
             json.dump({"n_frame": len(outcomes_pre), "n_iter": args.n_iter,
-                       "metrics": report_metrics}, f, indent=2)
+                       "loader": args.loader,
+                       "img_size": args.img_size if args.loader == "okutama" else 640,
+                       "stride": args.stride, "metrics": report_metrics}, f, indent=2)
         console.print(f"[green]✓ Report salvato in {out_path}[/green]")
-
         # Extra opzionali (stratificazione per taglia + grafici K). conf_drop
         # RIMOSSO: il relatore ha chiesto il prima/dopo (evasion) significativo,
         # non il calo di confidenza continuo.
@@ -175,7 +179,8 @@ def main():
             for cmd in (
                 [sys.executable, "tools/stratify_by_size.py", "--data", args.data, "--patch", args.patch] +
                 (["--loader", "okutama"] if args.loader == "okutama" else []),
-                [sys.executable, "tools/plot_k_selection.py", "--data", args.data, "--max-samples", "300"],
+                [sys.executable, "tools/plot_k_selection.py", "--data", args.data, "--max-samples", "300"] +
+                (["--loader", "okutama", "--img-size", str(args.img_size)] if args.loader == "okutama" else []),
             ):
                 console.print(f"[dim]$ {' '.join(cmd)}[/dim]")
                 subprocess.run(cmd, check=False)
@@ -220,6 +225,14 @@ def main():
             results = optimizer.optimize_universal(loader=loader, verbose=True)
             torch.save(results["patch"], patch_out)
             console.print(f"\n[bold green]✓ Universal Patch salvata in: {patch_out}[/bold green]")
+
+            import shutil
+            from config import METRICS_JSON_FILE
+            suffix = "visdrone" if args.loader == "visdrone" else f"okutama_{args.img_size}"
+            if os.path.exists(METRICS_JSON_FILE):
+                dest = f"outputs/metrics/training_metrics_{suffix}.json"
+                shutil.copy(METRICS_JSON_FILE, dest)
+                console.print(f"[dim]Copia training curve salvata in: {dest}[/dim]")
         except KeyboardInterrupt:
             console.print("\n[yellow]Addestramento interrotto manualmente.[/yellow]")
         return
