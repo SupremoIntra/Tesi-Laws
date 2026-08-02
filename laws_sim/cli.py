@@ -269,6 +269,19 @@ def main():
         # TACTICAL FILTER 2026: ora restituisce anche le metriche filtrate
         # (>=80px) e la copertura tattica del valset, calcolate a costo zero
         # nello stesso loop di inferenza.
+        # FIX BRIDGE: due passate sullo stesso valset e stesso ordine.
+        # La PRE serve ad ancorare la baseline del simulatore al dataset
+        # effettivamente in uso (vedi fix D2 in simulator.py): senza di essa
+        # la riga "Baseline (No Attack)" resta a un valore di letteratura.
+        console.print("[dim]Passata PRE (YOLO naturale, nessuna patch)...[/dim]")
+        metrics_pre, _, _, _ = evaluate_on_dataset(
+            loader=loader,
+            patch_tensor=None,
+            max_samples=args.max_samples,
+            verbose=False
+        )
+
+        console.print("[dim]Passata POST (con patch)...[/dim]")
         metrics, metrics_tactical, tactical_coverage, per_frame_outcomes = evaluate_on_dataset(
             loader=loader,
             patch_tensor=patch_tensor,
@@ -277,12 +290,26 @@ def main():
         )
         filtered_evasion_rate = metrics_tactical.fn / max(metrics_tactical.tp + metrics_tactical.fn, 1)
 
-        # Salvo il risultato empirico (F1-Score) per il simulatore
+        # Bridge arricchito: R1/R2 sia PRE sia POST. I campi preesistenti
+        # sono AGGIUNTI, non sostituiti -> retrocompatibilità con ogni altro
+        # consumatore del JSON (plot, tool, script di analisi).
+        r1_pre = metrics_pre.sensitivity
+        r2_pre = metrics_pre.specificity
+        r1_post = metrics.sensitivity
+        r2_post = metrics.specificity
+
         results = {
             "f1": metrics.f1, "precision": metrics.precision, "recall": metrics.recall,
             "filtered_evasion_rate": filtered_evasion_rate,  # TACTICAL FILTER 2026
             "tactical_coverage": tactical_coverage,          # TACTICAL FILTER 2026
             "per_frame_outcomes": per_frame_outcomes,        # BOOTSTRAP CI (relatore)
+            # --- Campi per il simulatore (Layer 2/3) ---
+            "loader": args.loader,
+            "img_size": args.img_size if args.loader == "okutama" else 640,
+            "r1_pre": r1_pre, "r1_post": r1_post,
+            "r2_pre": r2_pre, "r2_post": r2_post,
+            "f1_pre": metrics_pre.f1,
+            "source": "eval_vision_two_pass",
         }
         os.makedirs(os.path.dirname(VISION_METRICS_JSON), exist_ok=True)
         with open(VISION_METRICS_JSON, "w") as f:
@@ -301,6 +328,10 @@ def main():
         t.add_row("Evasion Rate (completo)", f"{(metrics.fn / max(metrics.tp + metrics.fn, 1)) * 100:.1f}%")
         t.add_row("Evasion Rate (target >=80px)", f"{filtered_evasion_rate * 100:.1f}%")
         t.add_row("Copertura tattica valset (>=80px)", f"{tactical_coverage * 100:.1f}%")
+        t.add_row("R1 PRE (baseline reale dataset)", f"{r1_pre:.3f}")
+        t.add_row("R1 POST (sotto attacco)", f"{r1_post:.3f}")
+        t.add_row("Delta R1 (POST - PRE)", f"{r1_post - r1_pre:+.3f}")
+        t.add_row("R2 PRE / POST", f"{r2_pre:.3f} / {r2_post:.3f}")
         console.print(t)
         console.print(f"[green]✓ Metriche visive salvate per il simulatore ({VISION_METRICS_JSON}).[/green]\n")
 
@@ -312,9 +343,20 @@ def main():
         if os.path.exists(VISION_METRICS_JSON):
             with open(VISION_METRICS_JSON, "r") as f:
                 d = json.load(f)
-                console.print(f"[green]✓ Dati visivi empirici caricati (F1={d.get('f1', 0):.3f})[/green]")
+            if "r1_pre" in d:
+                console.print(
+                    f"[green]✓ Bridge caricato ({d.get('loader', '?')}): "
+                    f"R1 {d['r1_pre']:.3f} -> {d['r1_post']:.3f}, "
+                    f"R2 {d['r2_pre']:.3f} -> {d['r2_post']:.3f}[/green]"
+                )
+            else:
+                console.print(
+                    "[yellow]! ATTENZIONE: bridge in formato vecchio (solo F1). "
+                    "La baseline NON e' ancorata al dataset: rilancia "
+                    "--eval-vision prima di usare questi numeri in tesi.[/yellow]"
+                )
         else:
-            console.print("[yellow]! Nessun dato empirico trovato. Uso F1 Baseline (0.710).[/yellow]")
+            console.print("[yellow]! Nessun dato empirico trovato. Uso baseline di sicurezza (0.710).[/yellow]")
 
         from rich.table import Table
         results = {}

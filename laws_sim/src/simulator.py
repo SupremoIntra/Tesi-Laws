@@ -28,17 +28,39 @@ class LAWSSim:
         self.steps = steps
         self.env = Environment(grid_size=GRID_SIZE)
         
-        # IL PONTE: Leggo il dato reale misurato da VisDrone
-        vision_f1 = 0.710  # Baseline fittizia di sicurezza
+        # IL PONTE (fix D2): la baseline è ora ancorata al PRE REALE del
+        # dataset caricato, non più alla costante 0.710 (Sodhro et al. 2025).
+        #
+        # Difetto corretto: prima il JSON veniva letto SOLO negli scenari
+        # sotto attacco, quindi la riga "Baseline (No Attack)" restava fissa
+        # a 0.710 qualunque fosse il dataset. Le tabelle confrontavano un
+        # riferimento di letteratura generico con il dataset sotto attacco —
+        # non PRE vs POST — e il delta risultava inquinato dal domain gap,
+        # esattamente l'effetto che nel capitolo Vision è stato isolato.
+        #
+        # Ora i quattro valori vengono letti INDIPENDENTEMENTE dallo scenario:
+        # è detection.py a scegliere quale usare, in base a patch_active e al
+        # ruolo dell'entità.
+        r1_pre, r1_post = 0.710, 0.710
+        r2_pre, r2_post = 0.960, 0.960
         if os.path.exists(VISION_METRICS_JSON):
             with open(VISION_METRICS_JSON, "r") as f:
                 data = json.load(f)
-                # Se c'è un attacco visivo, carico il crollo dell'F1 (es. 0.008)
-                if scenario in (AttackScenario.PATCH_ONLY, AttackScenario.CASCADING):
-                    vision_f1 = data.get("f1", 0.008)
+            # Fallback ai default solo se il bridge è di una versione
+            # precedente al fix (campi assenti): in quel caso il simulatore
+            # gira ma la baseline NON è ancorata al dataset.
+            r1_pre = float(data.get("r1_pre", r1_pre))
+            r1_post = float(data.get("r1_post", r1_post))
+            r2_pre = float(data.get("r2_pre", r2_pre))
+            r2_post = float(data.get("r2_post", r2_post))
 
-        # Inizializzo l'Agente Visivo Statistico passandogli il dato empirico
-        self.vision = VisionAgentStat(empirical_f1=vision_f1)
+        # Nuova firma (fix D1/D3): non più un F1 aggregato singolo, ma i due
+        # recall empirici in entrambe le condizioni. La detection diventa un
+        # test di Bernoulli su R1 (target) e 1-R2 (civili).
+        self.vision = VisionAgentStat(
+            r1_pre=r1_pre, r1_post=r1_post,
+            r2_pre=r2_pre, r2_post=r2_post,
+        )
         
         self.fusion = FusionAgent()
         self.decision = DecisionAgent()
