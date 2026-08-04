@@ -362,7 +362,7 @@ Il dato tecnicamente interessante di questa vicenda non è l'esito, ancora pende
 La controversia appena descritta \footcite{leggezero_anthropic_2026} rende ancora più chiaro il collasso dell'autoregolamentazione etica. Davanti all'iper-pragmatismo dello stato di eccezione, persino i vincoli architetturali dei modelli commerciali più avanzati vengono dissolti in favore dell'esigenza tattica. %%COME CONTINUARE E SPIEGARE BENE LA FONTE COLLEGANDO E FACENDO UN RIEPILOGO DEL CAPITOLO?%%
 Se l'etica privata cede all'operatività e la governance globale risulta paralizzata, emerge una chiara constatazione: la difesa dei diritti umani non può più essere unicamente demandata a compromessi giuridici o ad autocertificazioni aziendali. Questo vuoto normativo rende strettamente necessaria l'analisi che verrà affrontata nel Capitolo Terzo: testare sperimentalmente le vulnerabilità algoritmiche dei sistemi di \textit{Computer Vision} impiegati nel \textit{targeting}, per dimostrare come la manipolazione tecnica dell'Intelligenza Artificiale (\textit{Adversarial Attacks}) possa affermarsi come l'ultimo argine di difesa materiale lì dove il Diritto Internazionale sta fallendo miseramente.
 
-\chapter{Adversarial Patch Attack e Vulnerabilità dei Sistemi di Targeting}
+\chapter{Stato dell'arte}
 \label{cap3}
 rischi tecnici \footcite{podar_2025}. vulnerabilità intrinseche delle reti neurali utilizzate nel targeting \footcite{feldman_2024}
 Aggiungo grafiici e risultati sperimentali sui computer vision e sugli adversarial attack (patching)
@@ -376,8 +376,162 @@ Aggiungo grafiici e risultati sperimentali sui computer vision e sugli adversari
         \item Decision Agent  IGNORE  falso negativo sistemico
     \end{itemize}
 
-\chapter{Conclusioni: Il C.A.R.E. Kit e la Difesa dei Diritti Umani}
+\chapter{Metodo}
 \label{cap4}
+% =============================================================================
+%  MATERIALI E METODI — §1 Architettura del framework
+%  Da incollare in main.tex. Convenzioni applicate:
+%   - \footcite (biblatex verbose-ibid, coerente col preambolo esistente)
+%   - decimali col punto, non con la virgola
+%   - nessun \\ per andare a capo, nessun \noindent
+%   - acronimi definiti al primo uso
+%   - equazioni con label e simboli spiegati in prosa subito dopo
+%   - \subsubsection* per i paragrafi intitolati (fuori numerazione e indice)
+%
+%  ============================================================================
+%  PROMEMORIA — CAPITOLO STATO DELL'ARTE  ***DA SCRIVERE***
+%  ============================================================================
+%  Si sta procedendo in ordine di prontezza, non di lettura. Nel documento
+%  finale lo Stato dell'arte va PRIMA di questo capitolo.
+%
+%  Contenuto previsto (vedi indice_tesi_v3.tex, Cap. 3):
+%    - Rilevamento a singolo stadio: nozioni essenziali (griglia, confidenza
+%      per cella, NMS). Niente derivazione interna di YOLO.
+%    - Adversarial examples e patch: Carlini & Wagner 2017, Brown et al. 2017
+%    - EoT: Athalye et al. 2017
+%    - Patch contro persone: Thys et al. 2019, Wu et al. 2020, Hu et al. 2021,
+%      Huang et al. 2020 — TUTTI a livello del suolo
+%    - Dominio aereo: la letteratura attacca VEICOLI e scarta i pedoni per
+%      dimensione. E' IL GAP CHE GIUSTIFICA LA TESI.
+%    - Difese passive e camouflage: Harvey (CV Dazzle), tessuti avversariali
+%    - Architetture di fusione: STANAG 1241 (tassonomia, stato UNKNOWN),
+%      4162 (BBA bayesiano), 4676, 4586
+%
+%  PRIMA DI SCRIVERLO, DUE VERIFICHE BLOCCANTI:
+%    1. DOI/riferimenti completi di LFRAP 2025 e del paper 2023 su aerial
+%       imagery: nelle note sono citati in forma abbreviata e non verificata.
+%       NON ricostruirli a memoria.
+%    2. STANAG 1241: accertare se lo stato UNKNOWN comporti una qualsiasi
+%       conseguenza sull'ingaggio. Se NON la comporta, "UNKNOWN implica
+%       astensione" e' la TESI di questo lavoro, non un legame preesistente.
+%  ============================================================================
+
+
+\section{Architettura del framework LAWS-SIM}
+\label{sec:laws_sim}
+
+Il framework sviluppato in questo lavoro, denominato LAWS-SIM, non è un
+sistema d'arma né una sua replica funzionale: è un banco di prova progettato
+per rendere misurabile una singola domanda, ovvero se e quanto una
+contromisura passiva applicata al corpo di una persona possa alterare il
+comportamento di un sistema di percezione autonoma. La sua struttura riflette
+questa finalità: un modulo di visione basato su dati reali, e un ambiente
+simulato che ne propaga gli effetti fino a una decisione.
+
+\subsection{Organizzazione in tre livelli e disaccoppiamento della pipeline}
+\label{sec:tre_layer}
+
+L'architettura è organizzata in tre livelli funzionalmente distinti. Il primo
+livello riguarda la visione: su di esso si concentra il contributo
+sperimentale della tesi, e consiste nell'ottimizzazione di una patch
+avversariale universale contro un rilevatore di oggetti e nella misura del
+degrado che ne consegue su due insiemi di dati aerei reali. Il secondo livello
+è un ambiente multi-agente che simula il movimento di un velivolo senza
+pilota e delle entità a terra, e che integra le metriche empiriche prodotte
+dal primo livello. Il terzo livello riguarda l'integrità dei metadati
+informativi e valuta la resilienza della decisione fusa a perturbazioni dei
+canali non visivi.
+
+La distinzione di merito tra i tre livelli va dichiarata subito, perché
+determina il peso che va attribuito ai rispettivi risultati. Il primo livello
+opera su fotogrammi reali e su un rilevatore reale, e i suoi risultati sono
+misure sperimentali. Il secondo e il terzo livello operano su entità
+sintetiche generate da distribuzioni statistiche scelte in fase di
+progettazione, e i loro risultati hanno lo statuto di conseguenze di un
+modello, non di osservazioni. Questa asimmetria è deliberata e ricorre nella
+discussione dei risultati.
+
+\subsubsection*{Il ponte di interscambio tra visione e simulazione}
+
+Eseguire l'inferenza del rilevatore a ogni passo temporale della simulazione
+sarebbe proibitivo: ogni passo richiede una valutazione per ciascuna entità
+visibile, e ogni scenario richiede centinaia di passi. La soluzione adottata
+disaccoppia i due livelli. Le prestazioni del sensore vengono misurate una
+sola volta, in modalità non interattiva, su tutto l'insieme di validazione; i
+valori così ottenuti vengono scritti su un file di interscambio in formato
+JSON; il simulatore li legge all'inizializzazione e li usa come parametri di
+un modello probabilistico del sensore, senza mai caricare la rete neurale.
+
+Il disaccoppiamento ha una conseguenza metodologica che va oltre il risparmio
+di calcolo: rende i due livelli verificabili in modo indipendente. Il
+comportamento del sensore può essere validato contro i dati reali senza che
+il simulatore sia coinvolto, e il simulatore può essere eseguito su
+parametri arbitrari per verificarne la coerenza interna senza rilanciare
+alcuna inferenza. Il file di interscambio è inoltre l'unico punto di
+contatto tra i due livelli, il che rende esplicito e ispezionabile
+l'insieme delle informazioni che passano dall'uno all'altro.
+
+\subsection{Il canale visivo come modello probabilistico del sensore}
+\label{sec:canale_visivo}
+
+All'interno del simulatore, il canale visivo non riproduce il rilevatore: ne
+riproduce il \emph{tasso di successo}. A ogni passo temporale, per ogni
+entità entro il raggio operativo del sensore, l'esito del rilevamento è
+determinato da un'estrazione di Bernoulli la cui probabilità di successo è
+posta pari alla sensibilità misurata empiricamente sul primo livello.
+
+La scelta della sensibilità come parametro richiede una giustificazione,
+perché una versione precedente dell'implementazione usava invece la misura
+$F_1$. Indicando con $\mathit{TP}$, $\mathit{FN}$, $\mathit{TN}$ e
+$\mathit{FP}$ rispettivamente i veri positivi, i falsi negativi, i veri
+negativi e i falsi positivi calcolati a livello di fotogramma, la
+sensibilità e la specificità sono definite come
+\begin{equation}
+    R_1 = \frac{\mathit{TP}}{\mathit{TP} + \mathit{FN}}, \qquad
+    R_2 = \frac{\mathit{TN}}{\mathit{TN} + \mathit{FP}}
+    \label{eq:r1_r2}
+\end{equation}
+dove $R_1$ è la frazione di fotogrammi contenenti un bersaglio valido in cui
+il rilevatore individua almeno una persona, e $R_2$ è la frazione di
+fotogrammi privi di bersaglio valido che il rilevatore classifica
+correttamente come tali. La misura $F_1$, per contro, è la media armonica di
+precisione e sensibilità calcolata sull'intero insieme di validazione: è una
+quantità aggregata, e non ammette un'interpretazione probabilistica riferita
+al singolo fotogramma. La domanda a cui il simulatore deve rispondere a ogni
+passo è invece esattamente ``questo bersaglio viene visto?'', ovvero un
+evento binario il cui tasso di successo atteso su fotogrammi positivi è per
+definizione $R_1$. La sostituzione corregge dunque un errore di categoria,
+non un semplice cambio di parametro.
+
+Il modello distingue due condizioni per ciascuna entità. Per un bersaglio su
+cui la contromisura è attiva, la probabilità di rilevamento è la sensibilità
+misurata in condizione di attacco; in assenza di contromisura è la
+sensibilità misurata sul rilevatore non perturbato, ovvero la linea di base
+propria dell'insieme di dati in uso. Per un'entità civile, che costituisce un
+caso negativo, la quantità rilevante è il tasso di falso allarme, pari a
+$1 - R_2$. Questa formulazione garantisce che entrambe le metriche misurate
+sul primo livello entrino effettivamente nel simulatore: in una versione
+precedente le entità civili erano trattate con un ramo di codice separato che
+non dipendeva da alcuna misura empirica, e la specificità non raggiungeva
+quindi mai il secondo livello.
+
+\subsubsection*{Il decadimento con la distanza non è modellato analiticamente}
+
+Il simulatore calcola la distanza tridimensionale fra sensore ed entità e la
+usa per modulare la confidenza riportata nei registri di esecuzione, ma
+\emph{non} per determinare l'esito del rilevamento. La ragione è che $R_1$ è
+una media empirica calcolata su fotogrammi reali, i quali contengono già una
+distribuzione eterogenea di distanze e di dimensioni apparenti del bersaglio:
+applicare a valle un ulteriore fattore di decadimento con la distanza
+conterebbe due volte il medesimo effetto. Si tratta di una scelta di
+modellazione esplicita, non di un'omissione, e la sua conseguenza è che il
+canale visivo del simulatore riproduce il comportamento \emph{medio} del
+rilevatore sulla distribuzione di distanze osservata, senza pretendere di
+riprodurne la dipendenza puntuale dalla geometria della scena.
+
+\chapter{Risultati}
+\chapter{Conclusioni: Il C.A.R.E. Kit e la Difesa dei Diritti Umani}
+\label{cap6}
 \todo{CARE KIT COME CONCLUSIONE O CONCLUSIONI CAPITOLO A PARTE????}Sfide etiche? \footcite{helkala_2023}, proposta di sviluppo di contromisure fisiche basate sulle debolezze della computer vision. Tecniche come il camuffamento asimmetrico \footcite{harvey_2010} e tessuti con pattern avversari \footcite{wu_2020, hu_2022} offrono una linea di difesa contro il tracciamento algoritmico.
 
 % --- BIBLIOGRAFIA ---
