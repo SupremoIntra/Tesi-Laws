@@ -99,17 +99,17 @@ Attraverso un'analisi interdisciplinare, la tesi si propone quindi di esplorare 
  
 Il rapido avanzamento tecnologico nel campo dell'intelligenza artificiale ha radicalmente ridefinito i paradigmi della sicurezza globale, sollevando interrogativi che superano i confini della pura tecnica per addentrarsi nei domini dell'etica e della giurisprudenza. La progressiva delegazione di decisioni letali a sistemi algoritmici complessi evidenzia una frizione insanabile tra la velocità dell'innovazione e la naturale lentezza dei processi di regolamentazione internazionale. 
 
-In questo scenario di profonda trasformazione, il presente lavoro si articola in quattro capitoli principali per esplorare le reali implicazioni di tale transizione. Il primo capitolo esamina il fallimento diplomatico nella gestione dei Sistemi d'Arma Autonomi Letali (LAWS), mostrando le divergenze strategiche tra le posizioni degli stati e le conseguenze per la governance globale. Il secondo capitolo affronta i dilemmi etici e la tanatopolitica algoritmica, discutendo l'illusione dell'autonomia e la necessità di un controllo umano di default. Il terzo capitolo presenta l'analisi sperimentale delle vulnerabilità tecniche dei sistemi autonomi, con particolare attenzione al concetto di bias e agli adversarial attack come minaccia diretta al concetto di ``human in the loop''. Infine, il quarto capitolo propone un approccio innovativo per la creazione di uno strumento popolare di difesa dei diritti umani attraverso lo sviluppo di contromisure fisiche basate sulle debolezze intrinseche della Computer Vision.
+In questo scenario di profonda trasformazione, il presente lavoro si articola in sei capitoli principali per esplorare le reali implicazioni di tale transizione. Il primo capitolo esamina il fallimento diplomatico nella gestione dei Sistemi d'Arma Autonomi Letali (LAWS), mostrando le divergenze strategiche tra le posizioni degli stati e le conseguenze per la governance globale. Il secondo capitolo affronta i dilemmi etici e la tanatopolitica algoritmica, discutendo l'illusione dell'autonomia e la necessità di un controllo umano di default. Il terzo capitolo presenta lo stato dell'arte dei sistemi di vision, degli adversarial attack come minaccia diretta al concetto di ``Human-in-the-loop'' e le relative vulnerabilità. Il quarto capitolo propone una panoramica sulle metodologie utilizzate per portare avanti la sezione sperimentale, in particolar modo attacchi avversariali di patching, miglioramento efficienza patch grazie all'Expectation over transformation (EoT) e al processo di training della patch sui due dataset aerei presi in considerazione. Il quinto capitolo comprende i risultati e gli output significativi che portano valore a questo lavoro. Infine, nel sesto capitolo si rielabora il lavoro svolto e si traggono le conclusioni, comprendenti la proposta di un approccio innovativo per la creazione di uno strumento popolare di difesa dei diritti umani attraverso lo sviluppo di contromisure fisiche basate sulle debolezze intrinseche della Computer Vision
 
 \section{Obiettivi}
-Il presente lavoro di tesi si pone l'obiettivo di analizzare criticamente l'intersezione tra le normative del Diritto Internazionale Umanitario (DIU) e le vulnerabilità intrinseche dei sistemi di visione artificiale impiegati nei contesti bellici. Partendo dall'assunto che l'attuale diplomazia internazionale fatica a definire confini normativi efficaci per i LAWS, questo studio intende dimostrare, attraverso un approccio empirico, la concreta inapplicabilità delle tutele giuridiche basate sull'illusione di un controllo umano infallibile.
+Il presente lavoro affronta sperimentalmente la sicurezza dei sistemi di percezione basati su Computer Vision impiegati nei sistemi di targeting militare, quantificando l'impatto di tecniche di \textit{Adversarial Machine Learning} sulla loro affidabilità operativa. Il quadro di riferimento è il Diritto Internazionale Umanitario (DIU), che vincola l'uso della forza letale alla presenza di un controllo umano significativo sul processo decisionale: poiché l'attuale stallo della diplomazia internazionale nella regolamentazione dei Sistemi d'Arma Autonomi Letali (LAWS) lascia questo vincolo privo di una verifica tecnica indipendente, il presente studio ne misura empiricamente la tenuta, sottoponendo il canale sensoriale del sistema a un attacco avversariale controllato e osservandone la propagazione fino alla decisione finale.
 
 Nello specifico, per perseguire tale scopo, il lavoro si articola sui seguenti obiettivi specifici:
 \begin{itemize}
     \item \textbf{Analisi geopolitica e normativa:} esaminare il divario tra l'approccio pragmatico-militare delle principali superpotenze e i tentativi di regolamentazione, evidenziando il fallimento della diplomazia internazionale (es. tavoli CCW) di fronte a necessità tattiche dettate dai moderni teatri di conflitto.
-    \item \textbf{Valutazione necro-etica dell'autonomia:} approfondire il concetto di tanatopolitica algoritmica, dimostrando come la disarticolazione tra l'umano e lo strumento di morte introduca problematiche di accountability e di ``bias'' insormontabili nel trattamento dei dati in zone di guerra.
-    \item \textbf{Quantificazione sperimentale delle vulnerabilità:} valutare empiricamente la robustezza dei modelli di Object Detection (nello specifico l'architettura YOLO) utilizzati nei sistemi di targeting, sfruttando tecniche di \textit{Adversarial Machine Learning} per dimostrare la facilità con cui la ``confidence'' algoritmica può essere compromessa. Tenere conto al contempo di altri fattori che possono influenzare la decisione di ``engagement'' come l'OSINT e il ``behavior'' del soggetto identificato da YOLO.
-    \item \textbf{Progettazione di contromisure umanitarie:} proporre e teorizzare il ``C.A.R.E. Kit'', una contromisura di difesa passiva basata sul camuffamento avversariale, volta a tutelare i diritti umani sfruttando proprio le debolezze strutturali della Computer Vision.
+    \item \textbf{Valutazione della governance e della necro-etica dell'autonomia:} approfondire il concetto di tanatopolitica algoritmica, dimostrando come la disarticolazione tra l'umano e lo strumento di morte introduca problematiche di accountability e di ``bias'' insormontabili nel trattamento dei dati in zone di guerra.
+    \item \textbf{Quantificazione sperimentale delle vulnerabilità:} valutare empiricamente la robustezza dei modelli di Object Detection (nello specifico l'architettura YOLO) utilizzati nei sistemi di targeting, sfruttando tecniche di \textit{Adversarial Machine Learning} per dimostrare la facilità con cui la ``confidence'' algoritmica può essere compromessa. La valutazione è condotta su due dataset aerei indipendenti, per constatare se le vulnerabilità osservate siano caratteristica unica del dataset o si replichino su domini distinti. Si tiene inoltre conto di altri fattori che possono influenzare la decisione di ``engagement'', come l'OSINT, il comportamento del soggetto identificato da YOLO, tramite un simulatore (\textit{LAWS-SIM}).
+    \item \textbf{Misurazione dei limiti di una contromisura passiva:} progettare il ``C.A.R.E. Kit'', un camuffamento indossabile, e misurarne statisticamente l'efficacia contro un sistema aereo, per fornire una stima di quanta protezione una contromisura di questo tipo possa realisticamente offrire.
 \end{itemize}
 \chapter{Dual-Use, contesto operativo e geopolitica}
 \label{cap1}
@@ -140,7 +140,7 @@ In questo nuovo contesto operativo, la Silicon Valley assume un ruolo di primo p
 La proliferazione di queste tecnologie commerciali altera irreversibilmente gli equilibri di potere globali. La democratizzazione a basso costo dell'AI permette non solo alle superpotenze, ma anche ad attori statali minori di sviluppare letalità autonoma \footcite{longpre_2022}. Di conseguenza, diviene quasi impossibile applicare una regolamentazione basata sui vecchi trattati di non proliferazione: bandire o limitare severamente la tecnologia militare significherebbe paralizzare l'innovazione dell'intero mercato civile globale. È proprio in questa profonda zona d'ombra tra lo sviluppo commerciale delle Big Tech e la loro immediata applicazione bellica che si consuma l'attuale stallo diplomatico.
 
 
-\section{Lo squilibrio di potere e il fallimento diplomatico }
+\section{Lo squilibrio di potere e il fallimento diplomatico}
 
 Negli ultimi anni, l'utilizzo dell'intelligenza artificiale e, soprattutto dei Lethal Autonomous Weapon Systems (LAWS), non è stato regolato da un'etica universale, ma da un mero realismo geopolitico. Le modalità con le quali uno stato si pone dinnanzi alla regolamentazione algoritmica sono strettamente legate alla sua capacità di sviluppare tecnologie interne, senza dipendere ciecamente da altri stati più ``forti'' in quel campo.
 Nello scenario attuale, è presente una dissonanza tra i due principali attori politici ed economici: da una parte gli Stati Uniti d'America utilizzano un approccio iper-pragmatico. Le ``Constitution'' \footcite{anthropic_constitution} delle aziende AI private, come Anthropic, hanno una valenza etico-giuridica fino a quando entrano in gioco sovra-esigenze di sicurezza nazionale, come dimostrato dalle pressioni del Pentagono nei confronti di Anthropic per rimuovere i vincoli etici dal loro modello commerciale Claude AI. Quindi la domanda che dovremmo porci è se, concretamente, l'etica si posiziona davvero sopra ad ogni aspetto o, potenzialmente, si può comprare, politicizzare e sopprimere in un fantomatico stato di eccezione.
@@ -249,11 +249,11 @@ Questo evento evidenzia due criticità geopolitiche:
 
 
 
-\chapter{L'Illusione dell'Etica e la Tanatopolitica Algoritmica}
+\chapter{L'Illusione dell'Etica nella Governance e la Tanatopolitica Algoritmica}
 \label{cap2}
 
 I concetti di autonomia e indipendenza nei LAWS non rappresentano una banale evoluzione tecno-meccanica, ma una radicale disarticolazione del legame tra l'azione bellica e il soggetto umano \textit{respons-abile}, ovvero capace di rispondere, assumere una piena responsabilità, attualmente impossibile da attribuire a un sistema algoritmico.
-Architetturalmente, il passaggio all'autonomia letale segna la drammatica transizione da un processo decisionale puramente umano basato sulla semantica a un'inferenza stocastica. \footnote{L'impiego del termine ``stocastico'' non è casuale: a differenza del ragionamento umano, che opera per nessi semantici e causali, la macchina mappa vettori di dati in distribuzioni di probabilità per approssimare un risultato. Come si dimostrerà sperimentalmente nel Capitolo Quarto, manipolare parametri statistici (come la soglia di \textit{confidence} in YOLO) altera direttamente queste probabilità, trasformando l'imprevedibilità stocastica dell'algoritmo in uno strumento di necropolitica privo di fondamenti semantici.} Come verrà spiegato nel capitolo quarto, la macchina identifica un bersaglio unicamente calcolando distribuzioni di probabilità per minimizzare una funzione di perdita preimpostata detta \textit{Loss Function}, ma è strutturalmente incapace di assumere piena responsabilità e quindi di \textit{rispondere} del proprio tasso d'errore nell'ingaggio (\textit{falsi positivi}) \footcite{simmons_edler_2025}.
+Architetturalmente, il passaggio all'autonomia letale segna la drammatica transizione da un processo decisionale puramente umano basato sulla semantica a un'inferenza stocastica. \footnote{L'impiego del termine ``stocastico'' non è casuale: a differenza del ragionamento umano, che opera per nessi semantici e causali, la macchina mappa vettori di dati in distribuzioni di probabilità per approssimare un risultato. Come si dimostrerà sperimentalmente nel Capitolo Quinto, manipolare parametri statistici (come la soglia di \textit{confidence} in YOLO) altera direttamente queste probabilità, trasformando l'imprevedibilità stocastica dell'algoritmo in uno strumento di necropolitica privo di fondamenti semantici.} Come verrà spiegato nel capitolo quarto, la macchina identifica un bersaglio unicamente calcolando distribuzioni di probabilità per minimizzare una funzione di perdita preimpostata detta \textit{Loss Function}, ma è strutturalmente incapace di assumere piena responsabilità e quindi di \textit{rispondere} del proprio tasso d'errore nell'ingaggio (\textit{falsi positivi}) \footcite{simmons_edler_2025}.
 La delegazione delle funzioni critiche di selezione e ingaggio a sistemi algoritmici, come complesse \textit{pipeline} di \textit{Computer Vision} e di \textit{Data Fusion} multi-sensore, introduce profondi dilemmi necro-etici, riconducibili a una vera e propria \textit{tanatopolitica computazionale}, in cui il potere di amministrare inesorabilmente la morte viene atomizzato tra gli \textit{hidden layers} di una rete neurale profonda e, di conseguenza, privato di un chiaro centro di imputazione giuridica \footcite{buffa_2025}.
 Questo vuoto normativo coincide esattamente con il limite tecnico della \textit{Black Box} algoritmica, in cui la costante mancanza di una \textit{Explainable AI} (XAI) rende intrattabile qualsiasi \textit{System Auditing} successivo ad un attacco illecito \footcite{wood_2024_xai, christie_2024}.
 Di fronte a questa opacità, l'esigenza di un controllo umano significativo (\textit{Meaningful Human Control}) emerge come una problematica centrale e non negoziabile lungo l'intero ciclo di vita del sistema \footcite{bode_2025, christie_2024}. Nonostante ciò, tale controllo si scontra con ostacoli cibernetici e cognitivi invalicabili: l'estrema asimmetria tra la velocità di \textit{processing} algoritmica e i limiti cognitivi umani genera un inscalfibile \textit{Automation Bias} \footcite{horowitz_kahn_2024}. In queste condizioni operative, lo \textit{human-in-the-loop} si degrada da garante del Diritto Internazionale a semplice finzione procedurale, chiamato ad avallare imparzialmente decisioni istantanee prese da un modello statistico \textit{in-udibile}.
@@ -352,62 +352,14 @@ Questo scontro non è rimasto confinato al piano retorico o contrattuale, ha att
 
 Il dato tecnicamente interessante di questa vicenda non è l'esito, ancora pendente, ma la struttura stessa della motivazione d'appello: un danno finanziario contenuto per una singola azienda privata viene bilanciato, e trovato recessivo, rispetto alla necessità di disporre senza interruzioni di un'infrastruttura di intelligenza artificiale durante un conflitto attivo. È esattamente la stessa logica già descritta a proposito dell'accesso strutturato \footcite{shevlane_2022_access}: superata una certa soglia di integrazione operativa, il potere di \textit{enforcement} del developer non si riduce soltanto nei fatti, per l'assenza di un interruttore tecnico azionabile dentro un'infrastruttura classificata di terzi, ma viene ora anche esplicitamente subordinato in diritto dalla stessa autorità giudiziaria chiamata a valutarlo. La Constitution algoritmica, presentata in apertura di questo capitolo come segnale di \textit{reward} regolabile e non come principio immutabile \footcite{bai_2022_cai}, trova qui la propria conferma più diretta: non resiste alla pressione contrattuale dello Stato, e adesso si scopre che non resiste nemmeno al vaglio di una corte, quando quella corte applica il medesimo calcolo di bilanciamento operativo che il capitolo ha descritto come strutturale e non contingente. Valutando la situazione, ha davvero senso parlare ancora di ``autoregolamentazione'' dell'intelligenza artificiale oppure, sarebbe più onesto, definirla una sorta di ``etica ad uso concesso''?\\
 La controversia appena descritta \footcite{leggezero_anthropic_2026} rende ancora più chiaro il collasso dell'autoregolamentazione etica. Davanti all'iper-pragmatismo dello stato di eccezione, persino i vincoli architetturali dei modelli commerciali più avanzati vengono dissolti in favore dell'esigenza tattica. %%COME CONTINUARE E SPIEGARE BENE LA FONTE COLLEGANDO E FACENDO UN RIEPILOGO DEL CAPITOLO?%%
-Se l'etica privata cede all'operatività e la governance globale risulta paralizzata, emerge una chiara constatazione: la difesa dei diritti umani non può più essere unicamente demandata a compromessi giuridici o ad autocertificazioni aziendali. Questo vuoto normativo rende strettamente necessaria l'analisi che verrà affrontata nel Capitolo Quarto: testare sperimentalmente le vulnerabilità algoritmiche dei sistemi di \textit{Computer Vision} impiegati nel \textit{targeting}, per dimostrare come la manipolazione tecnica dell'Intelligenza Artificiale (\textit{Adversarial Attacks}) possa affermarsi come l'ultimo argine di difesa materiale lì dove il Diritto Internazionale sta fallendo miseramente.
+Se l'etica privata cede all'operatività e la governance globale risulta paralizzata, emerge una chiara constatazione: la difesa dei diritti umani non può più essere unicamente demandata a compromessi giuridici o ad autocertificazioni aziendali. Questo vuoto normativo rende strettamente necessaria l'analisi che verrà affrontata nel Capitolo Quinto: testare sperimentalmente le vulnerabilità algoritmiche dei sistemi di \textit{Computer Vision} impiegati nel \textit{targeting}, per dimostrare come la manipolazione tecnica dell'Intelligenza Artificiale (\textit{Adversarial Attacks}) possa affermarsi come l'ultimo argine di difesa materiale lì dove il Diritto Internazionale sta fallendo miseramente.
 
 \chapter{Stato dell'arte}
 \label{cap3}
-rischi tecnici \footcite{podar_2025}. vulnerabilità intrinseche delle reti neurali utilizzate nel targeting \footcite{feldman_2024}
-Aggiungo grafiici e risultati sperimentali sui computer vision e sugli adversarial attack (patching)
-- aggiungo esperimento agents simulati in python per abbattimento metriche precision, recall, f1 score, ecc. utilizzando metodi in contemporanea:
 
-    \begin{itemize}
-        \item CARE kit (EoT patch)  Vision Agent non rileva target
-        \item OSINT poisoning  OSINT Agent abbassa il profilo
-        \item Fusion Agent  riceve segnale degradato da entrambi i layer
-        \item \todo{CHE ALGO DI DECISIONE METTO?Bayesian update  non raggiunge la soglia di engagement}
-        \item Decision Agent  IGNORE  falso negativo sistemico
-    \end{itemize}
 
 \chapter{Metodo}
 \label{cap4}
-% =============================================================================
-%  MATERIALI E METODI — §1 Architettura del framework
-%  Da incollare in main.tex. Convenzioni applicate:
-%   - \footcite (biblatex verbose-ibid, coerente col preambolo esistente)
-%   - decimali col punto, non con la virgola
-%   - nessun \\ per andare a capo, nessun \noindent
-%   - acronimi definiti al primo uso
-%   - equazioni con label e simboli spiegati in prosa subito dopo
-%   - \subsubsection* per i paragrafi intitolati (fuori numerazione e indice)
-%
-%  ============================================================================
-%  PROMEMORIA — CAPITOLO STATO DELL'ARTE  ***DA SCRIVERE***
-%  ============================================================================
-%  Si sta procedendo in ordine di prontezza, non di lettura. Nel documento
-%  finale lo Stato dell'arte va PRIMA di questo capitolo.
-%
-%  Contenuto previsto (vedi indice_tesi_v3.tex, Cap. 3):
-%    - Rilevamento a singolo stadio: nozioni essenziali (griglia, confidenza
-%      per cella, NMS). Niente derivazione interna di YOLO.
-%    - Adversarial examples e patch: Carlini & Wagner 2017, Brown et al. 2017
-%    - EoT: Athalye et al. 2017
-%    - Patch contro persone: Thys et al. 2019, Wu et al. 2020, Hu et al. 2021,
-%      Huang et al. 2020 — TUTTI a livello del suolo
-%    - Dominio aereo: la letteratura attacca VEICOLI e scarta i pedoni per
-%      dimensione. E' IL GAP CHE GIUSTIFICA LA TESI.
-%    - Difese passive e camouflage: Harvey (CV Dazzle), tessuti avversariali
-%    - Architetture di fusione: STANAG 1241 (tassonomia, stato UNKNOWN),
-%      4162 (BBA bayesiano), 4676, 4586
-%
-%  PRIMA DI SCRIVERLO, DUE VERIFICHE BLOCCANTI:
-%    1. DOI/riferimenti completi di LFRAP 2025 e del paper 2023 su aerial
-%       imagery: nelle note sono citati in forma abbreviata e non verificata.
-%       NON ricostruirli a memoria.
-%    2. STANAG 1241: accertare se lo stato UNKNOWN comporti una qualsiasi
-%       conseguenza sull'ingaggio. Se NON la comporta, "UNKNOWN implica
-%       astensione" e' la TESI di questo lavoro, non un legame preesistente.
-%  ============================================================================
-
 
 \section{Architettura del framework LAWS-SIM}
 \label{sec:laws_sim}
@@ -520,6 +472,191 @@ modellazione esplicita, non di un'omissione, e la sua conseguenza è che il
 canale visivo del simulatore riproduce il comportamento \emph{medio} del
 rilevatore sulla distribuzione di distanze osservata, senza pretendere di
 riprodurne la dipendenza puntuale dalla geometria della scena.
+
+
+\section{Modello di minaccia e architettura dell'attacco}
+\label{sec:attacco}
+
+La valutazione di robustezza condotta in questo lavoro segue la logica
+propria della sicurezza informatica: prima si dichiara il modello di
+minaccia, cioè quali capacità si attribuiscono all'attaccante e quali
+vincoli lo limitano, e solo dopo si costruisce l'attacco. Senza questa
+dichiarazione preliminare qualunque risultato di robustezza è
+ininterpretabile, perché un attacco riuscito sotto ipotesi irrealistiche non
+dice nulla sulla sicurezza del sistema reale.
+
+\subsection{Modello di minaccia}
+\label{sec:threat_model}
+
+La superficie di attacco considerata è il canale di acquisizione ottica del
+sistema di percezione: l'avversario non ha accesso né alla rete di
+comunicazione, né ai pesi del modello in esecuzione sul velivolo, né alla
+catena di comando. La sua unica capacità è modificare l'aspetto fisico della
+scena osservata, applicando una superficie stampata sul proprio corpo. Si
+tratta, nella terminologia della disciplina, di un attacco di evasione al
+momento dell'inferenza, non di un attacco di avvelenamento in fase di
+addestramento: il modello bersaglio resta integro, e viene indotto in errore
+soltanto attraverso l'ingresso.
+
+Rispetto alla conoscenza del bersaglio, l'ottimizzazione è condotta in
+regime di scatola bianca su un modello sostitutivo: si assume che
+l'attaccante disponga di un rilevatore della stessa famiglia
+architetturale di quello impiegato dal sistema bersaglio, e ne sfrutti i
+gradienti per costruire la perturbazione. Questa assunzione è la più
+favorevole all'attaccante, e va dichiarata come tale: i risultati ottenuti
+costituiscono quindi un limite superiore all'efficacia conseguibile, non una
+stima di efficacia in condizioni operative, dove il modello bersaglio è
+ignoto e la trasferibilità dell'attacco andrebbe verificata separatamente.
+
+Due vincoli ulteriori distinguono questo scenario dagli attacchi
+avversariali classici sulle immagini. Il primo è la localizzazione: la
+perturbazione non può essere distribuita sull'intera immagine, come nelle
+formulazioni a norma limitata \footcite{carlini_2017}, perché l'attaccante
+controlla soltanto la porzione di scena occupata dal proprio corpo. Si
+adotta quindi il paradigma della patch avversariale
+\footcite{brown_2017_patch}, in cui la perturbazione è confinata in una
+regione contigua ma non è soggetta a vincoli di ampiezza: all'interno di
+quella regione il contenuto è arbitrario. Il secondo vincolo è la
+realizzabilità fisica: la perturbazione deve sopravvivere alla stampa, a
+condizioni di illuminazione variabili, a deformazioni del tessuto e a
+diverse geometrie di ripresa. Questo secondo vincolo determina due scelte
+progettuali descritte nel seguito, l'aggregazione su trasformazioni multiple
+e la regolarizzazione della variazione totale.
+
+\subsection{Parametrizzazione della perturbazione e vincolo di dominio}
+\label{sec:sigmoide}
+
+Il contenuto della patch deve appartenere allo spazio delle immagini valide,
+ossia ogni suo canale di colore deve restare nell'intervallo unitario dopo
+ogni passo di ottimizzazione. La soluzione più immediata, il troncamento
+diretto dei valori fuori intervallo dopo l'aggiornamento, presenta un
+inconveniente noto: un elemento che raggiunge il bordo del dominio riceve
+gradiente nullo per il resto dell'ottimizzazione e cessa di partecipare
+all'attacco, producendo regioni inerti nella superficie.
+
+La parametrizzazione adottata elimina il problema alla radice. La patch non
+viene ottimizzata direttamente nello spazio dei colori, ma in uno spazio
+latente non vincolato, da cui si ottiene l'immagine effettiva applicando una
+funzione sigmoide elemento per elemento:
+\begin{equation}
+    \mathbf{P} = \sigma(\mathbf{z}) = \frac{1}{1 + e^{-\mathbf{z}}}
+    \label{eq:sigmoide}
+\end{equation}
+dove $\mathbf{z}$ è il tensore dei parametri liberi effettivamente
+aggiornati dall'ottimizzatore, definito su tutto l'asse reale, e
+$\mathbf{P}$ è la patch risultante, i cui valori appartengono per
+costruzione all'intervallo aperto $(0,1)$. Il vincolo di dominio è così
+soddisfatto per costruzione e non per proiezione, e nessun elemento può
+raggiungere un bordo su cui il gradiente si annulla.
+
+\subsection{Collocazione della perturbazione sul bersaglio}
+\label{sec:collocazione}
+
+La patch viene applicata su una regione derivata proporzionalmente dal
+rettangolo di delimitazione della persona, e non su un'area di dimensione
+fissa in pixel. La motivazione è duplice. La prima è di coerenza fisica: un
+capo di abbigliamento occupa una frazione approssimativamente costante della
+figura di chi lo indossa, indipendentemente dalla distanza da cui viene
+osservato; una patch di dimensione fissa in pixel corrisponderebbe invece a
+un capo di taglia variabile con la distanza. La seconda è metodologica: in
+prospettiva aerea, dove la figura umana occupa poche decine di pixel, una
+regione fissa può eccedere l'intera figura, coprendo il volto e producendo
+un attacco che non è più realizzabile con un indumento.
+
+La regione occupa metà della larghezza e due quinti dell'altezza del
+rettangolo di delimitazione, per una copertura pari a un quinto dell'area
+complessiva della figura, ed è centrata sulla porzione superiore del tronco
+anziché sul centro geometrico. La scelta della zona toracica riflette
+l'assunzione di visibilità dominante nella prospettiva considerata: da un
+sensore posto in quota, la superficie corporea più costantemente esposta è
+quella anteriore-superiore del tronco.
+
+\subsection{Robustezza alle trasformazioni}
+\label{sec:eot}
+
+Una perturbazione ottimizzata su una singola resa geometrica del bersaglio è
+tipicamente fragile: perde efficacia appena l'oggetto viene osservato da un
+angolo, a una scala o con un bilanciamento cromatico diversi da quelli visti
+durante l'ottimizzazione. Poiché lo scenario di impiego prevede un sensore
+in movimento e un bersaglio in movimento, questa fragilità sarebbe
+disqualificante.
+
+Il metodo adottato è l'aggregazione dell'obiettivo su una distribuzione di
+trasformazioni, secondo la formulazione dell'\textit{Expectation over
+Transformation} \footcite{athalye_2018_eot}: a ogni passo, e per ogni
+fotogramma, la patch viene composta sul bersaglio non una volta ma sedici,
+ciascuna sotto una trasformazione campionata casualmente, e la funzione
+obiettivo è calcolata sulla media dei sedici esiti. Le trasformazioni
+comprendono variazioni di scala, rotazioni nel piano, alterazioni del
+rapporto d'aspetto, perturbazioni cromatiche e rumore additivo. Il risultato
+è una perturbazione che non ottimizza il caso migliore ma il valore atteso
+sulla famiglia di condizioni di osservazione modellata, ed è la sola ragione
+per cui l'artefatto ottenuto può essere considerato un candidato a
+realizzazione fisica.
+
+\subsection{Regolarizzazione della variazione totale}
+\label{sec:tv}
+
+Un'ottimizzazione non vincolata nello spazio dei colori converge tipicamente
+verso pattern ad altissima frequenza spaziale, in cui elementi adiacenti
+assumono valori molto distanti. Simili pattern sono efficaci contro il
+modello ma non sopravvivono alla catena di riproduzione fisica: la stampa a
+inchiostro, la trama del tessuto e il campionamento del sensore agiscono
+tutti come filtri passa-basso, e distruggono selettivamente l'informazione
+ad alta frequenza su cui l'attacco si basa.
+
+Si introduce quindi un termine di penalizzazione della variazione totale
+\footcite{thys_2019}, che misura la discontinuità locale della superficie:
+\begin{equation}
+    \mathcal{L}_{TV}(\mathbf{P}) = \sum_{i,j}
+    \sqrt{\left(P_{i+1,j} - P_{i,j}\right)^{2}
+        + \left(P_{i,j+1} - P_{i,j}\right)^{2}}
+    \label{eq:tv}
+\end{equation}
+dove $P_{i,j}$ è il valore della patch nella posizione di indici $i$ e $j$,
+e la somma è estesa a tutte le posizioni interne della superficie. Il
+termine è aggiunto alla funzione obiettivo con un peso relativo che governa
+il compromesso tra efficacia contro il modello e stampabilità: valori
+elevati del peso producono pattern a bassa frequenza spaziale, più robusti
+alla riproduzione fisica ma meno aggressivi.
+
+\subsection{Vincoli di piattaforma e accumulo del gradiente}
+\label{sec:accumulo}
+
+L'intera sperimentazione è stata condotta su una singola macchina con
+memoria unificata condivisa tra unità di calcolo generale e acceleratore
+grafico, il che impone un vincolo di occupazione stringente. Poiché ogni
+fotogramma richiede sedici composizioni distinte, la dimensione del lotto
+fisico è fissata a uno: un lotto maggiore eccederebbe la memoria
+disponibile.
+
+Per ottenere comunque un aggiornamento mediato su più fotogrammi si adotta
+l'accumulo del gradiente: i gradienti di quattro fotogrammi consecutivi
+vengono sommati prima di applicare un singolo aggiornamento dei parametri.
+L'effetto sulla traiettoria di ottimizzazione equivale a quello di un lotto
+di quattro elementi, mentre l'occupazione di memoria resta quella di un
+elemento singolo. Questa scelta ha una conseguenza sulla programmazione del
+passo di apprendimento che va dichiarata, perché costituisce una fonte di
+errore metodologico non evidente: se il decadimento del passo è espresso in
+funzione del numero di iterazioni grezze anziché del numero di
+aggiornamenti effettivi, il decadimento risulta dilatato di un fattore pari
+al numero di fotogrammi accumulati, e il passo resta prossimo al valore
+iniziale per la quasi totalità dell'ottimizzazione. La programmazione è
+quindi definita sul conteggio degli aggiornamenti effettivi.
+
+Si segnala infine che il campionamento su griglia impiegato per applicare
+le trasformazioni geometriche è stato mantenuto in precisione a virgola
+mobile singola. Prove condotte a precisione ridotta hanno evidenziato
+instabilità numerica nel calcolo del gradiente di questa operazione sul
+backend di accelerazione utilizzato, e il vantaggio in occupazione di
+memoria non è stato giudicato sufficiente a giustificare il rischio sulla
+riproducibilità dei risultati.
+
+
+
+
+
+
 
 \chapter{Risultati}
 \chapter{Conclusioni: Il C.A.R.E. Kit e la Difesa dei Diritti Umani}
