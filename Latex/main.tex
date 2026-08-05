@@ -16,6 +16,10 @@
 \usepackage{blindtext}
 \usepackage{subfig} % per le figure con più pannelli (a, b, c)
 \usepackage{booktabs} % per le tabelle formattate correttamente (senza linee verticali) 
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, fit, backgrounds, calc}
+\input{tikz_common_styles}   
+
 
 \usepackage[utf8]{inputenc}
 \usepackage[disable]{todonotes} %per note e commenti
@@ -364,13 +368,25 @@ Se l'etica privata cede all'operatività e la governance globale risulta paraliz
 \section{Architettura del framework LAWS-SIM}
 \label{sec:laws_sim}
 
+\begin{tikzpicture}[node distance=14mm]
+\node[vision] (l1) {\textbf{Livello 1 — Visione}\\[3pt]
+    Patch avversariale su dati reali.\\ Misure sperimentali.};
+\node[sim, right=of l1] (l2) {\textbf{Livello 2 — Simulazione}\\[3pt]
+    Ambiente multi-agente. Entità sintetiche.};
+\node[meta, right=of l2] (l3) {\textbf{Livello 3 — Metadati}\\[3pt]
+    Fusione bayesiana. Resilienza a\\ perturbazioni OSINT.};
+\draw[arr] (l1) -- (l2) node[midway, above, arrlabel] {\texttt{vision\_metrics.json}};
+\draw[arr] (l2) -- (l3) node[midway, above, arrlabel] {stato entità};
+\end{tikzpicture}
+
 Il framework sviluppato in questo lavoro, denominato LAWS-SIM, non è un
 sistema d'arma né una sua replica funzionale: è un banco di prova progettato
 per rendere misurabile una singola domanda, ovvero se e quanto una
 contromisura passiva applicata al corpo di una persona possa alterare il
 comportamento di un sistema di percezione autonoma. La sua struttura riflette
 questa finalità: un modulo di visione basato su dati reali, e un ambiente
-simulato che ne propaga gli effetti fino a una decisione.
+simulato che ne propaga gli effetti fino a una decisione, come illustrato in
+Figura\ref{fig:tre_livelli}.
 
 \subsection{Organizzazione in tre livelli e disaccoppiamento della pipeline}
 \label{sec:tre_layer}
@@ -473,6 +489,32 @@ canale visivo del simulatore riproduce il comportamento \emph{medio} del
 rilevatore sulla distribuzione di distanze osservata, senza pretendere di
 riprodurne la dipendenza puntuale dalla geometria della scena.
 
+La Figura~\ref{fig:ponte_interscambio} riassume il disaccoppiamento appena
+descritto.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=10mm and 16mm]
+\node[optim] (dataset) {\textbf{Dataset aerei}\\[3pt]
+    VisDrone-DET, Okutama-Action.\\ Bbox pedoni $\geq 60$px.};
+\node[optim, below=of dataset] (patch) {\textbf{Patch Optimizer}\\[3pt]
+    EoT (16 trasf.), loss asintotica,\\ top-$K{=}20$, TV loss.};
+\node[optim, below=of patch] (valid) {\textbf{Validazione}\\[3pt]
+    Inferenza su YOLOv8n reale.\\ Calcolo $R_1$, $R_2$ pre/post.};
+\node[bridge, right=of patch] (bridge) {\textbf{vision\_metrics.json}\\[3pt]
+    $R_1$, $R_2$ pre/post misurati\\ offline. Unico punto di\\ contatto fra i due livelli.};
+\node[vision, right=of bridge] (vagent) {\textbf{VisionAgentStat}\\[3pt]
+    Test di Bernoulli su $R_1$.\\ Non carica la rete neurale.};
+\draw[arr] (dataset) -- (patch);
+\draw[arr] (patch) -- (valid);
+\draw[arr] (valid.east) -- (bridge.south) node[midway, below right, arrlabel] {serializzazione};
+\draw[arr] (bridge) -- (vagent) node[midway, above, arrlabel] {ingestione};
+\end{tikzpicture}
+\caption{Disaccoppiamento fra il canale visivo e il simulatore. Le
+prestazioni del rilevatore sono misurate una sola volta, offline, su tutto
+l'insieme di validazione; il simulatore non carica mai la rete neurale.}
+\label{fig:ponte_interscambio}
+\end{figure}
 
 \section{Modello di minaccia e architettura dell'attacco}
 \label{sec:attacco}
@@ -654,7 +696,34 @@ riproducibilità dei risultati.
 
 
 
-
+%%FIGURA FUSIONE??? DOVE LA METTIAMO???%%
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm and 18mm]
+\node[vision] (vagent) {\textbf{VisionAgentStat}\\[3pt]
+    Bernoulli su $R_1$};
+\node[osint, below=of vagent] (oagent) {\textbf{OSINTAgent}\\[3pt]
+    Bernoulli, Beta, Poisson\\ $\rightarrow$ Bayes interno\\ (prior $=0.15$)};
+\node[behav, below=of oagent] (bagent) {\textbf{BehaviorAgent}\\[3pt]
+    Varianza cinetica\\ dei movimenti};
+\node[fusion, right=of oagent] (fusion) {\textbf{FusionAgent}\\[3pt]
+    Somma pesata (45/35/20)\\ $\rightarrow$ Bayes (prior $=0.50$)\\
+    Output: Threat Score};
+\node[decision, right=of fusion] (decision) {\textbf{DecisionAgent}\\[3pt]
+    CI mobile $\pm 1.96\sigma$\\ (finestra 10 oss.)\\
+    Ampiezza $>0.40 \Rightarrow$\\ inibisce ENGAGE};
+\draw[arr] (vagent.east) -- (fusion.west |- vagent.east);
+\draw[arr] (oagent) -- (fusion);
+\draw[arr] (bagent.east) -- (fusion.west |- bagent.east);
+\draw[arr] (fusion) -- (decision) node[midway, above, arrlabel] {Threat Score};
+\end{tikzpicture}
+\caption{Fusione bayesiana dei tre canali informativi e verifica di
+precauzione. Il \textit{Decision Agent} applica una soglia sull'ampiezza
+dell'intervallo di confidenza mobile: un disaccordo persistente fra
+osservazioni recenti inibisce l'ingaggio indipendentemente dal valore del
+\textit{Threat Score}.}
+\label{fig:fusione_decisione}
+\end{figure}
 
 
 
