@@ -1,19 +1,109 @@
-\tikzset{
-  archbox/.style={
-    rectangle, rounded corners=2pt, draw=black!60, thick,
-    minimum width=3.4cm, minimum height=1.9cm, text width=3.1cm,
-    align=center, font=\footnotesize, inner sep=5pt, fill=white
+% =====================================================================
+%  tikz_common_styles.tex
+%  Stili condivisi per i diagrammi di architettura (Cap. 4 — Metodo).
+%
+%  Caricato da main.tex con \input{tikz_common_styles} DOPO
+%  \usepackage{tikz}. Le librerie sono ridichiarate qui per rendere il
+%  file autonomo: \usetikzlibrary e' idempotente, non rompe nulla se
+%  le stesse librerie sono gia' caricate in main.tex.
+%
+%  CRITERI TIPOGRAFICI
+%  - Palette desaturata: scala di grigi + un solo blu-grigio a tre
+%    luminanze per distinguere i livelli. Nessun colore saturo.
+%  - Spigoli vivi (sharp corners): convenzione dei diagrammi a blocchi
+%    in letteratura ingegneristica, meno "slide" dei bordi arrotondati.
+%  - Larghezze dei box selezionabili con chiavi dedicate (wnarrow /
+%    wmed / wwide) invece di essere riscritte a mano nelle figure:
+%    il controllo del text wrapping resta centralizzato in questo file.
+%  - Etichette degli archi su fondo bianco (fill=white) per evitare la
+%    sovrapposizione con la linea e con i bordi dei box adiacenti.
+% =====================================================================
+
+\usetikzlibrary{positioning, arrows.meta, fit, backgrounds, calc}
+
+% ---------------------------------------------------------------------
+% Palette
+% ---------------------------------------------------------------------
+\definecolor{lawsInk}{gray}{0.22}          % bordi primari, testo etichette
+\definecolor{lawsInkSoft}{gray}{0.45}      % archi, bordi secondari
+\definecolor{lawsL1}{RGB}{231,237,243}     % Livello 1 — Visione
+\definecolor{lawsL2}{RGB}{240,242,245}     % Livello 2 — Simulazione
+\definecolor{lawsL3}{RGB}{247,248,249}     % Livello 3 — Metadati
+\definecolor{lawsNeutral}{RGB}{247,247,247}% blocchi di processo
+\definecolor{lawsAccent}{RGB}{224,230,237} % nodo decisionale (piu' scuro)
+
+% ---------------------------------------------------------------------
+% Titolo interno ai box: una sola definizione, spaziatura uniforme.
+% Usare SEMPRE come primo elemento del testo del nodo, mai come ultimo
+% (il \\ finale su nodo vuoto genera errore).
+% ---------------------------------------------------------------------
+\newcommand{\lawstitle}[1]{{\bfseries #1}\\[2.5pt]}
+
+% ---------------------------------------------------------------------
+% Stili
+% ---------------------------------------------------------------------
+\tikzset{%
+  % --- classe base: qui si calibra il wrapping, non nelle figure ---
+  lawsbox/.style={
+    draw=lawsInk,
+    line width=0.5pt,
+    rectangle,
+    sharp corners,
+    fill=white,
+    text width=46mm,          % default; sovrascritto da wnarrow/wmed/wwide
+    align=center,
+    inner xsep=6pt,           % respiro orizzontale: evita che il grassetto
+    inner ysep=5.5pt,         % del titolo tocchi il bordo
+    minimum height=13mm,      % pavimento, non vincolo: i box crescono
+    font=\footnotesize,
+    text=black,
   },
-  vision/.style={archbox, fill=cyan!8, draw=cyan!65!black},
-  optim/.style={archbox, fill=blue!7, draw=blue!55!black},
-  bridge/.style={archbox, fill=yellow!12, draw=orange!70!black,
-                 minimum width=3.6cm, text width=3.3cm},
-  osint/.style={archbox, fill=violet!8, draw=violet!55!black},
-  behav/.style={archbox, fill=black!5, draw=black!50},
-  fusion/.style={archbox, fill=red!7, draw=red!60!black},
-  decision/.style={archbox, fill=green!8, draw=green!50!black},
-  sim/.style={archbox, fill=orange!7, draw=orange!65!black},
-  meta/.style={archbox, fill=violet!7, draw=violet!55!black},
-  arr/.style={-{Stealth[length=2.2mm]}, thick, draw=black!55},
-  arrlabel/.style={font=\scriptsize\itshape, fill=white, inner sep=1pt}
+  % --- larghezze selezionabili ---
+  wnarrow/.style={text width=40mm},
+  wmed/.style={text width=48mm},
+  wwide/.style={text width=82mm},
+%
+  % --- livelli architetturali ---
+  vision/.style={lawsbox, fill=lawsL1},
+  sim/.style={lawsbox, fill=lawsL2},
+  meta/.style={lawsbox, fill=lawsL3},
+%
+  % --- blocchi di processo (pipeline di ottimizzazione) ---
+  optim/.style={lawsbox, fill=lawsNeutral},
+%
+  % --- interfaccia di interscambio: bordo tratteggiato = artefatto su
+  %     disco, non componente di calcolo ---
+  bridge/.style={lawsbox, fill=white, draw=lawsInk, dashed, line width=0.6pt},
+%
+  % --- canali della fusione ---
+  osint/.style={lawsbox, fill=lawsL2},
+  behav/.style={lawsbox, fill=lawsL3},
+%
+  % --- nodi terminali: bordo piu' spesso, non colore diverso ---
+  fusion/.style={lawsbox, fill=lawsNeutral, line width=0.9pt},
+  decision/.style={lawsbox, fill=lawsAccent, line width=0.9pt},
+%
+  % --- archi ---
+  arr/.style={
+    -{Stealth[length=2mm, width=1.4mm]},
+    draw=lawsInkSoft,
+    line width=0.6pt,
+  },
+  busline/.style={draw=lawsInkSoft, line width=0.6pt},
+%
+  % --- etichette degli archi ---
+  arrlabel/.style={
+    font=\scriptsize,
+    text=lawsInk,
+    inner sep=1.5pt,
+    fill=white,
+  },
+  % --- annotazione laterale (statuto epistemico, note di lettura) ---
+  sidenote/.style={
+    font=\scriptsize\itshape,
+    text=lawsInkSoft,
+    align=left,
+    inner sep=1pt,
+  },
 }
+%
