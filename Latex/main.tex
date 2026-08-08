@@ -619,16 +619,15 @@ L'analisi di robustezza di un sistema richiede, come prerequisito metodologico, 
 \subsection{Modello di minaccia}
 \label{sec:threat_model}
 
-In linea con le prassi della sicurezza informatica, la valutazione delle vulnerabilità del sistema di percezione viene preceduta dalla formalizzazione del modello di minaccia (\textit{threat model}). Definire preventivamente i limiti operativi e le capacità dell'avversario è fondamentale per contestualizzare la ricerca.
+Nel presente scenario, la superficie di attacco è limitata esclusivamente al canale di acquisizione ottica del sistema di percezione. Si assume un avversario privo di accesso all'infrastruttura logica del velivolo e ai pesi del rilevatore in esercizio. L'unico vettore di compromissione ammesso è la manipolazione del dominio fisico, ottenuta tramite l'applicazione di una perturbazione visiva (patch) sul corpo del bersaglio. Il modello di minaccia configura pertanto un attacco avversariale fisico di \textit{evasion} in fase di inferenza: il modello e l'architettura aerea rimangono integri, mentre l'inganno si consuma interamente attraverso l'alterazione malevola dell'input sensoriale.
 
-Nel presente scenario, la superficie di attacco è limitata esclusivamente al canale di acquisizione ottica del sistema di percezione. Si assume un avversario privo di accesso all'infrastruttura logica e ai pesi interni della rete neurale (\textit{black-box scenario}). L'unico vettore di compromissione ammesso è la manipolazione del dominio fisico, ottenuta tramite l'applicazione di una perturbazione visiva (patch) sul corpo del bersaglio. Il modello di minaccia configura pertanto un attacco avversariale fisico di \textit{evasion} in fase di inferenza: il modello e l'architettura aerea rimangono integri, mentre l'inganno si consuma interamente attraverso l'alterazione malevola dell'input sensoriale.
+Rispetto alla conoscenza del bersaglio lo scenario è dunque di tipo \textit{transfer}: l'avversario non interroga né ispeziona il rilevatore in esercizio, ma costruisce la perturbazione in regime \textit{white-box} su un modello surrogato appartenente alla stessa famiglia architetturale, di cui sfrutta i gradienti. L'assunzione di corrispondenza fra surrogato e bersaglio è massimamente favorevole all'attaccante e va dichiarata come tale: le misure riportate costituiscono un limite superiore all'efficacia conseguibile, non una stima operativa. Il disallineamento fra i due modelli in condizioni reali degrada l'efficacia in misura non quantificata in questo lavoro; la trasferibilità della perturbazione richiede una valutazione dedicata, condotta nel dominio UAV da lavori specifici \footcite{shrestha_2023} ed esclusa dallo scope primario.
 
-L'ottimizzazione per la creazione della patch è condotta in regime \textit{white-box} su un modello surrogato appartenente alla stessa famiglia architetturale del rilevatore bersaglio, di cui si sfruttano i gradienti. Questa è l'ipotesi massimamente favorevole all'attaccante e va dichiarata come tale: le misure riportate costituiscono un limite superiore all'efficacia conseguibile, non una stima operativa. In condizioni reali il regime degrada a \textit{gray-box} o \textit{black-box}, e la trasferibilità della perturbazione richiede una valutazione dedicata, condotta nel dominio UAV da lavori specifici \footcite{shrestha_2023} ed esclusa dallo scope primario di questo lavoro.
+Due vincoli distinguono la formulazione da quella degli attacchi avversariali a norma limitata \footcite{carlini_2017}. Il primo è la localizzazione: la perturbazione non è distribuibile sull'intera immagine, poiché l'attaccante controlla la sola porzione di scena occupata dal proprio corpo. Si adotta quindi il paradigma della patch avversariale \footcite{brown_2017_patch}, in cui il supporto della perturbazione è una regione contigua e limitata mentre l'ampiezza al suo interno è libera. Il secondo è la realizzabilità fisica: la perturbazione deve permanere efficace attraverso la catena stampa-tessuto-ottica-campionamento, sotto illuminazione e geometria di ripresa variabili. Il primo vincolo determina la parametrizzazione e la collocazione della perturbazione, discusse nella Sezione \ref{sec:sigmoide}; il secondo determina l'aggregazione su distribuzione di trasformazioni e la penalizzazione della variazione totale, discusse nella Sezione \ref{sec:eot}.
 
-Due vincoli distinguono la formulazione da quella degli attacchi avversariali a norma limitata \footcite{carlini_2017}. Il primo è la localizzazione: la perturbazione non è distribuibile sull'intera immagine, poiché l'attaccante controlla la sola porzione di scena occupata dal proprio corpo. Si adotta quindi il paradigma della patch avversariale \footcite{brown_2017_advpatch}, in cui il supporto della perturbazione è una regione contigua e limitata mentre l'ampiezza al suo interno è libera. Il secondo è la realizzabilità fisica: la perturbazione deve permanere efficace attraverso la catena stampa-tessuto-ottica-campionamento, sotto illuminazione e geometria di ripresa variabili. Da quest'ultimo derivano l'aggregazione su distribuzione di trasformazioni (Sezione \ref{sec:eot}) e la penalizzazione della variazione totale (Sezione \ref{sec:tv}).
-
-\subsection{Parametrizzazione della perturbazione e vincolo di dominio}
+\subsection{Parametrizzazione e collocazione della perturbazione}
 \label{sec:sigmoide}
+\label{sec:collocazione}
 
 Il contenuto della patch deve appartenere allo spazio delle immagini
 ammissibili, mantenendo ogni canale cromatico nell'intervallo unitario dopo
@@ -642,29 +641,28 @@ dell'espediente proposto da Carlini e Wagner \footcite{carlini_2017}:
 l'ottimizzazione opera in uno spazio latente non vincolato, da cui la patch è
 ottenuta per applicazione elemento per elemento di una sigmoide,
 \begin{equation}
-    \mathbf{P} = \sigma(\mathbf{z}) = \left(1 + e^{-\mathbf{z}}\right)^{-1}
+    \mathrm{P} = \sigma(\mathrm{Z}) = \left(1 + e^{-\mathrm{Z}}\right)^{-1}
     \label{eq:sigmoide}
 \end{equation}
-con $\mathbf{z} \in \mathbb{R}^{3 \times H \times W}$ tensore dei parametri
-liberi effettivamente aggiornati dall'ottimizzatore e
-$\mathbf{P} \in (0,1)^{3 \times H \times W}$ patch risultante. Il vincolo di
-dominio è soddisfatto per costruzione anziché per proiezione, il gradiente è non
-nullo su tutto lo spazio dei parametri e nessun elemento è assorbito da uno
+dove $\mathrm{Z} \in \mathbb{R}^{3 \times H \times W}$ è il tensore dei parametri
+liberi effettivamente aggiornati dall'ottimizzatore, $H$ e $W$ sono
+rispettivamente altezza e larghezza della superficie in elementi, e
+$\mathrm{P} \in (0,1)^{3 \times H \times W}$ è la patch risultante. Il vincolo di
+dominio è così soddisfatto per costruzione anziché per proiezione: il gradiente è
+non nullo su tutto lo spazio dei parametri e nessun elemento è assorbito da uno
 stato inerte.
 
-\subsection{Collocazione della perturbazione sul bersaglio}
-\label{sec:collocazione}
-
-La patch è applicata su una regione derivata proporzionalmente dal
-\textit{bounding box} del soggetto, non su un'area di estensione fissa in pixel.
-La scelta ha una giustificazione di consistenza fisica e una metodologica. Un
-indumento sottende una frazione approssimativamente invariante della figura di
-chi lo indossa, indipendentemente dalla distanza di osservazione; una regione di
-dimensione fissa corrisponderebbe a un capo di taglia variabile con la scala
-apparente del bersaglio. Sul piano metodologico, in prospettiva aerea la figura
-umana occupa poche decine di pixel e una regione fissa eccederebbe l'impronta
-del soggetto, coprendone il volto e producendo una perturbazione non
-realizzabile per via di un indumento.
+Definito il contenuto della perturbazione, resta da stabilirne la geometria di
+applicazione sulla scena. La patch è applicata su una regione derivata
+proporzionalmente dal \textit{bounding box} del soggetto, non su un'area di
+estensione fissa in pixel. La scelta ha una giustificazione di consistenza fisica
+e una metodologica. Un indumento sottende una frazione approssimativamente
+invariante della figura di chi lo indossa, indipendentemente dalla distanza di
+osservazione; una regione di dimensione fissa corrisponderebbe a un capo di
+taglia variabile con la scala apparente del bersaglio. Sul piano metodologico, in
+prospettiva aerea la figura umana occupa poche decine di pixel e una regione
+fissa eccederebbe l'impronta del soggetto, coprendone il volto e producendo una
+perturbazione non realizzabile per via di un indumento.
 
 La regione sottende il $50\%$ della larghezza e il $40\%$ dell'altezza del
 \textit{bounding box}, per una copertura pari al $20\%$ dell'area, ed è centrata
@@ -674,57 +672,60 @@ visibilità dominante nella prospettiva considerata: da sensore in quota la
 superficie corporea più costantemente esposta è quella anteriore-superiore del
 tronco.
 
-\subsection{Robustezza alle trasformazioni}
+\subsection{Robustezza alla riproduzione fisica}
 \label{sec:eot}
+\label{sec:tv}
+
+Il vincolo di realizzabilità fisica introdotto nella Sezione
+\ref{sec:threat_model} agisce su due piani distinti, la geometria di
+osservazione e la banda spaziale della superficie, e determina due meccanismi
+corrispondenti.
 
 Una perturbazione ottimizzata su una singola resa geometrica del bersaglio è
 fragile per costruzione: l'efficacia decade appena scala, orientamento o
 bilanciamento cromatico si discostano dalle condizioni viste in ottimizzazione.
 Poiché lo scenario prevede sensore e bersaglio entrambi in moto, tale fragilità
-sarebbe squalificante.
-
-Si adotta la formulazione \textit{Expectation over Transformation}
-\footcite{athalye_2018_eot}. Dette $\mathcal{T}$ la distribuzione delle
-trasformazioni ammesse, $\mathbf{x}$ il fotogramma, $A(\cdot,\cdot)$ l'operatore
-di composizione della patch sulla regione bersaglio e $\mathcal{L}$ la funzione
-obiettivo, l'ottimizzazione minimizza
+sarebbe squalificante. Si adotta pertanto la formulazione \textit{Expectation
+over Transformation} \footcite{athalye_2018_eot}. Dette $\mathcal{T}$ la
+distribuzione delle trasformazioni ammesse, $\mathrm{X}$ il fotogramma,
+$A(\cdot,\cdot)$ l'operatore di composizione della patch sulla regione bersaglio
+e $\mathcal{L}$ la funzione obiettivo, l'ottimizzazione minimizza
 \begin{equation}
     \mathbb{E}_{t \sim \mathcal{T}}
-    \left[\mathcal{L}\left(A\left(t(\mathbf{P}),\, \mathbf{x}\right)\right)\right]
+    \left[\mathcal{L}\left(A\left(t(\mathrm{P}),\, \mathrm{X}\right)\right)\right]
     \label{eq:eot}
 \end{equation}
-stimata per media campionaria su $N = 16$ realizzazioni indipendenti di $t$ per
-ciascun fotogramma. La distribuzione $\mathcal{T}$ compone variazioni di scala,
-rotazioni nel piano, alterazioni del rapporto d'aspetto, perturbazioni
+dove $t$ è una singola trasformazione campionata da $\mathcal{T}$. Il valore
+atteso è stimato per media campionaria su $N = 16$ realizzazioni indipendenti di
+$t$ per ciascun fotogramma. La distribuzione $\mathcal{T}$ compone variazioni di
+scala, rotazioni nel piano, alterazioni del rapporto d'aspetto, perturbazioni
 cromatiche e rumore additivo. L'aggregazione sposta l'obiettivo dal caso
 migliore al valore atteso sulla famiglia di condizioni di osservazione
 modellata, ed è il presupposto che rende l'artefatto un candidato alla
 realizzazione fisica anziché un esemplare valido nel solo dominio digitale.
 
-\subsection{Regolarizzazione della variazione totale}
-\label{sec:tv}
-
-L'ottimizzazione non vincolata nello spazio dei colori converge verso pattern ad
+L'invarianza alle trasformazioni geometriche non è però sufficiente, perché la
+catena di riproduzione agisce anche sul contenuto in frequenza della superficie.
+Un'ottimizzazione non vincolata nello spazio dei colori converge verso pattern ad
 alta frequenza spaziale, in cui elementi contigui assumono valori marcatamente
 distanti. Tali pattern sono efficaci contro il modello ma non sopravvivono alla
-catena di riproduzione fisica: retinatura di stampa, trama del tessuto e
-campionamento del sensore agiscono come filtri passa-basso in cascata e
-sopprimono selettivamente la banda su cui l'attacco si appoggia.
-
-Si introduce il termine di variazione totale \footcite{thys_2019},
+riproduzione: retinatura di stampa, trama del tessuto e campionamento del sensore
+agiscono come filtri passa-basso in cascata e sopprimono selettivamente la banda
+su cui l'attacco si appoggia. Si introduce quindi il termine di variazione totale
+\footcite{thys_2019},
 \begin{equation}
-    \mathcal{L}_{TV}(\mathbf{P}) = \sum_{i,j}
-    \sqrt{\left(P_{i+1,j} - P_{i,j}\right)^{2}
-        + \left(P_{i,j+1} - P_{i,j}\right)^{2}}
+    \mathcal{L}_{TV}(\mathrm{P}) = \sum_{i,j}
+    \sqrt{\left(p_{i+1,j} - p_{i,j}\right)^{2}
+        + \left(p_{i,j+1} - p_{i,j}\right)^{2}}
     \label{eq:tv}
 \end{equation}
-con $P_{i,j}$ valore della patch in posizione $(i,j)$ e somma estesa alle
-posizioni interne della superficie. Il termine entra nella funzione obiettivo
-con peso $\lambda_{TV}$, che governa il compromesso tra aggressività e
-stampabilità: valori elevati spostano la soluzione verso pattern a bassa
-frequenza spaziale, più robusti alla riproduzione fisica ma meno efficaci contro
-il modello. La taratura adottata e la sua giustificazione empirica sono riportate
-nel seguito.
+dove $p_{i,j}$ è il valore della patch $\mathrm{P}$ nella posizione di indici $i$
+e $j$, e la somma è estesa a tutte le posizioni interne della superficie. Il
+termine entra nella funzione obiettivo con peso $\lambda_{TV}$, che governa il
+compromesso tra aggressività e stampabilità: valori elevati spostano la soluzione
+verso pattern a bassa frequenza spaziale, più robusti alla riproduzione fisica ma
+meno efficaci contro il modello. La taratura adottata e la sua giustificazione
+empirica sono riportate nel seguito.
 
 \subsection{Vincoli di piattaforma e accumulo del gradiente}
 \label{sec:accumulo}
