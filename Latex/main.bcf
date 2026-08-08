@@ -2457,14 +2457,18 @@
     <bcf:citekey order="78" intorder="1">shevlane_2022_access</bcf:citekey>
     <bcf:citekey order="79" intorder="1">bai_2022_cai</bcf:citekey>
     <bcf:citekey order="80" intorder="1">leggezero_anthropic_2026</bcf:citekey>
-    <bcf:citekey order="81" intorder="1">carlini_2017</bcf:citekey>
-    <bcf:citekey order="82" intorder="1">brown_2017_patch</bcf:citekey>
-    <bcf:citekey order="83" intorder="1">athalye_2018_eot</bcf:citekey>
-    <bcf:citekey order="84" intorder="1">thys_2019</bcf:citekey>
-    <bcf:citekey order="85" intorder="1">helkala_2023</bcf:citekey>
-    <bcf:citekey order="86" intorder="1">harvey_2010</bcf:citekey>
-    <bcf:citekey order="87" intorder="1">wu_2020</bcf:citekey>
-    <bcf:citekey order="87" intorder="2">hu_2022</bcf:citekey>
+    <bcf:citekey order="81" intorder="1">brown_2017_patch</bcf:citekey>
+    <bcf:citekey order="81" intorder="2">thys_2019</bcf:citekey>
+    <bcf:citekey order="82" intorder="1">zhu_2021_visdrone</bcf:citekey>
+    <bcf:citekey order="83" intorder="1">barekatain_2017_okutama</bcf:citekey>
+    <bcf:citekey order="84" intorder="1">carlini_2017</bcf:citekey>
+    <bcf:citekey order="85" intorder="1">brown_2017_patch</bcf:citekey>
+    <bcf:citekey order="86" intorder="1">athalye_2018_eot</bcf:citekey>
+    <bcf:citekey order="87" intorder="1">thys_2019</bcf:citekey>
+    <bcf:citekey order="88" intorder="1">helkala_2023</bcf:citekey>
+    <bcf:citekey order="89" intorder="1">harvey_2010</bcf:citekey>
+    <bcf:citekey order="90" intorder="1">wu_2020</bcf:citekey>
+    <bcf:citekey order="90" intorder="2">hu_2022</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="none">

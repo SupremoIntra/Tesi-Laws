@@ -368,34 +368,33 @@ Se l'etica privata cede all'operatività e la governance globale risulta paraliz
 \section{Architettura del framework LAWS-SIM}
 \label{sec:laws_sim}
 
-Il framework sviluppato in questo lavoro, denominato LAWS-SIM, non è un
-sistema d'arma né una sua replica funzionale: è un banco di prova progettato
-per rendere misurabile una singola domanda, ovvero se e quanto una
+Il framework (LAWS-SIM) sviluppato in questo lavoro non è un
+sistema d'arma o una replica funzionale, ma uno strumento progettato
+per rispondere tecnicamente a una singola domanda, ovvero se e quanto una
 contromisura passiva applicata al corpo di una persona possa alterare il
 comportamento di un sistema di percezione autonoma. La sua struttura riflette
-questa finalità: un modulo di visione basato su dati reali, e un ambiente
-simulato che ne propaga gli effetti fino a una decisione, come illustrato in
-Figura~\ref{fig:tre_livelli}.
+questa finalità: un modulo di \textit{vision} basato su dati elaborati e sanitizzati da due dataset reali e un ambiente simulato che ne propaga gli effetti fino a una decisione, come illustrato in
+Figura \ref{fig:tre_livelli}.
 
 \begin{figure}[htbp]
 \centering
 \begin{adjustbox}{max width=\textwidth}
 \begin{tikzpicture}[node distance=10mm]
-\node[vision, wwide] (l1) {\lawstitle{Livello 1 — Visione}
+\node[vision, wwide] (l1) {\lawstitle{Livello 1 — Vision}
     Patch avversariale universale contro\\
-    un rilevatore reale, su due insiemi\\
+    YOLOv8, su due dataset\\
     di dati aerei indipendenti.\\[3pt]
-    \textit{Statuto: misura sperimentale.}};
-\node[sim, wwide, below=of l1] (l2) {\lawstitle{Livello 2 — Simulazione}
+    \textit{Statuto: dato sperimentale}};
+\node[sim, wwide, below=of l1] (l2) {\lawstitle{Livello 2 — Simulatore}
     Ambiente multi-agente a entità sintetiche.\\
     Canale visivo parametrizzato sulle\\
-    misure del Livello~1.\\[3pt]
-    \textit{Statuto: conseguenza di un modello.}};
+    misure del Livello 1\\[3pt]
+    \textit{Statuto: conseguenza di un modello}};
 \node[meta, wwide, below=of l2] (l3) {\lawstitle{Livello 3 — Integrità dei metadati}
     Fusione bayesiana dei canali non visivi.\\
     Resilienza della decisione alla\\
-    contaminazione dei profili OSINT.\\[3pt]
-    \textit{Statuto: conseguenza di un modello.}};
+    contaminazione dei profili OSINT\\[3pt]
+    \textit{Statuto: conseguenza di un modello}};
 \draw[arr] (l1) -- (l2)
     node[midway, right=1.5mm, arrlabel] {\texttt{vision\_metrics.json}};
 \draw[arr] (l2) -- (l3)
@@ -403,30 +402,27 @@ Figura~\ref{fig:tre_livelli}.
 \end{tikzpicture}
 \end{adjustbox}
 \caption[Architettura a tre livelli del framework LAWS-SIM]{Architettura a
-tre livelli del framework LAWS-SIM. Il primo livello opera su fotogrammi e
-rilevatore reali; il secondo e il terzo su entità sintetiche. L'indicazione
-dello statuto di ciascun livello è riportata nel diagramma perché determina
-il peso attribuibile ai rispettivi risultati nella discussione.}
+tre livelli del framework LAWS-SIM. Il primo livello opera su fotogrammi reali e
+rilevatore YOLOv8; il secondo e il terzo su entità sintetiche. Lo statuto di ciascun livello  determina il peso attribuibile ai rispettivi risultati}
 \label{fig:tre_livelli}
 \end{figure}
 
 \subsection{Organizzazione in tre livelli e disaccoppiamento della pipeline}
 \label{sec:tre_layer}
 
-L'architettura è organizzata in tre livelli funzionalmente distinti. Il primo
-livello riguarda la visione: su di esso si concentra il contributo
+L'architettura è organizzata in tre livelli, ognuno con una funzione specifica. Il primo
+livello riguarda la \textit{vision}: su di esso si concentra il contributo
 sperimentale della tesi, e consiste nell'ottimizzazione di una patch
-avversariale universale contro un rilevatore di oggetti e nella misura del
-degrado che ne consegue su due insiemi di dati aerei reali. Il secondo livello
-è un ambiente multi-agente che simula il movimento di un velivolo senza
-pilota e delle entità a terra, e che integra le metriche empiriche prodotte
+avversariale universale \footcite{brown_2017_patch,thys_2019} contro un rilevatore di oggetti (YOLOv8 nano) e nella misura del
+degrado che ne deriva su due dataset aerei reali (VisDrone\footcite{zhu_2021_visdrone} e
+Okutama\footcite{barekatain_2017_okutama}).
+Il secondo livello
+è un ambiente multi-agente che simula il movimento di un velivolo autonomo e delle entità a terra, e che integra tramite un file \textit{JSON} intermedio le metriche empiriche prodotte
 dal primo livello. Il terzo livello riguarda l'integrità dei metadati
 informativi e valuta la resilienza della decisione fusa a perturbazioni dei
-canali non visivi.
+canali non visivi, come la contaminazione dei profili OSINT delle entità (blacklist di fonti aperte, falsificazione di dati georeferenziati, ecc.).
 
-La distinzione di merito tra i tre livelli va dichiarata subito, perché
-determina il peso che va attribuito ai rispettivi risultati. Il primo livello
-opera su fotogrammi reali e su un rilevatore reale, e i suoi risultati sono
+Il primo livello, il focus di questa tesi, opera su fotogrammi reali tramite YOLOv8, e i suoi risultati sono
 misure sperimentali. Il secondo e il terzo livello operano su entità
 sintetiche generate da distribuzioni statistiche scelte in fase di
 progettazione, e i loro risultati hanno lo statuto di conseguenze di un
@@ -435,39 +431,38 @@ discussione dei risultati.
 
 \subsubsection*{Il ponte di interscambio tra visione e simulazione}
 
-Eseguire l'inferenza del rilevatore a ogni passo temporale della simulazione
-sarebbe proibitivo: ogni passo richiede una valutazione per ciascuna entità
-visibile, e ogni scenario richiede centinaia di passi. La soluzione adottata
+Nei vari test effettuati si è constatato che eseguire l'inferenza del rilevatore YOLOv8 ad ogni passo temporale, \textit{step}, della simulazione
+sarebbe computazionalmente troppo oneroso: ogni passo richiede una valutazione per ciascuna entità
+visibile, e ogni scenario richiede centinaia di passi. La soluzione successivamente adottata
 disaccoppia i due livelli. Le prestazioni del sensore vengono misurate una
-sola volta, in modalità non interattiva, su tutto l'insieme di validazione; i
-valori così ottenuti vengono scritti su un file di interscambio in formato
-JSON; il simulatore li legge all'inizializzazione e li usa come parametri di
+sola volta, in modalità non interattiva, su tutto il dataset di validazione; i
+valori così ottenuti vengono scritti su un file di interscambio, intermedio, in formato
+\textit{JSON}; il simulatore procede con la lettura di quest'ultimi nella fase di inizializzazione e li usa come parametri di
 un modello probabilistico del sensore, senza mai caricare la rete neurale.
 
-Il disaccoppiamento ha una conseguenza metodologica che va oltre il risparmio
-di calcolo: rende i due livelli verificabili in modo indipendente. Il
+Il disaccoppiamento, oltre a garantire concretamente un risparmio in termini di potenza computazionale, rende i due livelli verificabili in modo indipendente. Il
 comportamento del sensore può essere validato contro i dati reali senza che
 il simulatore sia coinvolto, e il simulatore può essere eseguito su
 parametri arbitrari per verificarne la coerenza interna senza rilanciare
 alcuna inferenza. Il file di interscambio è inoltre l'unico punto di
 contatto tra i due livelli, il che rende esplicito e ispezionabile
-l'insieme delle informazioni che passano dall'uno all'altro.
+l'insieme delle informazioni che transitano dall'uno all'altro.
 
 \subsection{Il canale visivo come modello probabilistico del sensore}
 \label{sec:canale_visivo}
 
 All'interno del simulatore, il canale visivo non riproduce il rilevatore: ne
 riproduce il \emph{tasso di successo}. A ogni passo temporale, per ogni
-entità entro il raggio operativo del sensore, l'esito del rilevamento è
+entità entro il raggio operativo del sensore %anche qui citazioni paper o decisioni prese?
+, l'esito del rilevamento è
 determinato da un'estrazione di Bernoulli la cui probabilità di successo è
 posta pari alla sensibilità misurata empiricamente sul primo livello.
 
 La scelta della sensibilità come parametro richiede una giustificazione,
 perché una versione precedente dell'implementazione usava invece la misura
 $F_1$. Indicando con $\mathit{TP}$, $\mathit{FN}$, $\mathit{TN}$ e
-$\mathit{FP}$ rispettivamente i veri positivi, i falsi negativi, i veri
-negativi e i falsi positivi calcolati a livello di fotogramma, la
-sensibilità e la specificità sono definite come
+$\mathit{FP}$ rispettivamente i \textit{True Positive}, i \textit{False Negative}, i \textit{True Negative} e i \textit{False Positive} calcolati a livello di fotogramma, la
+\textit{sensitivity} e la \textit{specificity} sono definite come
 \begin{equation}
     R_1 = \frac{\mathit{TP}}{\mathit{TP} + \mathit{FN}}, \qquad
     R_2 = \frac{\mathit{TN}}{\mathit{TN} + \mathit{FP}}
@@ -482,8 +477,7 @@ quantità aggregata, e non ammette un'interpretazione probabilistica riferita
 al singolo fotogramma. La domanda a cui il simulatore deve rispondere a ogni
 passo è invece esattamente ``questo bersaglio viene visto?'', ovvero un
 evento binario il cui tasso di successo atteso su fotogrammi positivi è per
-definizione $R_1$. La sostituzione corregge dunque un errore di categoria,
-non un semplice cambio di parametro.
+definizione $R_1$. La sostituzione dunque permette di modellare il comportamento del sensore in modo più coerente e granulare.
 
 Il modello distingue due condizioni per ciascuna entità. Per un bersaglio su
 cui la contromisura è attiva, la probabilità di rilevamento è la sensibilità
@@ -492,8 +486,7 @@ sensibilità misurata sul rilevatore non perturbato, ovvero la linea di base
 propria dell'insieme di dati in uso. Per un'entità civile, che costituisce un
 caso negativo, la quantità rilevante è il tasso di falso allarme, pari a
 $1 - R_2$. Questa formulazione garantisce che entrambe le metriche misurate
-sul primo livello entrino effettivamente nel simulatore: in una versione
-precedente le entità civili erano trattate con un ramo di codice separato che
+sul primo livello entrino effettivamente nel simulatore. Precedentemente era stata modellata una versione nella quale le entità civili erano trattate con un ramo di codice separato che
 non dipendeva da alcuna misura empirica, e la specificità non raggiungeva
 quindi mai il secondo livello.
 
@@ -506,12 +499,12 @@ una media empirica calcolata su fotogrammi reali, i quali contengono già una
 distribuzione eterogenea di distanze e di dimensioni apparenti del bersaglio:
 applicare a valle un ulteriore fattore di decadimento con la distanza
 conterebbe due volte il medesimo effetto. Si tratta di una scelta di
-modellazione esplicita, non di un'omissione, e la sua conseguenza è che il
+modellazione esplicita, e la sua conseguenza è che il
 canale visivo del simulatore riproduce il comportamento \emph{medio} del
 rilevatore sulla distribuzione di distanze osservata, senza pretendere di
-riprodurne la dipendenza puntuale dalla geometria della scena.
+riprodurne la dipendenza dalla geometria della scena.
 
-La Figura~\ref{fig:ponte_interscambio} riassume il disaccoppiamento appena
+La Figura \ref{fig:ponte_interscambio} riassume il disaccoppiamento appena
 descritto.
 
 \begin{figure}[htbp]
@@ -524,10 +517,10 @@ descritto.
 \node[optim, wmed, below=of dataset] (patch) {\lawstitle{Ottimizzazione della patch}
     EoT su 16 trasformazioni.\\
     Obiettivo asintotico.\\
-    Aggregazione top-$K{=}20$.\\
-    Penalizzazione di\\ variazione totale.};
+    Aggregazione top-$K{=}20$.\\ %qua grafici della scelta del k? o dopo??
+    Penalizzazione di\\ variazione totale.}; % total variation TV sarebbe?? non dovremmo spiegarle meglio queste cose tipo TV EoT ecc?
 \node[optim, wmed, below=of patch] (valid) {\lawstitle{Validazione}
-    Inferenza sul rilevatore reale.\\
+    Inferenza YOLOv8 nano\\
     Stima di $R_1$ e $R_2$ nelle\\
     condizioni pre e post attacco.};
 \node[bridge, wmed, right=of valid] (bridge) {\lawstitle{\texttt{vision\_metrics.json}}
@@ -549,18 +542,14 @@ descritto.
 fra il canale visivo e il simulatore. Le prestazioni del rilevatore sono
 misurate una sola volta, fuori linea, su tutto l'insieme di validazione; il
 bordo tratteggiato indica un artefatto persistente su disco e non un
-componente di calcolo. Il simulatore non carica mai la rete neurale.}
+componente di calcolo. Il simulatore non carica mai la rete neurale YOLO.}
 \label{fig:ponte_interscambio}
 \end{figure}
 
-% ---------------------------------------------------------------------
-% NOTA DI COLLOCAZIONE (provvisoria): la figura chiude §4.1 perché
-% descrive il Livello 3, introdotto in §4.1.1. Se in sede di rielaborazione
-% di §4.1 si apre una sottosezione dedicata alla fusione, spostarla lì.
-% ---------------------------------------------------------------------
+
 Il terzo livello riceve la stima prodotta dal canale visivo e la combina con
-i canali non visivi. La sua struttura, riportata in
-Figura~\ref{fig:fusione_decisione}, è richiamata nella discussione dei
+i canali non visivi: OSINT e comportamentali (\textit{behavioral}). La sua struttura, riportata in
+Figura \ref{fig:fusione_decisione}, è richiamata nella discussione dei
 risultati perché costituisce il percorso lungo il quale il degrado misurato
 sul primo livello si propaga, attenuato, fino alla decisione finale.
 
@@ -569,7 +558,7 @@ sul primo livello si propaga, attenuato, fino alla decisione finale.
 \begin{adjustbox}{max width=\textwidth}
 \begin{tikzpicture}[node distance=8mm and 26mm]
 \node[vision, wnarrow] (vagent) {\lawstitle{VisionAgentStat}
-    Estrazione di Bernoulli\\ su $R_1$.};
+    Estrazione di Bernoulli\\ su $R_1$};
 \node[osint, wnarrow, below=of vagent] (oagent) {\lawstitle{OSINTAgent}
     Bernoulli, Beta, Poisson.\\
     Inferenza bayesiana interna,\\
@@ -578,8 +567,9 @@ sul primo livello si propaga, attenuato, fino alla decisione finale.
     Varianza della\\ traiettoria recente.};
 \node[fusion, wmed, right=of oagent] (fusion) {\lawstitle{FusionAgent}
     Combinazione lineare pesata:\\
-    visione $0.45$, OSINT $0.35$,\\
-    comportamento $0.20$.\\[3pt]
+    VISION $0.45$\\
+    OSINT $0.35$\\
+    BEHAVIORAL $0.20$\\[3pt]
     Aggiornamento bayesiano,\\
     probabilità a priori $0.50$.};
 \node[decision, wmed, below=11mm of fusion] (decision) {\lawstitle{DecisionAgent}
@@ -605,35 +595,26 @@ sul primo livello si propaga, attenuato, fino alla decisione finale.
 bayesiana dei tre canali informativi e vincoli precauzionali applicati a
 valle. L'intervallo di confidenza è calcolato come $\pm 1.96\sigma$ su una
 finestra mobile delle dieci osservazioni più recenti: un disaccordo
-persistente fra osservazioni successive inibisce l'ingaggio
-indipendentemente dal valore del punteggio di minaccia.}
+persistente fra osservazioni contingenti inibisce l'ingaggio
+indipendentemente dal valore del punteggio di minaccia (esempio di probabile flickering del drone).}
 \label{fig:fusione_decisione}
 \end{figure}
 
 \section{Modello di minaccia e architettura dell'attacco}
 \label{sec:attacco}
-
-La valutazione di robustezza condotta in questo lavoro segue la logica
-propria della sicurezza informatica: prima si dichiara il modello di
-minaccia, cioè quali capacità si attribuiscono all'attaccante e quali
-vincoli lo limitano, e solo dopo si costruisce l'attacco. Senza questa
-dichiarazione preliminare qualunque risultato di robustezza è
-ininterpretabile, perché un attacco riuscito sotto ipotesi irrealistiche non
-dice nulla sulla sicurezza del sistema reale.
+L'analisi di robustezza di un sistema richiede, come prerequisito metodologico, la definizione esplicita di un modello di minaccia (\textit{threat model}). Questo passaggio serve a formalizzare le capacità, le risorse e i vincoli fisici dell'attaccante prima di procedere alla progettazione della contromisura. Ignorare questa fase renderebbe la valutazione puramente teorica: un attacco concepito sotto ipotesi irrealistiche o non dichiarate non fornisce, infatti, alcuna informazione utile sulla reale sicurezza del sistema.
 
 \subsection{Modello di minaccia}
 \label{sec:threat_model}
 
-La superficie di attacco considerata è il canale di acquisizione ottica del
+La superficie di attacco presa in considerazione è il canale di \textit{Vision} del
 sistema di percezione: l'avversario non ha accesso né alla rete di
 comunicazione, né ai pesi del modello in esecuzione sul velivolo, né alla
 catena di comando. La sua unica capacità è modificare l'aspetto fisico della
-scena osservata, applicando una superficie stampata sul proprio corpo. Si
-tratta, nella terminologia della disciplina, di un attacco di evasione al
+scena osservata, applicando una superficie stampata sul proprio corpo. Si tratta a tutti gli effetti di un attacco di \textit{evasion} al
 momento dell'inferenza, non di un attacco di avvelenamento in fase di
 addestramento: il modello bersaglio resta integro, e viene indotto in errore
-soltanto attraverso l'ingresso.
-
+soltanto attraverso l'input.
 Rispetto alla conoscenza del bersaglio, l'ottimizzazione è condotta in
 regime di scatola bianca su un modello sostitutivo: si assume che
 l'attaccante disponga di un rilevatore della stessa famiglia
