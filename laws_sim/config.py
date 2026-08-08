@@ -17,7 +17,7 @@ Fonti:
     [5] Asili, H. & Bahtiyar, Ş. (2025). GEN-TPRM OSINT risk model.
         https://doi.org/10.1109/ACIT65614.2025.11185738
     [6] González-Granadillo, G. et al. (2021). ETIP threat scoring.
-        https://doi.org/10.1016/j.jisa.2020.102658
+        https://doi.org/10.1016/j.jisa.2020.102715
     [7] Carlini, N. & Wagner, D. (2017). "Towards Evaluating the Robustness
         of Neural Networks".
     [8] Thys, S. et al. (2019). "Fooling automated surveillance cameras".
