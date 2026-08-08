@@ -368,7 +368,9 @@ Se l'etica privata cede all'operatività e la governance globale risulta paraliz
 \section{Architettura del framework LAWS-SIM}
 \label{sec:laws_sim}
 
-Il framework (LAWS-SIM) sviluppato in questo lavoro non è un
+Il framework (LAWS-SIM) \footnote{Il codice sorgente completo, comprensivo degli
+script di analisi e di generazione delle figure, è disponibile
+all'indirizzo \url{https://github.com/intradaniele/Tesi-Laws/tree/main/laws_sim}.} sviluppato in questo lavoro non è un
 sistema d'arma o una replica funzionale, ma uno strumento progettato
 per rispondere tecnicamente a una singola domanda, ovvero se e quanto una
 contromisura passiva applicata al corpo di una persona possa alterare il
@@ -617,38 +619,13 @@ L'analisi di robustezza di un sistema richiede, come prerequisito metodologico, 
 \subsection{Modello di minaccia}
 \label{sec:threat_model}
 
-La superficie di attacco considerata è il canale di acquisizione ottica del
-sistema di percezione. Si assume un attaccante privo di accesso
-all'infrastruttura cyber-fisica del velivolo e ai parametri del modello in
-esecuzione: l'unico vettore di compromissione ammesso è la manipolazione del
-dominio fisico osservato, ottenuta applicando una superficie stampata solidale
-al corpo del soggetto. Lo scenario si configura pertanto come \textit{physical
-evasion attack} in fase di inferenza, con integrità di pesi e corpus di
-addestramento preservata e deviazione comportamentale indotta per via del solo
-input.
+In linea con le prassi della sicurezza informatica, la valutazione delle vulnerabilità del sistema di percezione viene preceduta dalla formalizzazione del modello di minaccia (\textit{threat model}). Definire preventivamente i limiti operativi e le capacità dell'avversario è fondamentale per contestualizzare la ricerca.
 
-L'ottimizzazione è condotta in regime \textit{white-box} su un modello surrogato
-appartenente alla stessa famiglia architetturale del rilevatore bersaglio, di cui
-sfrutta i gradienti. È l'ipotesi massimamente favorevole all'attaccante e va
-dichiarata come tale: le misure riportate costituiscono un limite superiore
-all'efficacia conseguibile, non una stima operativa. In condizioni reali il
-regime degrada a \textit{gray-box} o \textit{black-box}, e la trasferibilità
-della perturbazione richiede una valutazione dedicata, condotta nel dominio UAV
-da lavori specifici \footcite{shrestha_2023} ed esclusa dallo scope di questo
-lavoro.
+Nel presente scenario, la superficie di attacco è limitata esclusivamente al canale di acquisizione ottica del sistema di percezione. Si assume un avversario privo di accesso all'infrastruttura logica e ai pesi interni della rete neurale (\textit{black-box scenario}). L'unico vettore di compromissione ammesso è la manipolazione del dominio fisico, ottenuta tramite l'applicazione di una perturbazione visiva (patch) sul corpo del bersaglio. Il modello di minaccia configura pertanto un attacco avversariale fisico di \textit{evasion} in fase di inferenza: il modello e l'architettura aerea rimangono integri, mentre l'inganno si consuma interamente attraverso l'alterazione malevola dell'input sensoriale.
 
-Due vincoli distinguono la formulazione da quella degli attacchi avversariali a
-norma limitata \footcite{carlini_2017}. Il primo è la localizzazione: la
-perturbazione non è distribuibile sull'intera immagine, poiché l'attaccante
-controlla la sola porzione di scena occupata dal proprio corpo. Si adotta quindi
-il paradigma della patch avversariale \footcite{brown_2017_patch}, in cui il
-supporto della perturbazione è una regione contigua e limitata mentre l'ampiezza
-al suo interno è libera. Il secondo è la realizzabilità fisica: la perturbazione
-deve permanere efficace attraverso la catena stampa--tessuto--ottica--
-campionamento, sotto illuminazione e geometria di ripresa variabili. Da
-quest'ultimo derivano l'aggregazione su distribuzione di trasformazioni
-(Sezione~\ref{sec:eot}) e la penalizzazione della variazione totale
-(Sezione~\ref{sec:tv}).
+L'ottimizzazione per la creazione della patch è condotta in regime \textit{white-box} su un modello surrogato appartenente alla stessa famiglia architetturale del rilevatore bersaglio, di cui si sfruttano i gradienti. Questa è l'ipotesi massimamente favorevole all'attaccante e va dichiarata come tale: le misure riportate costituiscono un limite superiore all'efficacia conseguibile, non una stima operativa. In condizioni reali il regime degrada a \textit{gray-box} o \textit{black-box}, e la trasferibilità della perturbazione richiede una valutazione dedicata, condotta nel dominio UAV da lavori specifici \footcite{shrestha_2023} ed esclusa dallo scope primario di questo lavoro.
+
+Due vincoli distinguono la formulazione da quella degli attacchi avversariali a norma limitata \footcite{carlini_2017}. Il primo è la localizzazione: la perturbazione non è distribuibile sull'intera immagine, poiché l'attaccante controlla la sola porzione di scena occupata dal proprio corpo. Si adotta quindi il paradigma della patch avversariale \footcite{brown_2017_advpatch}, in cui il supporto della perturbazione è una regione contigua e limitata mentre l'ampiezza al suo interno è libera. Il secondo è la realizzabilità fisica: la perturbazione deve permanere efficace attraverso la catena stampa-tessuto-ottica-campionamento, sotto illuminazione e geometria di ripresa variabili. Da quest'ultimo derivano l'aggregazione su distribuzione di trasformazioni (Sezione \ref{sec:eot}) e la penalizzazione della variazione totale (Sezione \ref{sec:tv}).
 
 \subsection{Parametrizzazione della perturbazione e vincolo di dominio}
 \label{sec:sigmoide}
@@ -781,9 +758,14 @@ ricaduta automatica, mentre l'inferenza del rilevatore resta sull'acceleratore.
 
 
 
-\chapter{Risultati}
+\chapter{Risultati e Discussione}
 \chapter{Conclusioni: Il C.A.R.E. Kit e la Difesa dei Diritti Umani}
 \label{cap6}
+% ~2 pagine discorsive, senza numeri
+\section{Limitazioni}
+% physical domain gap, R2 poco potente (9 negativi veri), stratificazione
+% IoU-matched non fatta, Layer 2/3 proof-of-concept
+\section{Sviluppi futuri: il C.A.R.E. Kit}
 \todo{CARE KIT COME CONCLUSIONE O CONCLUSIONI CAPITOLO A PARTE????}Sfide etiche? \footcite{helkala_2023}, proposta di sviluppo di contromisure fisiche basate sulle debolezze della computer vision. Tecniche come il camuffamento asimmetrico \footcite{harvey_2010} e tessuti con pattern avversari \footcite{wu_2020, hu_2022} offrono una linea di difesa contro il tracciamento algoritmico.
 
 % --- BIBLIOGRAFIA ---
