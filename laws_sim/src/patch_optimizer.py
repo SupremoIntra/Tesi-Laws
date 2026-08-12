@@ -647,7 +647,7 @@ class PatchOptimizer:
             - Checkpoint ogni 100 step e recovery da KeyboardInterrupt
         """
         MAX_TARGETS_PER_FRAME = 3
-        
+        skip_stats = {"no_bbox": 0, "mask_empty": 0, "no_targets": 0, "tactical_zero": 0, "ok": 0}
         # Carica checkpoint se esiste
         start_step = self._load_checkpoint()
         
@@ -696,6 +696,7 @@ class PatchOptimizer:
                 imgs_pil, bboxes_list = next(batch_gen)
                 
                 if not any(bboxes_list):
+                    skip_stats["no_bbox"] += 1
                     continue
                 
                 # Zero gradienti solo all'inizio del ciclo di accumulazione
@@ -706,6 +707,7 @@ class PatchOptimizer:
                 bboxes = bboxes_list[0]
                 
                 if not bboxes:
+                    skip_stats["no_bbox"] += 1
                     continue
                 
                 # .contiguous() necessario: senza, lo stride creato da
@@ -745,6 +747,7 @@ class PatchOptimizer:
                     
                     spatial_mask = self._build_spatial_mask(person_bbox, img_size, device)
                     if not spatial_mask.any():
+                        skip_stats["mask_empty"] += 1
                         continue
                     
                     # TACTICAL FILTER 2026: peso di rilevanza tattica in base
@@ -798,6 +801,7 @@ class PatchOptimizer:
                     targets_in_image += 1
                 
                 if targets_in_image == 0:
+                    skip_stats["no_targets"] += 1
                     continue
                 
                 # TACTICAL FILTER 2026: se NESSUN target nel frame supera il
@@ -806,6 +810,7 @@ class PatchOptimizer:
                 # coerente con la richiesta. La patch resta comunque allenata
                 # sul resto dei frame del batch/step successivo.
                 if not global_weight_list:
+                    skip_stats["tactical_zero"] += 1
                     continue
                 
                 # Combina spatial masks pesate di tutti i target (max per
@@ -821,6 +826,7 @@ class PatchOptimizer:
                 ).contiguous()
                 
                 # Calcola loss asintotica (pesata tatticamente)
+                skip_stats["ok"] += 1
                 loss = self._asymptotic_loss(
                     torch_model, adv_batch, global_spatial_mask,
                     cell_weights=global_cell_weight
@@ -930,7 +936,8 @@ class PatchOptimizer:
                 if targets_in_image > 0:
                     del global_spatial_mask
                 torch.mps.empty_cache() if device == "mps" else None
-                
+        
+            print(f"\n[Skip] {skip_stats}")     
         except KeyboardInterrupt:
             # Salvataggio emergenza su interruzione
             print("\n[Interrupt] Salvataggio emergenza patch corrente...")

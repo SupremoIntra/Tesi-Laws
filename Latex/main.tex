@@ -185,7 +185,7 @@ L'Italia ha supportato una proposta per dare via a dei dibattiti multilaterali s
 
 L'Italia non ha riconosciuto le preoccupazioni etiche e morali sulla rimozione del controllo umano dall'uso della forza o sostenuto proposte per vietare le armi completamente autonome, ma ha invece sostenuto, tramite l'ambasciatore L. Bencini \footcite{ccw_2019}, un approccio ``two way'' che riconosce l'importanza del controllo umano significativo, ma allo stesso tempo non esclude completamente la possibilità di sviluppare e utilizzare sistemi d'arma autonomi in determinate circostanze. Questo perché sarebbe controproducente vietare totalmente i LAWS, in quanto distruggerebbe il business plan della sua più grande azienda strategica, la Leonardo Spa, che è uno dei principali produttori di sistemi d'arma autonomi a livello mondiale. La posizione italiana è un equilibrio molto vulnerabile tra l'articolo 11 della Costituzione, che vieta l'uso della forza come mezzo di risoluzione delle controversie internazionali, e la necessità di mantenere un'industria militare competitiva a livello globale. In questo senso, l'Italia si trova in una posizione delicata, cercando di bilanciare le preoccupazioni etiche e morali con gli interessi economici e strategici del paese.
 
-Di fatto, il 14 ottobre 2025 l'associazione ``Giuristi e Avvocati per la Palestina'' \footcite{denunciacpi} ha presentato una denuncia contro la Leonardo Spa per la produzione e vendita di sistemi d'arma autonomi a Israele, che sono stati utilizzati contro i civili palestinesi. Questa denuncia, pur non essendo un documento ufficiale, riprende diverse problematiche sottolineate nel report \textit{From Economy of Occupation to Economy of Genocide} \footcite{albanese_report} pubblicato da Francesca Albanese, relatrice speciale delle Nazioni Unite sulla situazione dei diritti umani nei territori palestinesi occupati dal 1967. Il report evidenzia come l'occupazione militare israeliana abbia portato a una serie di violazioni dei diritti umani, tra cui l'uso di armi autonome e non contro i civili palestinesi, e sottolinea la necessità di una maggiore responsabilità da parte delle aziende che producono e vendono queste tecnologie. Alcune di queste armi comprendono cacciabombardieri F-35, sviluppati dagli Stati Uniti con una grande collaborazione da parte di Leonardo Spa, Bulldozer D9 trasformati in un'arma automatizzata e comandata a distanza, progettata da Elbit Systems e RADA Electronics Industries, di proprietà di Leonardo. Inoltre, dal 2019 al 2023, l'Italia ha contribuito ad esportare circa 23,8 milioni di euro in sistemi d'arma comprendenti 12 elicotteri leggeri AW119 Koali e 4 cannoni navali Super Rapid da 76mm. 
+Di fatto, il 14 ottobre 2025 l'associazione ``Giuristi e Avvocati per la Palestina'' \footcite{denunciacpi} ha presentato una denuncia contro la Leonardo Spa per la produzione e vendita di sistemi d'arma autonomi a Israele, che sono stati utilizzati contro i civili palestinesi. Questa denuncia, pur non essendo un documento ufficiale, riprende diverse problematiche sottolineate nel report \textit{From Economy of Occupation to Economy of Genocide} \footcite{albanese_report} pubblicato da Francesca Albanese, relatrice speciale delle Nazioni Unite sulla situazione dei diritti umani nei territori palestinesi occupati dal 1967. Il report evidenzia come l'occupazione militare israeliana abbia portato a una serie di violazioni dei diritti umani, tra cui l'uso di armi autonome e non contro i civili palestinesi, e sottolinea la necessità di una maggiore responsabilità da parte delle aziende che producono e vendono queste tecnologie. Alcune di queste armi comprendono cacciabombardieri F-35, sviluppati dagli Stati Uniti con una grande collaborazione da parte di Leonardo Spa, Bulldozer D9 trasformati in un'arma automatizzata e comandata a distanza, progettata da Elbit Systems e RADA Electronics Industries, di proprietà di Leonardo. Inoltre, dal 2019 al 2023, l'Italia ha contribuito ad esportare circa 23.8 milioni di euro in sistemi d'arma comprendenti 12 elicotteri leggeri AW119 Koali e 4 cannoni navali Super Rapid da 76mm. 
 
 Questa dubbia cautela diplomatica viene confermata nel non-paper sulla minaccia ibrida redatto dal Ministro della Difesa del governo Meloni, Guido Crosetto. Viene riconosciuto il cyberspazio come dominio operativo a pari grado di quelli convenzionali, sottolineando che la protezione delle infrastrutture critiche nazionali richiede necessariamente strumenti e competenze militari, non solo civili \footcite{crosetto_2025_nonpaper}. Lo stesso processo logico, che tratta la capacità tecnologica come condizione di sicurezza irrinunciabile piuttosto che come minaccia da limitare, spiega la coerenza tra l'approccio ``two way'' sostenuto da Bencini in sede CCW \footcite{ccw_2019} e l'atteggiamento nazionale prevalentemente difensivo: per l'Italia, rinunciare per via negoziale a capacità algoritmiche avanzate equivarrebbe a un disarmo unilaterale in un dominio, quello cyber e dell'autonomia, evento catastrofico per la sicurezza nazionale in un contesto attuale così fluido e instabile.
 
@@ -372,9 +372,8 @@ Il framework (LAWS-SIM) \footnote{Il codice sorgente completo, comprensivo degli
 script di analisi e di generazione delle figure, è disponibile
 all'indirizzo \url{https://github.com/intradaniele/Tesi-Laws/tree/main/laws_sim}.} sviluppato in questo lavoro non è un
 sistema d'arma o una replica funzionale, ma uno strumento progettato
-per rispondere tecnicamente a una singola domanda, ovvero se e quanto una
-contromisura passiva applicata al corpo di una persona possa alterare il
-comportamento di un sistema di percezione autonoma. La sua struttura riflette
+per quantificare l'impatto di una
+contromisura passiva applicata al corpo di una persona nell'alterazione della percezione di un sistema autonomo. La sua struttura riflette
 questa finalità: un modulo di \textit{vision} basato su dati elaborati e sanitizzati da due dataset reali e un ambiente simulato che ne propaga gli effetti fino a una decisione, come illustrato in
 Figura \ref{fig:tre_livelli}.
 
@@ -412,11 +411,7 @@ rilevatore YOLOv8; il secondo e il terzo su entità sintetiche. Lo statuto di ci
 \subsection{Organizzazione in tre livelli e disaccoppiamento della pipeline}
 \label{sec:tre_layer}
 
-L'architettura è organizzata in tre livelli, ognuno con una funzione specifica. Il primo
-livello riguarda la \textit{vision}: su di esso si concentra il contributo
-sperimentale della tesi, e consiste nell'ottimizzazione di una patch
-avversariale universale \footcite{brown_2017_patch,thys_2019} contro un rilevatore di oggetti (YOLOv8 nano) e nella misura del
-degrado che ne deriva su due dataset aerei reali (VisDrone\footcite{zhu_2021_visdrone} e
+L'architettura è organizzata in tre livelli, ognuno con una funzione specifica. Il primo livello implementa il modulo di \textit{vision} e rappresenta il nucleo sperimentale del lavoro. Esso è dedicato all'ottimizzazione di una patch avversariale universale \footcite{brown_2017_patch,thys_2019} contro un rilevatore di oggetti (YOLOv8 nano) e alla successiva quantificazione del degrado indotto su due dataset aerei reali (VisDrone\footcite{zhu_2021_visdrone} e
 Okutama\footcite{barekatain_2017_okutama}).
 Il secondo livello
 è un ambiente multi-agente che simula il movimento di un velivolo autonomo e delle entità a terra, e che integra tramite un file \textit{JSON} intermedio le metriche empiriche prodotte
@@ -424,7 +419,7 @@ dal primo livello. Il terzo livello riguarda l'integrità dei metadati
 informativi e valuta la resilienza della decisione fusa a perturbazioni dei
 canali non visivi, come la contaminazione dei profili OSINT delle entità (blacklist di fonti aperte, falsificazione di dati georeferenziati, ecc.).
 
-Il primo livello, il focus di questa tesi, opera su fotogrammi reali tramite YOLOv8, e i suoi risultati sono
+Questo primo livello opera esclusivamente su fotogrammi reali tramite YOLOv8, e i risultati estratti costituiscono
 misure sperimentali. Il secondo e il terzo livello operano su entità
 sintetiche generate da distribuzioni statistiche scelte in fase di
 progettazione, e i loro risultati hanno lo statuto di conseguenze di un
@@ -432,38 +427,18 @@ modello, non di osservazioni. Questa asimmetria è deliberata e ricorre nella
 discussione dei risultati.
 
 \subsubsection*{Il ponte di interscambio tra visione e simulazione}
+Valutare il rilevatore YOLOv8 ad ogni passo temporale \textit{step} imporrebbe un costo computazionale proibitivo, dato il prodotto tra il numero di entità visibili e le centinaia di iterazioni richieste da un singolo scenario. Per ovviare a questo limite strutturale, i due livelli sono stati disaccoppiati. L'inferenza del sensore è eseguita in modalità non interattiva sull'intero set di validazione e l'outputp salvato su un file di interscambio in formato \textit{JSON}.
+Il simulatore importa le metriche esclusivamente in fase di inizializzazione, impiegandole per istanziare un modello probabilistico del sensore senza caricare in memoria i pesi della rete neurale.
 
-Nei vari test effettuati si è constatato che eseguire l'inferenza del rilevatore YOLOv8 ad ogni passo temporale, \textit{step}, della simulazione
-sarebbe computazionalmente troppo oneroso: ogni passo richiede una valutazione per ciascuna entità
-visibile, e ogni scenario richiede centinaia di passi. La soluzione successivamente adottata
-disaccoppia i due livelli. Le prestazioni del sensore vengono misurate una
-sola volta, in modalità non interattiva, su tutto il dataset di validazione; i
-valori così ottenuti vengono scritti su un file di interscambio, intermedio, in formato
-\textit{JSON}; il simulatore procede con la lettura di quest'ultimi nella fase di inizializzazione e li usa come parametri di
-un modello probabilistico del sensore, senza mai caricare la rete neurale.
-
-Il disaccoppiamento, oltre a garantire concretamente un risparmio in termini di potenza computazionale, rende i due livelli verificabili in modo indipendente. Il
-comportamento del sensore può essere validato contro i dati reali senza che
-il simulatore sia coinvolto, e il simulatore può essere eseguito su
-parametri arbitrari per verificarne la coerenza interna senza rilanciare
-alcuna inferenza. Il file di interscambio è inoltre l'unico punto di
-contatto tra i due livelli, il che rende esplicito e ispezionabile
-l'insieme delle informazioni che transitano dall'uno all'altro.
+Tale disaccoppiamento, oltre ad abbattere lo sforzo computazionale, garantisce la verificabilità indipendente dei due livelli. Il comportamento del sensore è validato sui dati reali isolandolo dalla simulazione; allo stesso modo, il simulatore può essere collaudato iniettando parametri arbitrari per verificarne la coerenza interna, senza richiedere nuove inferenze. Il file \textit{JSON} funge da interfaccia esclusiva tra i moduli, rendendo esplicito e integralmente ispezionabile il trasferimento delle informazioni.
 
 \subsection{Il canale visivo come modello probabilistico del sensore}
 \label{sec:canale_visivo}
-
 All'interno del simulatore, il canale visivo non riproduce il rilevatore: ne
-riproduce il \emph{tasso di successo}. A ogni passo temporale, per ogni
-entità entro il raggio operativo del sensore %anche qui citazioni paper o decisioni prese?
-, l'esito del rilevamento è
-determinato da un'estrazione di Bernoulli la cui probabilità di successo è
-posta pari alla sensibilità misurata empiricamente sul primo livello.
+riproduce statisticamente il \emph{tasso di successo}. Ad ogni \textit{step} temporale, per ciascuna entità entro il raggio operativo del sensore, l'esito del rilevamento è
+determinato da un'estrazione di Bernoulli la cui probabilità di successo è pari alla sensibilità misurata sul primo livello.
 
-La scelta della sensibilità come parametro richiede una giustificazione,
-perché una versione precedente dell'implementazione usava invece la misura
-$F_1$. Indicando con $\mathit{TP}$, $\mathit{FN}$, $\mathit{TN}$ e
-$\mathit{FP}$ rispettivamente i \textit{True Positive}, i \textit{False Negative}, i \textit{True Negative} e i \textit{False Positive} calcolati a livello di fotogramma, la
+La scelta della sensibilità (\textit{sensitivity}) come parametro al posto del punteggio $F_1$ è motivata da ragioni probabilistiche. Indicando con $\mathit{TP}$, $\mathit{FN}$, $\mathit{TN}$ e $\mathit{FP}$ rispettivamente i \textit{True Positive}, i \textit{False Negative}, i \textit{True Negative} e i \textit{False Positive} calcolati a livello di fotogramma, la
 \textit{sensitivity} e la \textit{specificity} sono definite come
 \begin{equation}
     R_1 = \frac{\mathit{TP}}{\mathit{TP} + \mathit{FN}}, \qquad
@@ -473,51 +448,27 @@ $\mathit{FP}$ rispettivamente i \textit{True Positive}, i \textit{False Negative
 dove $R_1$ è la frazione di fotogrammi contenenti un bersaglio valido in cui
 il rilevatore individua almeno una persona, e $R_2$ è la frazione di
 fotogrammi privi di bersaglio valido che il rilevatore classifica
-correttamente come tali. La misura $F_1$, per contro, è la media armonica di
-precisione e sensibilità calcolata sull'intero insieme di validazione: è una
-quantità aggregata, e non ammette un'interpretazione probabilistica riferita
-al singolo fotogramma. La domanda a cui il simulatore deve rispondere a ogni
-passo è invece esattamente ``questo bersaglio viene visto?'', ovvero un
-evento binario il cui tasso di successo atteso su fotogrammi positivi è per
-definizione $R_1$. La sostituzione dunque permette di modellare il comportamento del sensore in modo più coerente e granulare.
+correttamente come tali. 
+La misura $F_1$, per contro, costituisce una media armonica calcolata sull'intero insieme di validazione e non ammette un'interpretazione probabilistica riferita
+al singolo fotogramma. Poiché l'ambiente simulato valuta l'evento binario del rilevamento di una specifica entità a ogni iterazione, l'uso di $R_1$ risulta l'unico approccio matematicamente coerente per parametrizzare un'estrazione bernoulliana.
 
-Il parametro dell'estrazione di Bernoulli è selezionato da due attributi
-ortogonali: il ruolo dell'entità determina quale delle due metriche sia
-pertinente, lo stato della contromisura determina quale variante (misurata
-prima o dopo l'attacco) di quella metrica venga impiegata. Per un bersaglio
-la quantità pertinente è la sensibilità: $R_1$ post-attacco se la contromisura
-è attiva su quel bersaglio, $R_1$ pre-attacco altrimenti, ovvero la linea di
-base propria dell'insieme di dati in uso. Per un'entità civile, che costituisce
-un caso negativo, la quantità pertinente è il tasso di falso allarme
-$1 - R_2$.
 
-Nel disegno sperimentale adottato la patch non viene composta sui fotogrammi
-negativi: la specificità è quindi invariante per costruzione, i suoi valori pre
-e post attacco coincidono e il ramo civile si riduce a un valore unico. La
-distinzione fra le due varianti è comunque mantenuta esplicita
-nell'implementazione, poiché un disegno che includesse la patch nei fotogrammi
-negativi non garantirebbe più tale invarianza. La formulazione assicura che
-entrambe le metriche misurate sul primo livello entrino effettivamente nel
-simulatore: una versione precedente trattava le entità civili con un ramo di
-codice indipendente da qualunque misura empirica, e la specificità non
-raggiungeva mai il secondo livello.
+Il parametro per l'estrazione di Bernoulli è governato da due attributi ortogonali: il ruolo dell'entità, che determina quale delle due metriche sia
+pertinente, e lo stato della contromisura, che determina quale variante (misurata
+prima o dopo l'attacco) di quella metrica venga impiegata. 
 
-\subsubsection*{Il decadimento con la distanza non è modellato analiticamente}
+Per un bersaglio ostile, la metrica pertinente è la sensibilità: si adotta il valore $R_1$ post-attacco qualora la contromisura sia attiva, e il valore $R_1$ pre-attacco (la linea di base del dataset) in caso contrario. Per un'entità civile, che costituisce
+un caso negativo, la probabilità di rilevamento errato coincide con il tasso di falso allarme, pari a $1 - R_2$.
 
-Il simulatore calcola la distanza tridimensionale fra sensore ed entità e la
-usa per modulare la confidenza riportata nei registri di esecuzione, ma
-\emph{non} per determinare l'esito del rilevamento. La ragione è che $R_1$ è
-una media empirica calcolata su fotogrammi reali, i quali contengono già una
-distribuzione eterogenea di distanze e di dimensioni apparenti del bersaglio:
-applicare a valle un ulteriore fattore di decadimento con la distanza
-conterebbe due volte il medesimo effetto. Si tratta di una scelta di
-modellazione esplicita, e la sua conseguenza è che il
-canale visivo del simulatore riproduce il comportamento \emph{medio} del
-rilevatore sulla distribuzione di distanze osservata, senza pretendere di
-riprodurne la dipendenza dalla geometria della scena.
+Nel disegno sperimentale adottato la patch avversariale non viene applicata sui fotogrammi
+privi di bersagli. Di conseguenza, la specificità risulta invariante per costruzione: i  valori pre e post-attacco coincidono e il ramo computazionale dedicato ai civili collassa su un unico valore. L'architettura mantiene tuttavia separata l'acquisizione delle due varianti, garantendo la compatibilità con futuri scenari di test che prevedano l'applicazione di contromisure anche su soggetti non ostili. Tale formulazione assicura che entrambe le metriche ($R_1$ e $R_2$) misurate nel primo livello governino effettivamente la simulazione, vincolando la gestione delle entità civili esclusivamente al dato empirico del rilevatore.
 
-La Figura \ref{fig:ponte_interscambio} riassume il disaccoppiamento appena
-descritto.
+\subsubsection*{Indipendenza analitica dalla distanza di osservazione}
+
+
+All'interno della simulazione, la distanza tridimensionale fra sensore ed entità viene calcolata e registrata per modulare la confidenza nei log di esecuzione, ma non altera l'esito dell'estrazione di Bernoulli. Poiché la metrica $R_1$ costituisce una media empirica calcolata su fotogrammi reali, essa incorpora nativamente una distribuzione eterogenea di distanze e di dimensioni apparenti dei bersagli. L'applicazione analitica di un ulteriore fattore di decadimento basato sulla distanza introdurrebbe una ridondanza metodologica, conteggiando il medesimo effetto due volte. Il canale visivo riproduce pertanto il comportamento medio del rilevatore sulla distribuzione spaziale intrinseca al dataset, omettendo alterazioni geometriche artificiali a valle.
+
+Il disaccoppiamento logico fra la valutazione empirica e l'ambiente simulato è schematizzato in Figura \ref{fig:ponte_interscambio}.
 
 \begin{figure}[htbp]
 \centering
@@ -552,18 +503,15 @@ descritto.
 \end{adjustbox}
 \caption[Disaccoppiamento fra canale visivo e simulatore]{Disaccoppiamento
 fra il canale visivo e il simulatore. Le prestazioni del rilevatore sono
-misurate una sola volta, fuori linea, su tutto l'insieme di validazione; il
+misurate una sola volta, \textit{offline} sull'intero insieme di validazione; il
 bordo tratteggiato indica un artefatto persistente su disco e non un
 componente di calcolo. Il simulatore non carica mai la rete neurale YOLO.}
 \label{fig:ponte_interscambio}
 \end{figure}
 
 
-Il terzo livello riceve la stima prodotta dal canale visivo e la combina con
-i canali non visivi: OSINT e comportamentali (\textit{behavioral}). La sua struttura, riportata in
-Figura \ref{fig:fusione_decisione}, è richiamata nella discussione dei
-risultati perché costituisce il percorso lungo il quale il degrado misurato
-sul primo livello si propaga, attenuato, fino alla decisione finale.
+
+L'output del canale visivo viene successivamente trasmesso al terzo livello dell'architettura (Figura \ref{fig:fusione_decisione}), dove subisce un processo di fusione bayesiana con due canali informativi indipendenti: un modulo basato su fonti aperte (OSINT) e un modulo di analisi comportamentale (\textit{behavioral}). Tale architettura di fusione costituisce il percorso algoritmico lungo il quale il degrado percettivo misurato sul primo livello si propaga, attenuato dalle dinamiche di validazione incrociata, fino ad alterare la decisione finale di ingaggio.
 
 \begin{figure}[htbp]
 \centering
@@ -614,152 +562,275 @@ indipendentemente dal valore del punteggio di minaccia (esempio di probabile fli
 
 \section{Modello di minaccia e architettura dell'attacco}
 \label{sec:attacco}
-L'analisi di robustezza di un sistema richiede, come prerequisito metodologico, la definizione esplicita di un modello di minaccia (\textit{threat model}). Questo passaggio serve a formalizzare le capacità, le risorse e i vincoli fisici dell'attaccante prima di procedere alla progettazione della contromisura. Ignorare questa fase renderebbe la valutazione puramente teorica: un attacco concepito sotto ipotesi irrealistiche o non dichiarate non fornisce, infatti, alcuna informazione utile sulla reale sicurezza del sistema.
+
+La valutazione di robustezza presuppone la definizione esplicita del modello di minaccia. Capacità dell'avversario, risorse a sua disposizione e vincoli fisici che lo limitano devono essere formalizzati prima della costruzione dell'attacco. Un attacco condotto sotto ipotesi non dichiarate non fornisce metriche oggettive sulla sicurezza del sistema reale.
 
 \subsection{Modello di minaccia}
 \label{sec:threat_model}
 
-Nel presente scenario, la superficie di attacco è limitata esclusivamente al canale di acquisizione ottica del sistema di percezione. Si assume un avversario privo di accesso all'infrastruttura logica del velivolo e ai pesi del rilevatore in esercizio. L'unico vettore di compromissione ammesso è la manipolazione del dominio fisico, ottenuta tramite l'applicazione di una perturbazione visiva (patch) sul corpo del bersaglio. Il modello di minaccia configura pertanto un attacco avversariale fisico di \textit{evasion} in fase di inferenza: il modello e l'architettura aerea rimangono integri, mentre l'inganno si consuma interamente attraverso l'alterazione malevola dell'input sensoriale.
+La superficie di attacco è limitata al canale di acquisizione ottica del sistema di percezione. Si assume un avversario privo di accesso all'infrastruttura logica del velivolo e ai pesi del rilevatore in esercizio. L'unico vettore di compromissione ammesso è la manipolazione del dominio fisico osservato, ottenuta applicando una superficie stampata sul corpo del bersaglio. Lo scenario è un attacco fisico di \textit{evasion} in fase di inferenza: pesi e corpus di addestramento restano integri, la deviazione del comportamento è indotta per via del solo input.
 
-Rispetto alla conoscenza del bersaglio lo scenario è dunque di tipo \textit{transfer}: l'avversario non interroga né ispeziona il rilevatore in esercizio, ma costruisce la perturbazione in regime \textit{white-box} su un modello surrogato appartenente alla stessa famiglia architetturale, di cui sfrutta i gradienti. L'assunzione di corrispondenza fra surrogato e bersaglio è massimamente favorevole all'attaccante e va dichiarata come tale: le misure riportate costituiscono un limite superiore all'efficacia conseguibile, non una stima operativa. Il disallineamento fra i due modelli in condizioni reali degrada l'efficacia in misura non quantificata in questo lavoro; la trasferibilità della perturbazione richiede una valutazione dedicata, condotta nel dominio UAV da lavori specifici \footcite{shrestha_2023} ed esclusa dallo scope primario.
+Rispetto alla conoscenza del bersaglio il regime è di tipo \textit{transfer}. L'avversario non interroga il rilevatore in esercizio. La perturbazione è ottimizzata in regime \textit{white-box} su un modello surrogato della stessa famiglia architetturale, di cui sono sfruttati i gradienti. L'assunzione di corrispondenza fra surrogato e bersaglio è massimamente favorevole all'attaccante: le misure riportate costituiscono un limite superiore all'efficacia conseguibile, non una stima operativa. Il disallineamento fra i due modelli degrada l'efficacia in misura non quantificata in questo lavoro. La trasferibilità di patch avversariali nel dominio UAV è oggetto di lavori dedicati \footcite{shrestha_2023} ed è esclusa dallo scope.
 
-Due vincoli distinguono la formulazione da quella degli attacchi avversariali a norma limitata \footcite{carlini_2017}. Il primo è la localizzazione: la perturbazione non è distribuibile sull'intera immagine, poiché l'attaccante controlla la sola porzione di scena occupata dal proprio corpo. Si adotta quindi il paradigma della patch avversariale \footcite{brown_2017_patch}, in cui il supporto della perturbazione è una regione contigua e limitata mentre l'ampiezza al suo interno è libera. Il secondo è la realizzabilità fisica: la perturbazione deve permanere efficace attraverso la catena stampa-tessuto-ottica-campionamento, sotto illuminazione e geometria di ripresa variabili. Il primo vincolo determina la parametrizzazione e la collocazione della perturbazione, discusse nella Sezione \ref{sec:sigmoide}; il secondo determina l'aggregazione su distribuzione di trasformazioni e la penalizzazione della variazione totale, discusse nella Sezione \ref{sec:eot}.
+Due vincoli distinguono questa formulazione da quella degli attacchi avversariali a norma limitata \footcite{carlini_2017}. Il primo è la localizzazione: l'avversario controlla la sola porzione di scena occupata dal proprio corpo, e la perturbazione non è distribuibile sull'intera immagine. Si adotta il paradigma della patch avversariale \footcite{brown_2017_patch}, nel quale il supporto della perturbazione è una regione contigua e limitata mentre l'ampiezza al suo interno non è vincolata. Il secondo è la realizzabilità fisica: la perturbazione deve conservare efficacia attraverso la catena stampa-tessuto-ottica-campionamento, sotto illuminazione e geometria di ripresa variabili. Dal primo vincolo derivano parametrizzazione e collocazione della superficie, trattate nella Sezione \ref{sec:sigmoide}. Dal secondo derivano l'aggregazione su distribuzione di trasformazioni e la penalizzazione della variazione totale, trattate nella Sezione \ref{sec:eot}.
 
 \subsection{Parametrizzazione e collocazione della perturbazione}
 \label{sec:sigmoide}
 \label{sec:collocazione}
 
-Il contenuto della patch deve appartenere allo spazio delle immagini
-ammissibili, mantenendo ogni canale cromatico nell'intervallo unitario dopo
-ciascun aggiornamento. La proiezione per troncamento introduce un difetto noto:
-un elemento saturato al bordo del dominio riceve gradiente nullo per il resto
-dell'ottimizzazione, generando regioni inerti che riducono la capacità effettiva
-della superficie.
+Il contenuto della patch deve appartenere allo spazio delle immagini ammissibili: ogni canale cromatico resta nell'intervallo unitario dopo ciascun aggiornamento. Sebbene la proiezione per troncamento \textit{(clipping)} soddisfi tale vincolo, essa introduce un difetto noto: un elemento saturato al bordo del dominio riceve gradiente nullo per il resto dell'ottimizzazione e genera una regione inerte, che riduce la capacità effettiva della superficie.
 
-Si adotta una riparametrizzazione per cambio di variabile, nella forma logistica
-dell'espediente proposto da Carlini e Wagner \footcite{carlini_2017}:
-l'ottimizzazione opera in uno spazio latente non vincolato, da cui la patch è
-ottenuta per applicazione elemento per elemento di una sigmoide,
+Si adotta una riparametrizzazione per cambio di variabile, nella forma logistica della formulazione proposta da Carlini e Wagner \footcite{carlini_2017}. L'ottimizzazione opera su uno spazio latente non vincolato; la patch è ottenuta per applicazione puntuale di una sigmoide,
 \begin{equation}
     \mathrm{P} = \sigma(\mathrm{Z}) = \left(1 + e^{-\mathrm{Z}}\right)^{-1}
     \label{eq:sigmoide}
 \end{equation}
-dove $\mathrm{Z} \in \mathbb{R}^{3 \times H \times W}$ è il tensore dei parametri
-liberi effettivamente aggiornati dall'ottimizzatore, $H$ e $W$ sono
-rispettivamente altezza e larghezza della superficie in elementi, e
-$\mathrm{P} \in (0,1)^{3 \times H \times W}$ è la patch risultante. Il vincolo di
-dominio è così soddisfatto per costruzione anziché per proiezione: il gradiente è
-non nullo su tutto lo spazio dei parametri e nessun elemento è assorbito da uno
-stato inerte.
+dove $\mathrm{Z} \in \mathbb{R}^{3 \times H \times W}$ è il tensore dei parametri liberi aggiornati dall'ottimizzatore, $H$ e $W$ sono altezza e larghezza della superficie in elementi, e $\mathrm{P} \in (0,1)^{3 \times H \times W}$ è la patch risultante. Il vincolo di dominio è soddisfatto per costruzione e non per proiezione. Il gradiente è non nullo su tutto lo spazio dei parametri e nessun elemento raggiunge uno stato inerte.
 
-Definito il contenuto della perturbazione, resta da stabilirne la geometria di
-applicazione sulla scena. La patch è applicata su una regione derivata
-proporzionalmente dal \textit{bounding box} del soggetto, non su un'area di
-estensione fissa in pixel. La scelta ha una giustificazione di consistenza fisica
-e una metodologica. Un indumento sottende una frazione approssimativamente
-invariante della figura di chi lo indossa, indipendentemente dalla distanza di
-osservazione; una regione di dimensione fissa corrisponderebbe a un capo di
-taglia variabile con la scala apparente del bersaglio. Sul piano metodologico, in
-prospettiva aerea la figura umana occupa poche decine di pixel e una regione
-fissa eccederebbe l'impronta del soggetto, coprendone il volto e producendo una
-perturbazione non realizzabile per via di un indumento.
+La geometria di applicazione deriva proporzionalmente dal \textit{bounding box} del soggetto e non da un'area di estensione fissa in pixel. Questa scelta è guidata da due ragioni di coerenza fisica e geometrica. In primo luogo, un indumento sottende una frazione approssimativamente invariante della figura di chi lo indossa, indipendentemente dalla distanza di osservazione; una regione di dimensione fissa corrisponderebbe a un capo di taglia variabile. In secondo luogo, in prospettiva aerea la figura umana occupa poche decine di pixel: una regione fissa eccederebbe l'impronta del soggetto, ne coprirebbe il volto e produrrebbe una perturbazione non realizzabile per via di un indumento.
 
-La regione sottende il $50\%$ della larghezza e il $40\%$ dell'altezza del
-\textit{bounding box}, per una copertura pari al $20\%$ dell'area, ed è centrata
-sul terzo superiore del tronco anziché sul centroide geometrico. La collocazione
-\textit{region-aware} \footcite{huang_2020_upc} riflette l'assunzione di
-visibilità dominante nella prospettiva considerata: da sensore in quota la
-superficie corporea più costantemente esposta è quella anteriore-superiore del
-tronco.
-
+La regione sottende il $50\%$ della larghezza e il $40\%$ dell'altezza del \textit{bounding box}, per una copertura pari al $20\%$ dell'area. Il centro è posto sul terzo superiore del tronco e non sul centroide geometrico. La collocazione \textit{region-aware} \footcite{huang_2020_upc} assume come dominante la visibilità della superficie corporea anteriore-superiore, che da sensore in quota risulta la più costantemente esposta.
+Tale limite superficiale garantisce la realizzabilità fisica del capo d'abbigliamento, confinando severamente la capacità perturbativa a disposizione dell'ottimizzatore rispetto ai classici attacchi a piena immagine.
 \subsection{Robustezza alla riproduzione fisica}
 \label{sec:eot}
 \label{sec:tv}
 
-Il vincolo di realizzabilità fisica introdotto nella Sezione
-\ref{sec:threat_model} agisce su due piani distinti, la geometria di
-osservazione e la banda spaziale della superficie, e determina due meccanismi
-corrispondenti.
+Il vincolo di realizzabilità fisica agisce su due piani distinti: la geometria di osservazione e la banda spaziale della superficie. A ciascuno corrisponde un meccanismo dell'ottimizzazione.
 
-Una perturbazione ottimizzata su una singola resa geometrica del bersaglio è
-fragile per costruzione: l'efficacia decade appena scala, orientamento o
-bilanciamento cromatico si discostano dalle condizioni viste in ottimizzazione.
-Poiché lo scenario prevede sensore e bersaglio entrambi in moto, tale fragilità
-sarebbe squalificante. Si adotta pertanto la formulazione \textit{Expectation
-over Transformation} \footcite{athalye_2018_eot}. Dette $\mathcal{T}$ la
-distribuzione delle trasformazioni ammesse, $\mathrm{X}$ il fotogramma,
-$A(\cdot,\cdot)$ l'operatore di composizione della patch sulla regione bersaglio
-e $\mathcal{L}$ la funzione obiettivo, l'ottimizzazione minimizza
+Una perturbazione ottimizzata su una singola resa geometrica del bersaglio è fragile per costruzione. L'efficacia decade appena scala, orientamento o bilanciamento cromatico si discostano dalle condizioni viste in ottimizzazione. Nello scenario considerato sensore e bersaglio sono entrambi in moto, e tale fragilità è squalificante. Si adotta la formulazione \textit{Expectation over Transformation} (EoT) \footcite{athalye_2018_eot}. Dette $\mathcal{T}$ la distribuzione delle trasformazioni ammesse, $\mathrm{X}$ il fotogramma, $A(\cdot,\cdot)$ l'operatore di composizione della patch sulla regione bersaglio e $\mathcal{L}$ la funzione obiettivo definita nella Sezione \ref{sec:loss}, l'ottimizzazione minimizza
 \begin{equation}
     \mathbb{E}_{t \sim \mathcal{T}}
     \left[\mathcal{L}\left(A\left(t(\mathrm{P}),\, \mathrm{X}\right)\right)\right]
     \label{eq:eot}
 \end{equation}
-dove $t$ è una singola trasformazione campionata da $\mathcal{T}$. Il valore
-atteso è stimato per media campionaria su $N = 16$ realizzazioni indipendenti di
-$t$ per ciascun fotogramma. La distribuzione $\mathcal{T}$ compone variazioni di
-scala, rotazioni nel piano, alterazioni del rapporto d'aspetto, perturbazioni
-cromatiche e rumore additivo. L'aggregazione sposta l'obiettivo dal caso
-migliore al valore atteso sulla famiglia di condizioni di osservazione
-modellata, ed è il presupposto che rende l'artefatto un candidato alla
-realizzazione fisica anziché un esemplare valido nel solo dominio digitale.
+dove $t$ è una singola trasformazione campionata da $\mathcal{T}$. Il valore atteso è stimato per media campionaria su $N = 16$ realizzazioni indipendenti di $t$ per ciascun fotogramma. La distribuzione $\mathcal{T}$ compone le seguenti trasformazioni:
+\begin{itemize}
+    \item guadagno cromatico moltiplicativo per canale in $[0.6,\, 1.4]$;
+    \item offset di luminosità additivo in $[-0.2,\, +0.2]$;
+    \item rumore gaussiano additivo a media nulla e deviazione standard $0.05$;
+    \item rotazione nel piano in $[-15^\circ,\, +15^\circ]$;
+    \item riscalamento isotropo in $[0.4,\, 0.9]$;
+    \item rapporto d'aspetto indipendente sui due assi in $[0.7,\, 1.3]$;
+    \item traslazione entro il $10\%$ della dimensione della superficie.
+\end{itemize}
+La variazione indipendente dei fattori di scala sui due assi modella la componente di beccheggio del velivolo, che comprime la proiezione del bersaglio lungo una sola direzione. L'aggregazione sposta l'obiettivo dal caso migliore al valore atteso sulla famiglia di condizioni di osservazione modellata. Tale aggregazione è il presupposto che rende l'artefatto un candidato alla realizzazione fisica e non un esemplare valido nel solo dominio digitale.
 
-L'invarianza alle trasformazioni geometriche non è però sufficiente, perché la
-catena di riproduzione agisce anche sul contenuto in frequenza della superficie.
-Un'ottimizzazione non vincolata nello spazio dei colori converge verso pattern ad
-alta frequenza spaziale, in cui elementi contigui assumono valori marcatamente
-distanti. Tali pattern sono efficaci contro il modello ma non sopravvivono alla
-riproduzione: retinatura di stampa, trama del tessuto e campionamento del sensore
-agiscono come filtri passa-basso in cascata e sopprimono selettivamente la banda
-su cui l'attacco si appoggia. Si introduce quindi il termine di variazione totale
-\footcite{thys_2019},
+L'invarianza alle trasformazioni geometriche non esaurisce il vincolo, poiché la catena di riproduzione agisce anche sul contenuto in frequenza della superficie. Un'ottimizzazione non vincolata nello spazio dei colori converge verso pattern ad alta frequenza spaziale, nei quali elementi contigui assumono valori marcatamente distanti. Tali pattern sono efficaci contro il modello e non sopravvivono alla riproduzione: retinatura di stampa, trama del tessuto e campionamento del sensore agiscono come filtri passa-basso in cascata e sopprimono selettivamente la banda su cui l'attacco si appoggia. Lo stesso effetto è osservabile già in fase di ottimizzazione, poiché l'interpolazione bilineare impiegata dalle trasformazioni geometriche attenua le componenti a frequenza più elevata. Si introduce un termine di variazione totale \footcite{thys_2019},
 \begin{equation}
-    \mathcal{L}_{TV}(\mathrm{P}) = \sum_{i,j}
-    \sqrt{\left(p_{i+1,j} - p_{i,j}\right)^{2}
-        + \left(p_{i,j+1} - p_{i,j}\right)^{2}}
+    \mathcal{L}_{TV}(\mathrm{P}) =
+    \frac{1}{C\,H\,(W-1)} \sum_{c,i,j} \left| p_{c,i,j+1} - p_{c,i,j} \right|
+    + \frac{1}{C\,(H-1)\,W} \sum_{c,i,j} \left| p_{c,i+1,j} - p_{c,i,j} \right|
     \label{eq:tv}
 \end{equation}
-dove $p_{i,j}$ è il valore della patch $\mathrm{P}$ nella posizione di indici $i$
-e $j$, e la somma è estesa a tutte le posizioni interne della superficie. Il
-termine entra nella funzione obiettivo con peso $\lambda_{TV}$, che governa il
-compromesso tra aggressività e stampabilità: valori elevati spostano la soluzione
-verso pattern a bassa frequenza spaziale, più robusti alla riproduzione fisica ma
-meno efficaci contro il modello. La taratura adottata e la sua giustificazione
-empirica sono riportate nel seguito.
+dove $p_{c,i,j}$ è il valore della patch $\mathrm{P}$ nel canale $c$ alla posizione di indici $i$ e $j$, mentre $C$, $H$ e $W$ sono numero di canali, altezza e larghezza della superficie. Si adotta la formulazione anisotropa in norma $L_1$, mediata separatamente lungo le due direzioni: rispetto alla forma isotropa è priva di radice quadrata e quindi di singolarità del gradiente nelle regioni in cui la superficie è localmente costante. Il termine entra nella funzione obiettivo con peso $\lambda_{TV}$, che regola il compromesso fra aggressività e stampabilità. Valori elevati spostano la soluzione verso pattern a bassa frequenza spaziale, più robusti alla riproduzione fisica e meno efficaci contro il modello. La taratura adottata è discussa nella Sezione \ref{sec:loss}.
 
-\subsection{Vincoli di piattaforma e accumulo del gradiente}
+\subsection{Vincoli di piattaforma e budget di ottimizzazione}
 \label{sec:accumulo}
 
-L'intera sperimentazione è condotta su una singola piattaforma Apple Silicon M4
-con $16$\,GB di memoria unificata, condivisa tra unità di calcolo generale e
-acceleratore, attraverso il backend MPS di PyTorch. Poiché ciascun fotogramma
-richiede sedici composizioni distinte e altrettanti passaggi in avanti
-attraverso il rilevatore, la dimensione del lotto fisico è vincolata a uno:
-valori superiori eccedono la memoria residente disponibile.
+L'intera sperimentazione è condotta su una singola piattaforma Apple Silicon M4 con $16$\,GB di memoria unificata, condivisa fra unità di calcolo generale e acceleratore, attraverso il backend MPS di PyTorch. Ciascun fotogramma richiede sedici composizioni distinte e altrettanti passaggi in avanti attraverso il rilevatore. La dimensione del lotto fisico è pertanto vincolata a uno: valori superiori eccedono la memoria residente disponibile. L'aggregazione su più fotogrammi è ottenuta per accumulo del gradiente su quattro iterazioni consecutive prima di ciascun aggiornamento dei parametri, con dimensione di lotto efficace pari a quattro a occupazione invariata.
 
-L'aggregazione su più fotogrammi è ottenuta per accumulo del gradiente su
-quattro iterazioni consecutive prima di ciascun aggiornamento dei parametri,
-realizzando una dimensione di lotto efficace pari a quattro a occupazione
-invariata. La scelta ha una conseguenza sulla programmazione del passo di
-apprendimento che va dichiarata, poiché costituisce una sorgente di errore
-metodologico non evidente: se il decadimento è espresso sul conteggio delle
-iterazioni grezze anziché su quello degli aggiornamenti effettivi, l'orizzonte
-del decadimento risulta dilatato del fattore di accumulo e il passo permane
-prossimo al valore iniziale per la quasi totalità della traiettoria. La
-programmazione è pertanto definita sul numero di aggiornamenti effettivi.
+Il campionamento su griglia impiegato dalle trasformazioni geometriche è mantenuto in precisione a virgola mobile singola. Prove in precisione ridotta hanno evidenziato instabilità numerica nel calcolo del gradiente dell'operatore sul backend adottato, e il risparmio di memoria non giustifica il rischio sulla riproducibilità dei risultati. Il corrispondente operatore all'indietro non dispone di implementazione nativa su tale backend ed è eseguito su unità di calcolo generale mediante ricaduta automatica, mentre l'inferenza del rilevatore resta sull'acceleratore.
 
-Il campionamento su griglia impiegato per le trasformazioni geometriche è
-mantenuto in precisione a virgola mobile singola. Prove in precisione ridotta
-hanno evidenziato instabilità numerica nel calcolo del gradiente dell'operatore
-sul backend adottato, e il risparmio di memoria non è stato giudicato
-sufficiente a giustificare il rischio sulla riproducibilità dei risultati. Il
-corrispondente operatore all'indietro non dispone inoltre di implementazione
-nativa su tale backend ed è eseguito su unità di calcolo generale mediante
-ricaduta automatica, mentre l'inferenza del rilevatore resta sull'acceleratore.
+Il numero di bersagli considerati per fotogramma è limitato a tre, selezionati per area decrescente del \textit{bounding box}. Il vincolo contiene il costo di composizione sui fotogrammi densamente popolati. Privilegiando i bersagli meglio risolti, concentra il segnale di ottimizzazione dove il rilevatore dispone di evidenza sufficiente perché una perturbazione ne alteri l'esito.
 
+L'accumulo del gradiente introduce una distinzione fra due contatori. Le \emph{iterazioni} corrispondono ai fotogrammi elaborati, gli \emph{aggiornamenti} agli interventi effettivi dell'ottimizzatore sui parametri. Il programma di decadimento del passo di apprendimento, di tipo coseno, deve essere espresso nella seconda unità. Espresso nella prima, il suo orizzonte risulta dilatato del fattore di accumulo e il passo permane prossimo al valore iniziale per la quasi totalità della traiettoria. Nell'implementazione adottata l'orizzonte è calcolato come rapporto fra budget di iterazioni e fattore di accumulo, ossia sul numero di aggiornamenti \emph{attesi}.
+
+Il numero di aggiornamenti eseguiti risulta inferiore a quello atteso. Non tutte le iterazioni contribuiscono all'obiettivo: un fotogramma nel quale nessun bersaglio supera la soglia di rilevanza dimensionale definita nella Sezione \ref{sec:loss} ha peso nullo ed è scartato prima dell'aggiornamento. La frazione di iterazioni utili dipende dalla distribuzione delle taglie dei bersagli propria dell'insieme di dati ed è stata misurata per strumentazione diretta del ciclo di ottimizzazione. Il decadimento del passo non completa quindi il proprio orizzonte entro la durata del run. Entità dello scarto e verifica sperimentale sono riportate nel Capitolo \ref{cap5}; la questione è ripresa fra le limitazioni del lavoro.
+
+Due elementi del protocollo vanno dichiarati. Un criterio di arresto anticipato, basato sulla media mobile dell'obiettivo su una finestra di cento aggiornamenti, è configurato come salvaguardia contro la divergenza e non è intervenuto in alcuno dei run riportati: la pazienza impostata è comparabile al numero complessivo di aggiornamenti disponibili, e l'ottimizzazione ha in ogni caso esaurito il budget assegnato. La patch valutata nel Capitolo \ref{cap5} corrisponde all'ultimo aggiornamento eseguito e non a quello di minima media mobile. Le due differiscono in misura trascurabile; la prima è la formulazione corretta.
+
+
+\section{Funzione obiettivo}
+\label{sec:loss}
+
+La funzione obiettivo minimizzata dall'ottimizzazione descritta nella Sezione \ref{sec:eot} si compone di due termini,
+\begin{equation}
+    \mathcal{L} = -\ln\left(1 - \bar{c} + \varepsilon\right)
+    + \lambda_{TV} \, \mathcal{L}_{TV}(\mathrm{P})
+    \label{eq:loss_totale}
+\end{equation}
+dove $\bar{c} \in [0,1]$ è una stima aggregata della confidenza attribuita dal rilevatore alla classe bersaglio nella regione del soggetto, $\varepsilon = 10^{-6}$ è una costante che previene la divergenza del logaritmo, $\mathcal{L}_{TV}$ è il termine di variazione totale dell'Equazione \ref{eq:tv} e $\lambda_{TV} = 0.1$ è il suo peso. Il valore di $\lambda_{TV}$ è stato fissato a valle dell'osservazione che valori inferiori di tre ordini di grandezza producono superfici a contenuto in frequenza troppo elevato per sopravvivere all'interpolazione bilineare delle trasformazioni geometriche. La forma logaritmica del primo termine e la definizione di $\bar{c}$ sono trattate nelle sottosezioni seguenti.
+
+\subsection{Dalla formulazione a soglia alla formulazione asintotica}
+\label{sec:loss_asintotica}
+
+La prima implementazione adottava un obiettivo a soglia \textit{Hinge Loss},
+\begin{equation}
+    \mathcal{L}_{\text{soglia}} = \max\left(0,\; \bar{c} - \tau\right)
+    \label{eq:hinge}
+\end{equation}
+con $\tau$ soglia di confidenza oltre la quale una predizione costituisce un rilevamento. Questa formulazione penalizza la confidenza solo quando questa è sufficiente a produrre un rilevamento. La sua derivata rispetto a $\bar{c}$ è identicamente nulla per $\bar{c} < \tau$. L'ottimizzazione si arresta quindi appena la confidenza aggregata scende sotto la soglia, indipendentemente dal fatto che la confidenza residua sia prossima alla soglia o trascurabile. Il punto di arresto è quello di minimo interesse pratico: il rilevamento è appena soppresso e una variazione delle condizioni di osservazione lo ripristina.
+
+La formulazione adottata sostituisce la soglia con una barriera logaritmica sul complemento della confidenza. Il termine $-\ln(1 - \bar{c} + \varepsilon)$ è definito e strettamente crescente in $\bar{c}$ su tutto l'intervallo, e la sua derivata vale
+\begin{equation}
+    \frac{\partial}{\partial \bar{c}}
+    \left[-\ln\left(1 - \bar{c} + \varepsilon\right)\right]
+    = \frac{1}{1 - \bar{c} + \varepsilon}
+    \label{eq:derivata_asintotica}
+\end{equation}
+Ne derivano due proprietà. Il gradiente non si annulla in alcun punto del dominio: l'ottimizzazione esercita pressione anche quando la confidenza è già sotto la soglia di rilevamento, e la spinge asintoticamente verso lo zero costruendo un margine rispetto alle variazioni delle condizioni di osservazione. La penalizzazione cresce senza limite superiore al crescere della confidenza residua: i casi in cui il rilevatore mantiene evidenza forte pesano sull'obiettivo in modo sproporzionato rispetto a quelli in cui l'evidenza è già debole, e lo sforzo di ottimizzazione si concentra dove il rilevamento è più solido. Tale proprietà è quella richiesta da una perturbazione universale, il cui requisito è l'efficacia sul caso avverso.
+
+L'assenza di una soglia esplicita nell'obiettivo comporta che $\tau$ non figuri fra gli iperparametri dell'ottimizzazione. La soglia resta definita in fase di valutazione, dove decide se una predizione costituisca un rilevamento, e non condiziona la direzione del gradiente. La conseguenza di tale separazione è trattata nella Sezione \ref{sec:divario}.
+
+\subsection{Aggregazione della confidenza sulle celle salienti}
+\label{sec:topk}
+
+Il rilevatore produce, per ciascun fotogramma, un numero di predizioni pari alla somma delle celle delle tre mappe di attivazione a passi di campionamento $8$, $16$ e $32$ pixel. La definizione di $\bar{c}$ richiede di stabilire su quali di tali predizioni la confidenza vada aggregata.
+
+Il primo criterio è geometrico. Si considerano le sole celle il cui centro cade all'interno del \textit{bounding box} del soggetto, ottenendo un insieme $\mathcal{M}$ di indici. La restrizione è necessaria: l'avversario non controlla il resto della scena, e una penalizzazione della confidenza fuori dal bersaglio ottimizzerebbe una perturbazione non realizzabile. La restrizione non è sufficiente. L'impronta di un bersaglio ben risolto comprende, sulle tre scale, dell'ordine di duecento celle, delle quali una minoranza porta evidenza forte. Le restanti si collocano nella periferia del \textit{bounding box}, dove il segnale è debole e l'insieme delle celle attive varia in modo scorrelato fra fotogrammi successivi. Una media estesa a tutto $\mathcal{M}$ diluisce il segnale utile in un fondo variabile e produce un gradiente dominato dal rumore.
+
+L'aggregazione è quindi ristretta alle $K$ celle a confidenza più elevata all'interno di $\mathcal{M}$. Detto $s_j$ il punteggio della classe bersaglio associato alla cella $j$-esima, e detto $\mathcal{K} \subseteq \mathcal{M}$ l'insieme degli indici dei $K$ punteggi maggiori,
+\begin{equation}
+    \bar{c} = \frac{\sum_{j \in \mathcal{K}} w_j \, s_j}{\sum_{j \in \mathcal{K}} w_j}
+    \label{eq:topk}
+\end{equation}
+dove $w_j \in [0,1]$ è il peso di rilevanza dimensionale del bersaglio che ha generato la cella $j$-esima. Detta $h$ l'altezza in pixel del \textit{bounding box} di tale bersaglio, il peso vale
+\begin{equation}
+    w(h) =
+    \begin{cases}
+        0 & h < 60 \\[2pt]
+        \dfrac{h - 60}{90} & 60 \leq h < 150 \\[6pt]
+        1 & h \geq 150
+    \end{cases}
+    \label{eq:peso_tattico}
+\end{equation}
+La soglia inferiore esclude dall'obiettivo i bersagli troppo poco risolti perché una perturbazione pari al $20\%$ della loro area possa alterare l'esito dell'inferenza; la rampa attenua il contributo dei bersagli intermedi. Il peso agisce sul solo calcolo della media: la selezione delle celle avviene per confidenza grezza, in modo che rifletta la distribuzione effettiva dell'evidenza del rilevatore, e la semantica probabilistica di $\bar{c}$ richiesta dall'Equazione \ref{eq:loss_totale} è preservata. Un bersaglio a peso nullo resta composto sul canvas, per consistenza fisica della scena, e non contribuisce al gradiente. Un fotogramma nel quale tutti i bersagli hanno peso nullo non produce aggiornamento, secondo quanto dichiarato nella Sezione \ref{sec:accumulo}.
+
+La formulazione generalizza l'aggregazione per massimo adottata in letteratura per l'attacco a rilevatori di persone \footcite{thys_2019}, estendendola ai fotogrammi con più bersagli: un massimo puro concentrerebbe l'intero gradiente su un solo soggetto per fotogramma, mentre $K > 1$ ripartisce la pressione sul nucleo di celle salienti di ciascuno.
+
+Il valore adottato, $K = 20$, costituiva un'assunzione di progetto ed è stato sottoposto a verifica empirica a posteriori. Il metodo caratterizza il comportamento del rilevatore in assenza di perturbazione. Per ciascun fotogramma positivo dell'insieme di validazione le celle sono ordinate per confidenza decrescente; mediante somma cumulativa si ricostruiscono sensitività e specificità a livello di cella per ogni valore di $K$, senza ripetere l'inferenza. Le due grandezze producono criteri di ottimalità divergenti: la misura $F_1$ premia la copertura completa dell'impronta geometrica del bersaglio e individua un optimum di ordine centinaia, mentre la media geometrica $\sqrt{R_1 R_2}$ penalizza la diluizione nello sfondo e individua un optimum di ordine decine. La divergenza fra i due criteri quantifica l'osservazione che il nucleo di celle a evidenza forte è un sottoinsieme ristretto dell'impronta del bersaglio.
+
+La media geometrica è assunta come criterio primario, poiché bilancia le due metriche effettivamente impiegate dal simulatore. La verifica è stata condotta sull'insieme impiegato in fase di sviluppo e ripetuta su quello della campagna finale; i valori sono riportati nel Capitolo \ref{cap5}. L'analisi caratterizza il rilevatore non perturbato e costituisce una verifica di plausibilità della scala di $K$, non un predittore dell'efficacia dell'attacco: la relazione fra le due grandezze non è stata stabilita in questo lavoro.
+
+\subsection{Obiettivo di ottimizzazione e metrica di valutazione}
+\label{sec:divario}
+
+L'obiettivo dell'Equazione \ref{eq:loss_totale} e le metriche di valutazione definite nella Sezione \ref{sec:metriche} misurano proprietà distinte dello stesso sistema. La distinzione condiziona l'interpretazione dei risultati e va formalizzata.
+
+La quantità $\bar{c}$ è una media su $K$ celle di una griglia interna al rilevatore, calcolata prima della soppressione dei non-massimi, mediata su sedici realizzazioni della distribuzione di trasformazioni e valutata sull'insieme di ottimizzazione. L' \textit{Evasion Rate} è un tasso di eventi binari definito a livello di fotogramma, valutato sull'insieme di validazione dopo la soppressione dei non-massimi e dopo l'applicazione di una soglia di confidenza. Fra le due quantità si interpongono tre trasformazioni non lineari.
+
+La prima è l'aggregazione per massimo operata dalla soppressione dei non-massimi. Un rilevamento sopravvive se almeno una cella supera la soglia: la quantità che determina l'esito è $\max_j s_j$, mentre l'obiettivo agisce sulla media delle $K$ maggiori. Le due coincidono per $K = 1$; per $K > 1$ la media è un surrogato conservativo del massimo, e una sua riduzione non si traduce linearmente in una riduzione del massimo.
+
+La seconda è la soglia di confidenza, che è una funzione a gradino. Per una popolazione di predizioni la cui distribuzione di confidenza sia addensata in prossimità della soglia, una traslazione di piccola entità della distribuzione produce una variazione del tasso di attraversamento di entità maggiore. L'ampiezza dell'effetto dipende dalla densità della distribuzione nell'intorno della soglia, proprietà empirica del rilevatore sull'insieme considerato e non conseguenza della formulazione.
+
+La terza è la differenza di condizione di osservazione. La quantità $\bar{c}$ è un valore atteso su una distribuzione che comprende riscalamenti fino a $0.4$ e rotazioni fino a $15^\circ$; la valutazione avviene su una singola realizzazione, geometricamente più favorevole all'avversario.
+
+Una flessione marginale dell'obiettivo $\bar{c}$ si traduce pertanto in un incremento drastico dell'\textit{Evasion Rate}, senza che ciò costituisca un'incoerenza matematica. L'efficacia operativa dell'attacco non deriva da un collasso assoluto della confidenza, bensì dall'attraversamento al ribasso della soglia decisionale da parte di una popolazione di predizioni già in condizioni di criticità.
+
+\section{Metriche di valutazione}
+\label{sec:metriche}
+
+L'unità di analisi è il fotogramma. Un bersaglio è considerato valido quando l'altezza del suo \textit{bounding box} annotato è pari o superiore a $60$ pixel nello spazio del canvas di rete; la soglia esclude i bersagli per i quali il campionamento spaziale comprometterebbe l'integrità della perturbazione. Un fotogramma è positivo quando contiene almeno un bersaglio valido, negativo altrimenti.
+
+\subsection{Classificazione degli esiti a livello di fotogramma}
+\label{sec:esiti}
+
+Sui fotogrammi positivi l'esito è determinato dalla presenza di almeno un rilevamento della classe bersaglio sopra soglia di confidenza. La presenza produce un vero positivo, l'assenza un falso negativo. Nessun criterio di sovrapposizione geometrica interviene: l'obiettivo della metrica è stabilire se il sistema rilevi la presenza di una persona nella scena, prescindendo dall'accuratezza della localizzazione.
+
+Sui fotogrammi negativi la classificazione impiega una convenzione a regione ignorata. Un fotogramma negativo può contenere persone annotate di altezza inferiore alla soglia di validità: un rilevamento su una di esse è corretto, ma riferito a un bersaglio non tatticamente rilevante, e non costituisce errore. Ciascun rilevamento è quindi confrontato per intersezione su unione con tutte le persone annotate del fotogramma, di qualunque dimensione. Un rilevamento con sovrapposizione pari o superiore a $0.3$ è ignorato. Il fotogramma è classificato come falso positivo se almeno un rilevamento resta privo di corrispondenza, come vero negativo altrimenti.
+
+La soglia di sovrapposizione adottata è più permissiva dello standard $0.5$ della campagna PASCAL VOC \footcite{everingham_2010_voc}. La scelta è motivata dalla sensibilità della metrica di sovrapposizione su riquadri di piccole dimensioni, per i quali uno scostamento di pochi pixel produce una variazione sproporzionata del valore \footcite{yu_2020_scalematch}, ed è allineata alla convenzione impiegata su insiemi di dati con occlusione elevata \footcite{shao_2018_crowdhuman}.
+
+Tale convenzione è strettamente necessaria: l'esclusione asimmetrica dei fotogrammi contenenti unicamente persone sotto soglia ridurrebbe la classe negativa a una frazione marginale dell'insieme di validazione, rendendo degenere la stima della specificità.
+
+\subsection{Metriche primarie e secondarie}
+\label{sec:metriche_scelta}
+
+Le metriche primarie sono la sensitività $R_1$ e la specificità $R_2$ definite nell'Equazione \ref{eq:r1_r2}, il \textit{Evasion Rate} e la loro media geometrica. L'\textit{Evasion Rate} è definito come
+\begin{equation}
+    E = \frac{\mathit{FN}}{\mathit{TP} + \mathit{FN}} = 1 - R_1
+    \label{eq:evasion}
+\end{equation}
+ed esprime la frazione di fotogrammi contenenti un bersaglio valido nei quali il rilevatore non produce alcun rilevamento. È la quantità che misura direttamente l'efficacia della perturbazione. La media geometrica
+\begin{equation}
+    G = \sqrt{R_1 \, R_2}
+    \label{eq:gmean}
+\end{equation}
+aggrega le due sensitività attribuendo peso identico alle due classi e si annulla se una delle due si annulla. La metrica è assunta come indicatore primario aggregato in quanto garantisce il bilanciamento tra le due classi (positiva e negativa) e si allinea esattamente ai due parametri probabilistici acquisiti dal simulatore attraverso il file di interscambio.
+
+La misura $F_1$ è riportata come metrica secondaria. La sua precisione dipende dal numero di falsi positivi, che sulla classe negativa estesa è governato dalla convenzione a regione ignorata descritta nella Sezione \ref{sec:esiti} e non dall'effetto della perturbazione; $F_1$ risulta pertanto meno interpretabile delle due sensitività separate. La sua inadeguatezza come parametro del canale visivo del simulatore è già stata argomentata nella Sezione \ref{sec:canale_visivo}.
+
+\subsection{Metriche accessorie}
+\label{sec:metriche_accessorie}
+
+Il danno collaterale quantifica i rilevamenti fantasma (\textit{ghost detections}) indotti dalla perturbazione. Sui soli fotogrammi positivi, dove la patch è effettivamente presente nella scena, si contano i rilevamenti privi di corrispondenza per intersezione su unione con qualunque persona annotata. La quantità è un conteggio grezzo per fotogramma e non un indicatore binario: un fotogramma con tre allucinazioni e uno con una sola non sono equivalenti, e il conteggio sfrutta l'informazione disponibile senza richiedere fotogrammi aggiuntivi.
+
+Una seconda coppia di conteggi è calcolata nello stesso ciclo di inferenza, ristretta ai bersagli di altezza pari o superiore a $80$ pixel. La restrizione corrisponde allo scenario di ingaggio ravvicinato modellato dal simulatore. La copertura tattica è definita come frazione delle annotazioni valide che soddisfano anche tale soglia; non è confrontabile fra insiemi di dati valutati a risoluzioni diverse.
+
+La metrica di ingaggio a costo pesato quantifica l'efficacia della decisione tenendo conto del costo dell'attacco che la produce,
+\begin{equation}
+    \mathit{CEAE} =
+    \frac{\mathit{TP}}
+    {\mathit{TP} + \mathit{FP}\,(1 + c_o) + \mathit{FN}\,(1 + c_v)}
+    \label{eq:ceae}
+\end{equation}
+dove $c_v$ è il costo dell'attacco al canale visivo, posto pari alla frazione dell'area del bersaglio coperta dalla perturbazione, e $c_o$ è il costo dell'attacco ai metadati, posto pari alla frazione dei campi del profilo informativo contaminati. Nello scenario combinato il costo è calcolato come probabilità dell'unione, $c = 1 - (1 - c_v)(1 - c_o)$. La formulazione penalizza i falsi positivi in proporzione al costo dell'attacco ai metadati e i falsi negativi in proporzione al costo dell'attacco visivo, e ammette confronto fra scenari a costo differente.
+
+\section{Insiemi di dati}
+\label{sec:dataset}
+
+La valutazione impiega due insiemi di dati aerei, trattati separatamente e non aggregati. Il secondo non sostituisce il primo: la ripetizione dell'esperimento su un dominio indipendente è essa stessa parte del disegno sperimentale. In entrambi i casi ottimizzazione e valutazione impiegano suddivisioni disgiunte.
+
+\subsection{VisDrone2019-DET}
+\label{sec:visdrone}
+
+L'insieme di validazione comprende $531$ immagini statiche acquisite da velivolo senza pilota in contesto urbano \footcite{zhu_2021_visdrone}. Le immagini sono ridimensionate a $640 \times 640$ pixel. La composizione misurata alla soglia di validità di $60$ pixel è la seguente:
+
+\begin{itemize}
+    \item fotogrammi positivi, con almeno un bersaglio valido: $80$, pari al $15.1\%$;
+    \item fotogrammi privi di qualunque persona annotata: $9$, pari all'$1.7\%$;
+    \item fotogrammi contenenti soltanto persone sotto soglia: $442$, pari all'$83.2\%$.
+\end{itemize}
+
+La terza categoria motiva la convenzione a regione ignorata della Sezione \ref{sec:esiti}. Senza di essa la classe negativa si riduce ai soli nove fotogrammi della seconda categoria. Il numero medio di bersagli validi per fotogramma è $0.72$.
+
+\subsection{Okutama-Action}
+\label{sec:okutama}
+
+Il secondo insieme comprende sequenze video acquisite da velivolo senza pilota ad altitudine compresa fra $10$ e $45$ metri \footcite{barekatain_2017_okutama}. L'intervallo di altitudine è coerente con lo scenario di ingaggio ravvicinato modellato dal simulatore, mentre la prospettiva di VisDrone corrisponde a una sorveglianza ad area più estesa. La composizione dell'insieme di validazione alla stessa soglia di validità è la seguente:
+
+\begin{itemize}
+    \item fotogrammi positivi: $57.0\%$;
+    \item numero medio di bersagli validi per fotogramma: $1.45$.
+\end{itemize}
+
+Sono impiegati i fotogrammi pre-estratti a $1280 \times 720$ pixel e le annotazioni ad azione singola. Le coordinate delle annotazioni sono espresse nello spazio nativo $3840 \times 2160$ e non nello spazio dei fotogrammi distribuiti: il riscalamento verso il canvas di rete avviene in un unico passaggio, senza stadio intermedio. Le colonne relative alla classificazione dell'azione sono ignorate, secondo l'indicazione della documentazione ufficiale per il compito di rilevamento di pedoni. La suddivisione impiegata è quella ufficiale, che separa le sequenze per scenario e garantisce quindi che nessuna sequenza compaia sia in ottimizzazione sia in valutazione.
+
+\subsection{Risoluzione del canvas e vincolo di memoria}
+\label{sec:risoluzione}
+
+La risoluzione di $960 \times 960$ pixel adottata su Okutama-Action deriva da un vincolo verificato sperimentalmente e non da una parità metodologica con il primo insieme.
+
+A $1280 \times 1280$ pixel, con sedici trasformazioni per fotogramma e precisione a virgola mobile singola, l'occupazione di memoria residente eccede la capacità della piattaforma. Il processo entra in condizione di \textit{Out-Of-Memory}, con conseguente paginazione continua e non completa l'ottimizzazione. A $960 \times 960$ l'occupazione rientra nel budget disponibile, il contatore di paginazione resta nullo e il budget di iterazioni è portato a termine.
+
+La parità esatta con la risoluzione impiegata su VisDrone è stata scartata sulla base di un calcolo sulla distribuzione delle taglie. A $640$ pixel ogni altezza si dimezza rispetto a $1280$: un riquadro resta valido solo se misurava almeno $120$ pixel alla risoluzione superiore. Tale condizione elimina l'intero intervallo compreso fra $60$ e $100$ pixel, che costituisce la quasi totalità della distribuzione misurata, e riduce il numero di riquadri validi di oltre il novanta percento. La riduzione ripristinerebbe il problema che la migrazione al secondo insieme di dati intendeva rimuovere.
+
+Il costo della risoluzione adottata è una riduzione del numero di riquadri validi rispetto alla risoluzione di $1280$ pixel, ed è riportato fra le limitazioni del lavoro.
+
+\section{Protocollo statistico}
+\label{sec:protocollo}
+
+La significatività delle differenze fra condizione non perturbata e condizione sotto attacco è stabilita per ricampionamento, senza assunzioni distribuzionali sulle metriche.
+
+\subsection{Intervalli di confidenza per ricampionamento}
+\label{sec:bootstrap}
+
+L'unità di ricampionamento è il fotogramma. Per ciascun fotogramma la valutazione produce un vettore a componente unica fra vero positivo, falso negativo, falso positivo e vero negativo, secondo la classificazione della Sezione \ref{sec:esiti}. L'insieme di tali vettori è ricampionato con reinserimento per $10\,000$ iterazioni; a ogni iterazione i conteggi sono riaggregati e la metrica ricalcolata. L'intervallo di confidenza al $95\%$ è dato dal $2.5$-esimo e dal $97.5$-esimo percentile della distribuzione ottenuta, secondo il metodo dei percentili \footcite{efron_1993_bootstrap}. Il valore puntuale riportato è quello calcolato sul campione originale e non la media delle repliche.
+
+Il confronto fra le due condizioni impiega un ricampionamento appaiato. A ogni iterazione una sola lista di indici è estratta e impiegata per riaggregare i conteggi di entrambe le condizioni, che si riferiscono allo stesso insieme di fotogrammi nello stesso ordine. La distribuzione ottenuta è quella della differenza fra le metriche, e da essa si derivano l'intervallo di confidenza della differenza e un valore di probabilità a due code sotto l'ipotesi nulla di differenza nulla, calcolato come doppio della frazione minima di repliche che contraddicono il segno osservato. La differenza è dichiarata significativa quando lo zero non è compreso nell'intervallo. Il ricampionamento appaiato rimuove la componente di variabilità comune alle due condizioni, che un confronto fra intervalli calcolati indipendentemente non separa.
+
+\subsection{Decorrelazione temporale}
+\label{sec:decorrelazione}
+
+Il ricampionamento assume unità indipendenti. L'assunzione è soddisfatta dal primo insieme di dati, costituito da immagini statiche distinte. Non è soddisfatta dal secondo, costituito da sequenze video acquisite a circa trenta fotogrammi al secondo, nel quale fotogrammi consecutivi differiscono di pochi pixel e non costituiscono osservazioni distinte.
+
+L'impiego dell'insieme completo produce pseudo-replicazione: le stime puntuali restano valide, l'incertezza è sottostimata e gli intervalli di confidenza risultano artificialmente stretti. La correzione adottata è un sottocampionamento temporale con passo costante, applicato all'indice del loader prima della valutazione. Il passo di campionamento impiegato è di $27$ fotogrammi, che riduce l'insieme di validazione a $527$ fotogrammi separati da circa nove decimi di secondo e numericamente comparabili ai $531$ fotogrammi del primo insieme.
+
+L'effetto della correzione è stato quantificato per confronto diretto fra le due condizioni ed è riportato nel Capitolo \ref{cap5}. Le stime puntuali risultano invariate entro il terzo decimale; l'ampiezza degli intervalli di confidenza aumenta di un fattore prossimo a cinque. Le conclusioni di significatività non cambiano. I valori riportati come definitivi sono quelli calcolati sull'insieme decorrelato.
 
 
 \chapter{Risultati e Discussione}
+\label{cap5}
 \chapter{Conclusioni: Il C.A.R.E. Kit e la Difesa dei Diritti Umani}
 \label{cap6}
 % ~2 pagine discorsive, senza numeri

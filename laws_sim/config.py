@@ -44,7 +44,7 @@ LOSS_TOP_K = 20  # Media sulle top-K celle piu' confidenti invece che su tutta l
 
 # === Training Patch ===
 PATCH_LR = 0.01  # Learning Rate ridotto per evitare saturazione sigmoide [9]
-PATCH_STEPS = 8000  #(top-k loss): 
+PATCH_STEPS = 8000  # (top-k loss): 
 
 # EoT (Expectation over Transformation) [10]
 EOT_N_TRANSFORMS = 16  # Numero di trasformazioni per immagine
