@@ -416,6 +416,6 @@ def main():
 
         console.print(t2)
         console.print("[green]✓ Test completati con successo.[/green]\n")
-
+    
 if __name__ == "__main__":
     main()

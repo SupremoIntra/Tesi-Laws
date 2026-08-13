@@ -1181,3 +1181,270 @@ scrivere §3.6 della tesi. Non blocca il resto della stesura.
 | Efron & Tibshirani 1993 | Bootstrap appaiato |
 
 DOI/URL completi in `config.py`.
+
+
+
+## FASE 8 — Stesura Cap. 4, verifiche sul codice, correzione della stratificazione
+
+Sessione dedicata alla scrittura del Capitolo 4 (Metodo). Tutte le voci sotto
+sono state verificate leggendo il codice sorgente o eseguendo strumentazione,
+non ricostruite da note precedenti.
+
+---
+
+### 8.1 Correzioni da applicare alle sezioni precedenti di questo documento
+
+⚠ **§7.8 — il finding sulla dipendenza dalla scala è un artefatto.**
+La misura riportata come `[VERIFICATO]` (bucket 100–150 px al 96.8%) era
+priva di condizione di controllo. Eseguita la condizione di controllo con lo
+stesso criterio, il bucket risulta **già al 97.1% senza patch**. Il 96.8%
+misurava il limite di localizzazione del rilevatore, non l'effetto
+dell'attacco.
+
+Va corretto anche il «controllo di coerenza indipendente» a 1280 con patch
+VisDrone (bucket 150+ px al 97.2%): stessa assenza di controllo, e la regione
+di scala è la medesima (150 px @1280 ≡ 112 px @960). Non erano due misure
+indipendenti dello stesso fenomeno, erano due misure dello stesso artefatto.
+
+Entrambe le misure erano su **dati Okutama**. La stratificazione non è mai
+stata eseguita su dati VisDrone.
+
+⚠ **§7.8 — il confound IoU dichiarato `[APERTO]` è stato risolto.**
+`stratify_by_size.py` ora attribuisce l'esito per bersaglio mediante
+corrispondenza IoU con soglia `IOU_IGNORE_THRESHOLD = 0.3`, importata da
+`simulator.py`. Aggiunta la condizione di controllo `--no-patch`.
+
+⚠ **Fase 2, tabella configurazioni** — la voce sul learning rate come
+"ininfluente" non risulta da alcuno sweep documentato. Le sei configurazioni
+variano loss, aggregazione, accumulo e scheduler, non l'LR. Declassare a
+`[IPOTESI]` o rimuovere: `config.py` riporta solo una motivazione a priori
+(passo ridotto per evitare la saturazione della sigmoide).
+
+⚠ **Riferimenti bibliografici** — `xi_2025_lfrap` e `tang_2023`, marcati
+«⚠ riferimento completo da verificare», sono stati verificati e sono corretti.
+Rimuovere l'avvertenza.
+
+---
+
+### 8.2 Stratificazione per scala — misura definitiva
+
+`[VERIFICATO]` `stratify_by_size.py` con matching IoU e condizione di
+controllo. Dati Okutama-val, 960×960, patch addestrata su Okutama,
+soglia di confidenza 0.50.
+
+| Bucket altezza (@960) | Controllo | Attacco | Delta | n |
+|---|---|---|---|---|
+| 60–100 px | 70.0% | 97.0% | **+27.0 pp** | 19921 |
+| 100–150 px | 97.1% | 100.0% | +2.9 pp | 618 |
+| 150 px+ | — | — | — | 0 |
+
+**Lettura corretta.** L'effetto dell'attacco è nel bucket 60–100 px, che
+contiene il 97% dei bersagli. Il bucket 100–150 px è in saturazione: la
+condizione di controllo è già al 97.1%, non resta margine misurabile, e
+n=618 è piccolo. Il bucket 150 px+ è vuoto per costruzione (a 960 le altezze
+sono 0.75× quelle a 1280).
+
+**Verifica di coerenza interna** `[VERIFICATO]`: il delta per bersaglio con
+matching IoU (**+27.0 pp**) coincide con il delta a livello di fotogramma
+misurato indipendentemente dal report bootstrap (**+28.0 pp**, 0.497 → 0.777).
+Due unità di analisi diverse, due criteri di attribuzione diversi, stesso
+risultato. È l'argomento più solido disponibile per la difesa.
+
+---
+
+### 8.3 Frazione di iterazioni utili — causa accertata
+
+`[VERIFICATO]` per strumentazione diretta del ciclo di ottimizzazione, con
+contatori su tutti i punti di uscita. Okutama, 960, 200 iterazioni:
+
+```
+{'no_bbox': 0, 'mask_empty': 0, 'no_targets': 0, 'tactical_zero': 75, 'ok': 125}
+```
+
+Somma esatta 200. **Unica causa di scarto: il filtro tattico**, ossia
+fotogrammi in cui nessun bersaglio supera i 60 px e il peso di rilevanza
+dimensionale è nullo. Zero scarti per maschera spaziale vuota o bbox
+degenere.
+
+Un'ipotesi formulata in sessione — interazione fra risoluzione del canvas e
+*stride* del rilevatore, con bersagli troppo sottili per contenere il centro
+di una cella — è stata **falsificata** da questa misura (`mask_empty = 0`).
+Non va riportata in tesi.
+
+Frazione utile misurata: 62.5% su questo campione, coerente con il 55.5%
+ricavato sul run completo (1110 aggiornamenti su 2000 attesi).
+
+---
+
+### 8.4 Run di training analizzato — identificazione e proprietà
+
+`[VERIFICATO]` `training_metrics.json` (senza suffisso) è il run **Okutama,
+8000 iterazioni**. Identificato per quattro vie concordi: posizione fuori da
+`archive_fase6_visdrone/`, 1110 aggiornamenti contro i 1250 del run VisDrone
+finale, budget 8000 contro 5000, e frazione di iterazioni utili (55.5%)
+corrispondente alla densità di bersagli di Okutama e non a quella di VisDrone
+(15.1%).
+
+⚠ La curva di loss del run VisDrone finale (Fase 2, config #5) resta
+**perduta**: sovrascritta prima dell'adozione della convenzione di naming.
+Non rigenerabile senza rilanciare il training. La figura della curva di loss
+in tesi può essere solo Okutama.
+
+**Proprietà misurate sul run:**
+
+| Grandezza | Valore |
+|---|---|
+| Aggiornamenti attesi / realizzati | 2000 / **1110** (55.5%) |
+| Learning rate finale osservato | 0.004726 (`eta_min` atteso: 0.001) |
+| Media mobile loss, minimo | 0.7574 all'aggiornamento 840 |
+| Media mobile loss, finale | 0.7583 |
+| Norma del gradiente, intervallo | 6.8×10⁻⁴ – 3.0×10⁻² |
+| Soglia di troncamento del gradiente | 1.0 — **mai raggiunta** |
+| $\mathcal{L}_{TV}$ osservata | 0.0466 – 0.0630 |
+| Contributo TV alla norma del gradiente | mediana 2.6×10⁻⁶ |
+
+Lo scarto del learning rate è stato verificato ricalcolando la formula del
+coseno: con `T_max = 2000` e $t = 1110$ il valore atteso è 0.0047263,
+coincidente alla sesta cifra con quello loggato.
+
+**Decisione: non rilanciare il training.** Le sei configurazioni di Fase 2
+convergono in una banda di cinque punti nonostante varino anche lo
+scheduler; la media mobile della loss è piatta dall'aggiornamento 840; il
+troncamento del gradiente non interviene mai. Il collo di bottiglia non è il
+programma del passo. Lo scarto va dichiarato fra le limitazioni.
+
+---
+
+### 8.5 Divario fra obiettivo di ottimizzazione e metrica di valutazione
+
+`[VERIFICATO]` per inversione della definizione della loss,
+$\mathcal{L} = -\ln(1 - \bar{c} + \varepsilon)$:
+
+$$\bar{c}: 0.5465 \longrightarrow 0.5312 \qquad (\Delta = -1.5\ \text{pp})$$
+
+Contro un delta di evasione di **+28.0 pp** sullo stesso dominio. Il rapporto
+è circa 1:18.
+
+`[VERIFICATO]` dal codice, due delle tre cause: la loss agisce sulla media
+delle top-20 celle mentre il rilevamento dipende dal solo massimo
+superstite alla NMS; la loss è un valore atteso su 16 trasformazioni (scale
+0.4–0.9, rotazioni ±15°) mentre la valutazione avviene su una singola
+realizzazione.
+
+`[INTERPRETAZIONE]` la terza: la soglia di confidenza è una funzione a
+gradino, quindi una traslazione piccola di una distribuzione addensata
+attorno alla soglia produce una variazione grande del tasso di
+attraversamento. Promuovibile a `[VERIFICATO]` loggando la distribuzione
+delle confidenze post-NMS attorno alla soglia in una passata di
+`--eval-report`, senza ritraining.
+
+---
+
+### 8.6 Difetti di implementazione accertati, da dichiarare
+
+`[VERIFICATO]` **La patch valutata è l'ultima, non la migliore.**
+`optimize_universal` ritorna la patch dell'ultimo aggiornamento;
+`cli.py` la salva con `torch.save(results["patch"], patch_out)` dove
+`patch_out` è per default `BEST_PATCH_FILE`, sovrascrivendo il checkpoint
+migliore salvato durante il training. Differenza in media mobile: 0.0009,
+trascurabile. In tesi va scritto «al termine del budget di ottimizzazione»,
+non «patch migliore».
+
+`[VERIFICATO]` **L'arresto anticipato non è mai intervenuto.** Con
+`WINDOW=100` e `PATIENCE=1000` su 1110 aggiornamenti disponibili, la
+condizione è strutturalmente irraggiungibile (100 per iniziare a misurare +
+1000 senza miglioramento = 1100 su 1110). Da presentare come salvaguardia
+contro la divergenza, non come criterio di selezione del modello.
+
+`[VERIFICATO]` **`ihl_overrides` in `fusion_decision.py` è dead code.**
+Il blocco `if action == "ENGAGE" and not ihl` non può eseguirsi, perché
+`action` diventa `"ENGAGE"` solo se `ihl` è già vero. Il comportamento a
+valle è corretto (un vincolo violato porta comunque ad ALERT per l'altro
+ramo), ma il contatore resta a zero. Fix disponibile: separare la decisione
+per soglia dal veto IHL; output bit-identico, il contatore diventa
+osservabile.
+
+⚠ **Commenti obsoleti in `config.py`**: riga 54 (`-> 1250 update reali`) e
+riga 59 (`Scalato per 1250 update potenziali (5000/4)`) si riferiscono a un
+budget non più in uso.
+
+---
+
+### 8.7 Discrepanza fra sorgenti di risultati — da risolvere prima del Cap. 5
+
+⚠ `vision_metrics.json` riporta R1 pre 0.5012 / post 0.2200, R2 0.9699.
+`full_report_okutama_960_stride27.json` riporta 0.5033 / 0.2233 / 0.9604.
+Probabile differenza di sottoinsieme o di *stride* fra le due esecuzioni.
+**Il dato da citare in tesi è quello del report decorrelato a n=527.**
+
+---
+
+### 8.8 Formulazione della TV loss — equazione corretta
+
+`[VERIFICATO]` il codice implementa la forma **anisotropa in norma L1 con
+medie separate**, non quella isotropa di Thys et al.:
+
+```python
+dx = (patch[:, :, 1:] - patch[:, :, :-1]).abs().mean()
+dy = (patch[:, 1:, :] - patch[:, :-1, :]).abs().mean()
+return dx + dy
+```
+
+L'equazione in tesi è stata scritta di conseguenza. La motivazione riportata
+(assenza di radice quadrata, quindi assenza di singolarità del gradiente
+dove la superficie è localmente costante) è una proprietà della forma
+adottata, non una scelta documentata nel codice.
+
+---
+
+### 8.9 Bibliografia — audit completo
+
+`[VERIFICATO]` 84 entry, zero chiavi duplicate, zero titoli duplicati, zero
+chiavi citate e mancanti.
+
+Correzioni applicate:
+
+| Chiave | Problema | Stato |
+|---|---|---|
+| `gonzalez_2021_etip` | DOI errato e titolo troncato; vol. 58, art. 102715 | corretto anche in `config.py` |
+| `sodhro_2025` | Autori incompleti, titolo troncato | corretto |
+| `adhikari_2020` | Ordine autori arXiv con DOI SPIE | convertito a `@misc` |
+| `asili_2025_gentprm` | Primo autore errato: **Asılı, Harika** (non "Asili, Hamed"); titolo inventato | corretto, `@inproceedings` ACIT 2025 |
+
+---
+
+### 8.10 Vincoli formali del correlatore — documento acquisito
+
+`LineeGuidaTesiLatex.pdf` letto integralmente. Vincoli rilevanti applicati al
+Cap. 4: profondità massima 1.1.1; sottosezioni sotto la pagina accorpate
+(§4.2 portata da sei a quattro); punto decimale e non virgola; nessun `\\`
+per andare a capo; notazione matematica (vettori minuscolo grassetto,
+matrici maiuscolo non corsivo, scalari minuscolo corsivo) — `\mathbf{P}`
+sostituito con `\mathrm{P}`; ogni figura con didascalia, label `fig:` e
+`\ref` nel testo; ogni equazione con label `eq:` e spiegazione testuale dei
+simboli.
+
+**Indicazione sulla lunghezza** (comunicazione del correlatore): circa 50–60
+pagine da copertina a copertina per una magistrale, 100 considerate
+eccessive. Caso in esame complicato dalla co-relazione: circa 40 pagine di
+inquadramento concordate con l'altro relatore. Questione sottoposta al
+correlatore, in attesa di riscontro.
+
+**Indicazione sul data fusion**: media pesata considerata adeguata; i metodi
+bayesiani «spesso finiscono per essere medie pesate». Conseguenza per la
+stesura: non enfatizzare l'aspetto bayesiano del Livello 3 oltre quanto
+l'implementazione giustifica.
+
+---
+
+### 8.11 Stato del Capitolo 4
+
+Scritte e revisionate: §4.1 (architettura, tre figure TikZ), §4.2 (modello di
+minaccia, parametrizzazione, robustezza fisica, vincoli di piattaforma),
+§4.3 (funzione obiettivo, top-K, divario obiettivo/metrica), §4.4 (metriche),
+§4.5 (insiemi di dati), §4.6 (protocollo statistico).
+
+Creato `tikz_common_styles.tex` con palette desaturata e larghezze
+centralizzate. ⚠ Nota di manutenzione: righe vuote all'interno di
+`\tikzset{}` producono `Paragraph ended before \pgfkeys@addpath was
+complete`; nel file sono neutralizzate con `%`.

@@ -96,9 +96,9 @@ class DecisionAgent:
         ihl = self._ihl_ok(fusion, nearby_civilians)
         score = fusion.threat_score
 
-        if score >= ENGAGEMENT_THRESHOLD and ihl:
+        # 1) azione nominale, determinata dalle sole soglie
+        if score >= ENGAGEMENT_THRESHOLD:
             action = "ENGAGE"
-            self.engagements += 1
         elif score >= ALERT_THRESHOLD:
             action = "ALERT"
         elif score >= TRACK_THRESHOLD:
@@ -106,9 +106,13 @@ class DecisionAgent:
         else:
             action = "IGNORE"
 
+        # 2) veto IHL: declassamento a supervisione umana
         if action == "ENGAGE" and not ihl:
             action = "ALERT"
             self.ihl_overrides += 1
+
+        if action == "ENGAGE":
+            self.engagements += 1
 
         rationale = (
             f"score={score:.3f} CI=[{fusion.confidence_interval[0]:.2f},"

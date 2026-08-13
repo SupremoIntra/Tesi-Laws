@@ -461,7 +461,7 @@ Per un bersaglio ostile, la metrica pertinente è la sensibilità: si adotta il 
 un caso negativo, la probabilità di rilevamento errato coincide con il tasso di falso allarme, pari a $1 - R_2$.
 
 Nel disegno sperimentale adottato la patch avversariale non viene applicata sui fotogrammi
-privi di bersagli. Di conseguenza, la specificità risulta invariante per costruzione: i  valori pre e post-attacco coincidono e il ramo computazionale dedicato ai civili collassa su un unico valore. L'architettura mantiene tuttavia separata l'acquisizione delle due varianti, garantendo la compatibilità con futuri scenari di test che prevedano l'applicazione di contromisure anche su soggetti non ostili. Tale formulazione assicura che entrambe le metriche ($R_1$ e $R_2$) misurate nel primo livello governino effettivamente la simulazione, vincolando la gestione delle entità civili esclusivamente al dato empirico del rilevatore.
+privi di bersagli. Di conseguenza, la specificità risulta invariante per costruzione: i  valori pre e post-attacco coincidono e il ramo computazionale dedicato ai civili collassa su un unico valore. L'architettura mantiene comunque separata l'acquisizione delle due varianti, garantendo la compatibilità con futuri scenari di test che prevedano l'applicazione di contromisure anche su soggetti non ostili. Tale formulazione assicura che entrambe le metriche ($R_1$ e $R_2$) misurate nel primo livello governino effettivamente la simulazione, vincolando la gestione delle entità civili esclusivamente al dato empirico del rilevatore.
 
 \subsubsection*{Indipendenza analitica dalla distanza di osservazione}
 
@@ -654,14 +654,14 @@ dove $\bar{c} \in [0,1]$ è una stima aggregata della confidenza attribuita dal 
 \subsection{Dalla formulazione a soglia alla formulazione asintotica}
 \label{sec:loss_asintotica}
 
-La prima implementazione adottava un obiettivo a soglia \textit{Hinge Loss},
+Una formulazione a soglia del tipo \textit{Hinge Loss},
 \begin{equation}
     \mathcal{L}_{\text{soglia}} = \max\left(0,\; \bar{c} - \tau\right)
     \label{eq:hinge}
 \end{equation}
-con $\tau$ soglia di confidenza oltre la quale una predizione costituisce un rilevamento. Questa formulazione penalizza la confidenza solo quando questa è sufficiente a produrre un rilevamento. La sua derivata rispetto a $\bar{c}$ è identicamente nulla per $\bar{c} < \tau$. L'ottimizzazione si arresta quindi appena la confidenza aggregata scende sotto la soglia, indipendentemente dal fatto che la confidenza residua sia prossima alla soglia o trascurabile. Il punto di arresto è quello di minimo interesse pratico: il rilevamento è appena soppresso e una variazione delle condizioni di osservazione lo ripristina.
+con $\tau$ soglia di confidenza oltre la quale una predizione costituisce un rilevamento, si dimostra degenere come obiettivo differenziabile. La sua derivata rispetto a $\bar{c}$ è identicamente nulla per $\bar{c} < \tau$: l'aggiornamento dei parametri cessa appena la confidenza aggregata scende sotto la soglia, indipendentemente dal fatto che la confidenza residua sia prossima alla soglia o trascurabile. Il punto stazionario così raggiunto è quello di minimo margine, nel quale il rilevamento è appena soppresso e una variazione delle condizioni di osservazione lo ripristina.
 
-La formulazione adottata sostituisce la soglia con una barriera logaritmica sul complemento della confidenza. Il termine $-\ln(1 - \bar{c} + \varepsilon)$ è definito e strettamente crescente in $\bar{c}$ su tutto l'intervallo, e la sua derivata vale
+La formulazione adottata impiega una barriera logaritmica sul complemento della confidenza. Il termine $-\ln(1 - \bar{c} + \varepsilon)$ è definito e strettamente crescente in $\bar{c}$ su tutto l'intervallo, e la sua derivata vale
 \begin{equation}
     \frac{\partial}{\partial \bar{c}}
     \left[-\ln\left(1 - \bar{c} + \varepsilon\right)\right]
@@ -698,7 +698,7 @@ La soglia inferiore esclude dall'obiettivo i bersagli troppo poco risolti perch�
 
 La formulazione generalizza l'aggregazione per massimo adottata in letteratura per l'attacco a rilevatori di persone \footcite{thys_2019}, estendendola ai fotogrammi con più bersagli: un massimo puro concentrerebbe l'intero gradiente su un solo soggetto per fotogramma, mentre $K > 1$ ripartisce la pressione sul nucleo di celle salienti di ciascuno.
 
-Il valore adottato, $K = 20$, costituiva un'assunzione di progetto ed è stato sottoposto a verifica empirica a posteriori. Il metodo caratterizza il comportamento del rilevatore in assenza di perturbazione. Per ciascun fotogramma positivo dell'insieme di validazione le celle sono ordinate per confidenza decrescente; mediante somma cumulativa si ricostruiscono sensitività e specificità a livello di cella per ogni valore di $K$, senza ripetere l'inferenza. Le due grandezze producono criteri di ottimalità divergenti: la misura $F_1$ premia la copertura completa dell'impronta geometrica del bersaglio e individua un optimum di ordine centinaia, mentre la media geometrica $\sqrt{R_1 R_2}$ penalizza la diluizione nello sfondo e individua un optimum di ordine decine. La divergenza fra i due criteri quantifica l'osservazione che il nucleo di celle a evidenza forte è un sottoinsieme ristretto dell'impronta del bersaglio.
+La scala di $K$ è vincolata da un'analisi del comportamento del rilevatore in assenza di perturbazione. Per ciascun fotogramma positivo dell'insieme di validazione le celle sono ordinate per confidenza decrescente; mediante somma cumulativa si ricostruiscono sensitività e specificità a livello di cella per ogni valore di $K$, senza ripetere l'inferenza. Le due grandezze producono criteri di ottimalità divergenti: la misura $F_1$ premia la copertura completa dell'impronta geometrica del bersaglio e individua un optimum di ordine centinaia, mentre la media geometrica $\sqrt{R_1 R_2}$ penalizza la diluizione nello sfondo e individua un optimum di ordine decine. La divergenza fra i due criteri quantifica l'estensione del nucleo di celle a evidenza forte, che risulta un sottoinsieme ristretto dell'impronta del bersaglio. Il valore $K = 20$ è compreso fra gli optimum misurati sui due domini secondo il criterio della media geometrica.
 
 La media geometrica è assunta come criterio primario, poiché bilancia le due metriche effettivamente impiegate dal simulatore. La verifica è stata condotta sull'insieme impiegato in fase di sviluppo e ripetuta su quello della campagna finale; i valori sono riportati nel Capitolo \ref{cap5}. L'analisi caratterizza il rilevatore non perturbato e costituisce una verifica di plausibilità della scala di $K$, non un predittore dell'efficacia dell'attacco: la relazione fra le due grandezze non è stata stabilita in questo lavoro.
 
@@ -769,7 +769,7 @@ dove $c_v$ è il costo dell'attacco al canale visivo, posto pari alla frazione d
 \section{Insiemi di dati}
 \label{sec:dataset}
 
-La valutazione impiega due insiemi di dati aerei, trattati separatamente e non aggregati. Il secondo non sostituisce il primo: la ripetizione dell'esperimento su un dominio indipendente è essa stessa parte del disegno sperimentale. In entrambi i casi ottimizzazione e valutazione impiegano suddivisioni disgiunte.
+La valutazione impiega due insiemi di dati aerei, trattati separatamente e non aggregati. L'impiego di due domini indipendenti costituisce parte del disegno sperimentale: la replica dell'effetto su distribuzioni di scala e condizioni di ripresa distinte discrimina fra una vulnerabilità caratteristica di un singolo insieme di dati e una proprietà del rilevatore. In entrambi i casi ottimizzazione e valutazione impiegano suddivisioni disgiunte.
 
 \subsection{VisDrone2019-DET}
 \label{sec:visdrone}
@@ -827,6 +827,44 @@ Il ricampionamento assume unità indipendenti. L'assunzione è soddisfatta dal p
 L'impiego dell'insieme completo produce pseudo-replicazione: le stime puntuali restano valide, l'incertezza è sottostimata e gli intervalli di confidenza risultano artificialmente stretti. La correzione adottata è un sottocampionamento temporale con passo costante, applicato all'indice del loader prima della valutazione. Il passo di campionamento impiegato è di $27$ fotogrammi, che riduce l'insieme di validazione a $527$ fotogrammi separati da circa nove decimi di secondo e numericamente comparabili ai $531$ fotogrammi del primo insieme.
 
 L'effetto della correzione è stato quantificato per confronto diretto fra le due condizioni ed è riportato nel Capitolo \ref{cap5}. Le stime puntuali risultano invariate entro il terzo decimale; l'ampiezza degli intervalli di confidenza aumenta di un fattore prossimo a cinque. Le conclusioni di significatività non cambiano. I valori riportati come definitivi sono quelli calcolati sull'insieme decorrelato.
+
+\section{Disegno degli esperimenti}
+\label{sec:esperimenti}
+
+Gli esperimenti sono organizzati su tre piani: la validazione del canale visivo su dati reali, l'analisi della dipendenza dell'efficacia dalla scala del bersaglio, e la propagazione del degrado misurato attraverso la catena decisionale simulata. Solo il primo produce misure sperimentali nel senso definito nella Sezione \ref{sec:tre_layer}.
+
+\subsection{Campagne di ottimizzazione e validazione}
+\label{sec:campagne}
+
+Ciascuna campagna consiste nell'ottimizzazione di una patch universale sulla suddivisione di addestramento di un insieme di dati, seguita dalla valutazione della patch risultante sulla suddivisione di validazione del medesimo insieme. La patch ottimizzata su un dominio non è impiegata per la valutazione sull'altro: le due campagne sono indipendenti e i loro esiti non sono aggregati.
+
+La valutazione confronta due condizioni sullo stesso insieme di fotogrammi e nel medesimo ordine di iterazione. La condizione di controllo esegue l'inferenza sul fotogramma non perturbato. La condizione sotto attacco compone la patch sulla regione derivata dal \textit{bounding box} di ciascun bersaglio valido, secondo la geometria definita nella Sezione \ref{sec:sigmoide}, e ripete l'inferenza. L'appaiamento fra le due passate è la condizione che rende applicabile il ricampionamento appaiato della Sezione \ref{sec:bootstrap}.
+
+Sulla suddivisione di validazione di Okutama-Action la valutazione è preceduta dal sottocampionamento temporale con passo $27$ descritto nella Sezione \ref{sec:decorrelazione}. Il sottocampionamento agisce sull'indice del \textit{loader} prima di entrambe le passate, cosicché le due condizioni operino sul medesimo sottoinsieme.
+
+La soglia di confidenza del rilevatore è posta a $0.50$ per le misure riportate. Le metriche accessorie definite nella Sezione \ref{sec:metriche_accessorie} sono ricalcolate anche alle soglie $0.30$ e $0.70$, per quantificare la dipendenza dell'esito dal valore adottato e distinguere un effetto stabile da uno prodotto dalla scelta di un particolare punto di taglio.
+
+\subsection{Analisi della dipendenza dalla scala}
+\label{sec:stratificazione}
+
+L'analisi verifica se l'efficacia della perturbazione dipenda dalla dimensione apparente del bersaglio. L'unità di analisi è il singolo bersaglio e non il fotogramma, e la stratificazione impiega tre intervalli di altezza del \textit{bounding box} nello spazio del canvas: $[60, 100)$, $[100, 150)$ e $[150, \infty)$ pixel. Il primo estremo coincide con la soglia di validità definita nella Sezione \ref{sec:metriche}; il terzo intervallo corrisponde alla condizione di ingaggio ravvicinato modellata dal simulatore.
+
+L'esito è attribuito per corrispondenza geometrica. Ciascun rilevamento della classe bersaglio sopra soglia di confidenza è confrontato per intersezione su unione con il \textit{bounding box} annotato del bersaglio in esame; il bersaglio è considerato rilevato quando almeno un rilevamento supera la soglia di sovrapposizione $0.3$ adottata nella Sezione \ref{sec:esiti}. L'attribuzione per corrispondenza è necessaria su insiemi di dati con più soggetti simultanei nello stesso fotogramma: un criterio a livello di fotogramma classificherebbe come rilevato un bersaglio effettivamente eluso ogni volta che il rilevatore individua un soggetto diverso nella medesima scena, con una distorsione crescente al crescere della densità di soggetti.
+
+L'analisi è condotta in entrambe le condizioni, di controllo e sotto attacco, sul medesimo insieme di bersagli. La quantità interpretabile è la differenza fra le due, poiché il tasso misurato nella sola condizione sotto attacco non isola l'effetto della perturbazione dal limite di localizzazione proprio del rilevatore su bersagli di piccola dimensione apparente.
+
+\subsection{Esperimenti di simulazione}
+\label{sec:esperimenti_sim}
+
+Il simulatore opera su una griglia di $100$ metri di lato popolata da tre bersagli e trenta entità civili, con velivolo ad altitudine di $10$ metri e raggio operativo del sensore di $150$ metri. Ciascuno scenario è eseguito per $150$ passi temporali. A ogni passo, per ciascuna entità entro il raggio operativo, il canale visivo produce un esito secondo il modello di Bernoulli della Sezione \ref{sec:canale_visivo}, i tre canali sono combinati e la decisione è classificata.
+
+Sono definiti quattro scenari, per combinazione di due vettori di attacco indipendenti: assenza di attacco; contromisura visiva attiva sui soli bersagli; contaminazione dei profili informativi; entrambi gli attacchi simultanei. La contaminazione agisce in due direzioni opposte, riducendo gli indicatori di rischio dei bersagli e innalzando quelli delle entità civili, e interessa la totalità dei campi del profilo.
+
+Due esperimenti impiegano gli stessi scenari con configurazioni di fusione differenti. Il primo isola il canale visivo azzerando i pesi dei canali non visivi, e quantifica l'effetto della sola contromisura fisica sulla decisione. Il secondo impiega la ripartizione nominale, con peso $0.45$ al canale visivo, $0.35$ al canale informativo e $0.20$ al canale comportamentale, e quantifica in che misura la ridondanza fra canali attenui il degrado propagato dal primo livello.
+
+La classificazione degli esiti aggrega le azioni di ingaggio e di allerta in un'unica categoria di intervento, poiché entrambe comportano l'attivazione della catena operativa; le azioni di tracciamento passivo e di non intervento costituiscono la categoria complementare. Il vincolo precauzionale descritto nella Sezione \ref{sec:laws_sim} agisce a valle della classificazione per soglia, declassando l'ingaggio ad allerta quando l'ampiezza dell'intervallo di confidenza mobile eccede $0.40$ oppure quando più di tre entità civili si trovano in prossimità di un bersaglio con punteggio inferiore a $0.85$.
+
+Ciascuno scenario è eseguito una sola volta, con generatore pseudocasuale inizializzato a un valore fisso. Le quantità riportate per questi esperimenti sono pertanto stime puntuali deterministiche e non dispongono di una misura di incertezza campionaria, a differenza di quelle del primo livello. La limitazione discende dallo statuto delle entità simulate, generate da distribuzioni scelte in fase di progettazione, e circoscrive l'uso di tali quantità all'illustrazione del meccanismo di propagazione.
 
 
 \chapter{Risultati e Discussione}
