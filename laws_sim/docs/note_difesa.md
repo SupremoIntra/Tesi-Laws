@@ -192,3 +192,41 @@ Okutama-Action: licenza CC BY-NC-SA 3.0.
       VisDrone, marcato `[RITIRATO]` perché non replica alle soglie 0.3 e 0.7
 - [ ] Tempo di wall-clock di un run completo, per la slide sui vincoli di
       piattaforma
+
+
+
+# DOMANDE BASTARDE CAP 5
+
+## 5.1
+"Il learning rate finale è 0.0047, non lo 0.001 atteso — è un bug nello scheduler?"→ No: verificato analiticamente. Con 
+𝑇
+𝑚
+𝑎
+𝑥
+=
+2000
+T
+max
+=2000 e 
+𝑡
+=
+1110
+t=1110 la formula del coseno dà 
+0.0047263
+0.0047263, identico a 6 cifre al valore loggato. Il divario viene dal numero di aggiornamenti mancati (1110 su 2000), non da un errore nel programma di decadimento.
+
+"Solo il 55.5% delle iterazioni produce un aggiornamento — non è uno spreco di calcolo?"
+→ È conseguenza diretta di una scelta di design già giustificata in Cap. 4 (§4.3.2, filtro di rilevanza tattica): un fotogramma senza bersaglio ≥60px ha peso nullo. Confermato per strumentazione diretta: unica causa di scarto, nessun caso di maschera vuota o bbox mancante.
+
+"La patch valutata è quella dell'ultimo aggiornamento, non la migliore — perché?"
+→ Comportamento del codice (optimize_universal ritorna sempre l'ultima); differenza rispetto al checkpoint migliore è 0.0009 sulla media mobile della loss — trascurabile rispetto all'oscillazione del training, dichiarato come limitazione, non nascosto.
+
+"VisDrone parte da R1 PRE = 0.825, Okutama da 0.503 — le due baseline sono comparabili?"
+→ No, e non lo saranno mai per costruzione (dataset diversi). Il confronto valido è sul delta appaiato (+0.250 vs +0.280), non sui livelli assoluti — punto che tratteremo esplicitamente in §5.2.4 quando arriviamo alla discussione, ma tienilo già a mente: è la domanda più prevedibile che un commissario può fare guardando i due forest plot affiancati.
+
+## CAP 5 in generale
+Perché VisDrone e Okutama non sono comparabili in assoluto → confronta solo i delta appaiati (+25 vs +28pp), mai i livelli.
+Δc̄ (-1.5pp) vs ΔEvasion (+28pp), rapporto 1:18 → non è incoerenza, sono 3 non-linearità dichiarate (§divario).
++27.0pp per-bersaglio ≈ +28.0pp per-fotogramma → coerenza interna, l'argomento più solido in tavola.
+Danno collaterale: perché uno è "ritirato" e l'altro no → Bonferroni fallito su VisDrone (p=0.0136 contro soglia 0.0083 richiesta), pattern monotono su Okutama.
+Layer 2/3: se te lo chiedono, di' subito "proof-of-concept, 4 difetti accertati, non quantificato" — non provare a difendere numeri che non useremo.

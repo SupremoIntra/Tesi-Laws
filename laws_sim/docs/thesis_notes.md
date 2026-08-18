@@ -643,44 +643,45 @@ patch produce *meno* detection spurie, non più (stessa direzione osservata su
 VisDrone). Riportare la tabella completa a tre soglie: il solo valore a 0.5
 sovrastima l'effetto.
 
-### 7.8 Stratificazione per dimensione — la domanda di Fase 2 trova risposta
+### 7.8 Stratificazione per dimensione — misura definitiva con condizione di controllo
 
-`[VERIFICATO]` `stratify_by_size.py`, patch **addestrata su Okutama**, 960×960:
+`[VERIFICATO]` `stratify_by_size.py`, versione con matching IoU (soglia 0.3,
+importata da `simulator.py`) e condizione di controllo `--no-patch`. Patch
+**addestrata su Okutama**, dati Okutama-val, 960×960, conf 0.50:
 
-| Bucket altezza (@960) | Evasi/Totali | Evasion Rate |
-|---|---|---|
-| 60–100px | 9155/19921 | 46.0% |
-| 100–150px | 598/618 | **96.8%** |
-| 150px+ | 0/0 | bucket vuoto |
+| Bucket altezza (@960) | Controllo | Attacco | Delta | n |
+|---|---|---|---|---|
+| 60–100px | 70.0% | 97.0% | **+27.0 pp** | 19921 |
+| 100–150px | 97.1% | 100.0% | +2.9 pp | 618 |
+| 150px+ | — | — | — | 0 |
 
 Il bucket 150px+ vuoto è **atteso, non un bug**: a 960 le altezze sono 0.75×
-quelle a 1280, quindi ≥150px@960 ≡ ≥200px@1280, e a 1280 c'erano solo 316 bbox
-≥150px in totale.
+quelle a 1280, quindi ≥150px@960 ≡ ≥200px@1280.
 
-**Controllo di coerenza indipendente** `[VERIFICATO]`: la stratificazione fatta
-in precedenza a 1280 con la patch **VisDrone** dava 60–100px: 52.2% (n=40683),
-100–150px: 48.6% (n=5294), 150px+: **97.2%** (n=316). Convertendo le scale
-(960 → 1280 = ×1.333), il bucket 100–150@960 corrisponde a 133–200@1280 — cioè
-proprio la regione dove la misura a 1280 mostrava il salto al 97%. **Due misure
-indipendenti, patch diverse e risoluzioni diverse, individuano il salto nella
-stessa regione di scala.**
+⚠ **Le misure precedenti di questa sezione sono superate.** I valori 46.0% /
+96.8% e il cosiddetto "controllo di coerenza indipendente" a 1280 (97.2%)
+erano privi di condizione di controllo. Il bucket 100–150px risultava alto non
+per effetto dell'attacco, ma perché il rilevatore è **già al 97.1% di mancata
+localizzazione** su quella fascia anche senza patch. Le due misure che
+sembravano indipendenti erano la stessa regione di scala (150px@1280 ≡
+112px@960) misurata due volte senza controllo. Entrambe erano su dati Okutama:
+la stratificazione non è mai stata eseguita su dati VisDrone.
 
-**Cosa risolve:** la domanda lasciata aperta in Fase 2 (bucket 150px+
-promettente ma con soli 11 casi) ora ha n=618 con effetto molto ampio. La
-direzione dell'ipotesi di scala è confermata su grande campione.
+**Lettura corretta:** l'effetto dell'attacco è nel bucket 60–100px, che
+contiene il 97% dei bersagli. **+27.0 punti percentuali su n=19921.** Il
+bucket 100–150px è in saturazione (linea di base già al 97.1%, nessun margine
+misurabile, n piccolo), non evidenza di maggiore vulnerabilità dei bersagli
+grandi.
 
-⚠ **Confound da dichiarare, non da nascondere.** `stratify_by_size` considera
-"rilevato" *qualsiasi* persona nel frame sopra soglia, non il bersaglio
-specifico con matching IoU. Su VisDrone (pochi soggetti per frame) era
-accettabile; su Okutama (fino a 9 attori simultanei) no: nei frame affollati
-basta che YOLO veda un altro attore perché il target conti come "non evaso".
-Probabile che il 46% del bucket dominante sia **sottostimato** e che il 96.8%
-del bucket medio corrisponda a frame con meno attori (bersagli grandi = drone
-più basso = meno gente inquadrata). **Da riportare come tendenza, non come
-misura pulita.** `[APERTO]` la versione IoU-matched è un miglioramento
-possibile e non costoso — **è lavoro Vision, da fare prima di scrivere i
-capitoli Risultati/Discussione**, perché rafforza il finding più forte che
-Okutama porta.
+**Verifica di coerenza interna** `[VERIFICATO]`: il delta per bersaglio con
+matching IoU (**+27.0 pp**) coincide con il delta a livello di fotogramma
+misurato indipendentemente dal report bootstrap (**+28.0 pp**, 0.497→0.777).
+Due unità di analisi diverse, due criteri di attribuzione diversi, stesso
+risultato. È l'argomento più solido disponibile per la difesa.
+
+Il confound IoU dichiarato `[APERTO]` nella versione precedente è **risolto**:
+la detection è attribuita per corrispondenza geometrica specifica al bersaglio,
+non a "qualunque persona nel frame".
 
 `[VERIFICATO]` **Distribuzione di scala: il guadagno reale è nei numeri
 assoluti, non nella forma della distribuzione.** Bbox valide (≥60px) nel
@@ -878,12 +879,12 @@ prima di scrivere qualunque frase comparativa.
    tesi, un effetto replicato su due domini vale più di un numero più alto su
    uno solo.
 
-2. **Risolve una domanda esplicitamente aperta.** In Fase 2 il bucket 150px+
-   aveva 11 casi e le note stesse lo definivano "non conclusivo, pista
-   esplorativa". Okutama porta il bucket rilevante a n=618 con un effetto ampio
-   (96.8% vs 46.0%), e due misure indipendenti collocano il salto nella stessa
-   regione di scala. **L'ipotesi di scala passa da speculazione a evidenza**
-   (con il confound di §7.8 dichiarato).
+2. **Risolve una domanda esplicitamente aperta, con esito diverso da quanto
+   inizialmente misurato.** In Fase 2 il bucket 150px+ aveva 11 casi e le note
+   stesse lo definivano "non conclusivo". La misura definitiva con condizione
+   di controllo (§7.8) colloca l'effetto nel bucket **dominante** 60–100px:
+   **+27.0pp su n=19921**. Il bucket 100–150px è in saturazione. L'ipotesi di
+   scala è confermata, ma nel bucket opposto a quello inizialmente indicato.
 
 3. **Un risultato positivo nuovo:** il danno collaterale, ritirato su VisDrone,
    è significativo e robusto su Okutama a 0.3 e 0.5. È l'unico punto in cui
@@ -968,8 +969,9 @@ Tre conseguenze operative:
 1. ✅ Il formato del forest plot è **approvato**. `[APERTO]` chiuso.
 2. **Il delta ha priorità narrativa**: in tesi dare rilievo al pannello del
    delta appaiato, o citarlo per primo nel testo che accompagna la figura.
-3. `[APERTO]` Il relatore nomina **R2**, che nel forest plot attuale non
-   compare (le metriche sono Evasion, R1, √(R1·R2), F1). Vedi Parte V.
+3. ✅ **R2 aggiunta al forest plot** su entrambi i dataset, e formato
+   confermato dal relatore via mail. Compare come riga piatta nel pannello (a)
+   e come punto senza baffi nel pannello (b): rende visivo il finding di Fase 4.
 
 ## La storia in 7 frasi
 
@@ -993,9 +995,9 @@ Tre conseguenze operative:
    nei frame senza bersaglio valido. R2 va riportato come caratterizzazione del
    detector, non come test dell'attacco.
 6. La migrazione a Okutama-Action **replica** il risultato su un dominio
-   indipendente (Δ +0.280, p<0.0001) e **risolve** la domanda aperta sulla scala
-   (bucket 100–150px: 96.8% di evasion su n=618, contro 46.0% su n=19.921 nel
-   bucket 60–100px).
+   indipendente (Δ +0.280, p<0.0001) e, con la misura di §7.8 corretta per
+   condizione di controllo, **conferma** la dipendenza dalla scala nel bucket
+   dominante (60–100px: +27.0pp su n=19921).
 7. Il contributo dell'attacco è quasi identico sui due dataset (+25 vs +28pp)
    pur con baseline e distribuzioni di scala molto diverse: **conferma** del
    soffitto strutturale su un secondo dominio, non suo superamento.
@@ -1098,28 +1100,11 @@ diario (Parte II).
 
 ## Da chiedere/confermare col relatore
 
-- `[APERTO]` **Includere R2 nel forest plot?** Il relatore ha nominato
-  esplicitamente R1 **e R2**; il plot attuale mostra Evasion, R1, √(R1·R2), F1.
-  Pro: essendo R2 invariante per costruzione, una riga piatta accanto a quattro
-  che crollano renderebbe **visivo** il finding di Fase 4 — il risultato
-  metodologico più originale del lavoro. Contro: rischia di sembrare un errore
-  di plotting. Propensione: aggiungerla, con didascalia che spiega l'invarianza.
-- `[APERTO]` **Formato figure multi-pannello**: le linee guida LaTeX richiedono
-  un file immagine separato per pannello (`\subfloat` + pacchetto `subfig`), ma i
-  nostri script producono PNG compositi (4 pannelli nel K-plot, 2 nel forest
-  plot, 2 nel before/after). Chiedere se è accettabile trattare il composito
-  come figura a pannello singolo con didascalia descrittiva, prima di rifare
-  tutte le figure.
 - `[APERTO]` Verificare che il confronto side-by-side nella forma di Parte III
   sia quello atteso (colonne, versione filtrata/non filtrata per dimensione).
 
 ## Verifiche a basso costo, non bloccanti
 
-- `[APERTO]` **`stratify_by_size.py` con IoU-matching** (soglia 0.3, come nelle
-  metriche): eliminerebbe il confound "altri attori nel frame" che su Okutama
-  (fino a 9 soggetti) è significativo. **Priorità alta**: è lavoro Vision, non
-  simulatore, e rafforza il finding più forte del lavoro. Da fare prima di
-  scrivere i capitoli Risultati/Discussione.
 - `[APERTO]` Stratificare la **PRE**-evasion di Okutama per taglia bbox: test
   diretto dell'ipotesi domain-gap (uniforme) contro effetto scala (concentrato
   sui piccoli).
@@ -1130,8 +1115,9 @@ diario (Parte II).
   attribuzione — citare Barekatain et al. 2017 **nella didascalia**, non solo in
   bibliografia). Le linee guida del relatore vietano immagini protette da
   copyright.
-- `[APERTO]` Salvare i grafici matplotlib anche in **PDF** (vettoriale) oltre al
-  PNG: le linee guida lo raccomandano esplicitamente. Una riga per script.
+- ✅ **Figure in PDF**: forest plot VisDrone e Okutama rigenerati vettoriali
+  (con R2 inclusa); k_selection (×2) e runs_comparison in contenitore PDF.
+  Tutte in `img/`.
 - `[APERTO]` Esito del retest di ponderazione tattica su Okutama, se completato.
 
 ## Fase successiva: Layer 2/3
@@ -1165,16 +1151,16 @@ scrivere §3.6 della tesi. Non blocca il resto della stesura.
 | Sodhro et al. 2025 | Baseline YOLOv8 outdoor 99.1% confidence; costante 0.710 del simulatore |
 | Carlini & Wagner 2017 | Margine di robustezza nella loss |
 | Wu et al. 2020 | Domain-Specific Attacks > Universal Attacks (Piano B) |
-| Athalye et al. 2017 | EoT |
+| Athalye et al. 2018 | EoT |
 | Thys et al. 2019 | TV Loss, aggregazione max/top-K |
 | Brown et al. 2017 | Adversarial Patch, convergenza e rendimenti marginali |
 | Arkin 2009 | Principio di Distinzione IHL, scenario Urban Clutter |
 | Liu et al. 2019 | DPatch — loss congiunta box+classe (riserva) |
 | Huang et al. 2020 | Universal Physical Camouflage — design region-aware |
-| Hu et al. 2021 | Naturalistic Patch — GAN latent space |
+| Hu et al. 2022 | Naturalistic Patch — GAN latent space |
 | Shrestha, Pathak, Viegas 2023 | Patch UAV-specific su VisDrone (Car, 80% ASR) |
-| LFRAP 2025 | Conferma: pedoni scartati per dimensione da vista aerea. ⚠ riferimento completo da verificare prima del `.bib` |
-| Adversarial patch attacks against aerial imagery object detectors 2023 | Loss su feature intermedie. ⚠ riferimento completo da verificare prima del `.bib` |
+| LFRAP 2025 (`xi_2025_lfrap`) | Conferma: pedoni scartati per dimensione da vista aerea. Riferimento verificato e presente nel `.bib` |
+| Adversarial patch attacks against aerial imagery object detectors 2023 (`tang_2023`) | Loss su feature intermedie. Riferimento verificato e presente nel `.bib` |
 | Everingham et al. 2010 | Standard IoU=0.5 (PASCAL VOC), da cui ci discostiamo |
 | Yu et al. 2020 | "Scale Match for Tiny Person Detection" — IoU permissivo |
 | Shao et al. 2018 | CrowdHuman — convenzione "ignore region" |
@@ -1193,6 +1179,10 @@ non ricostruite da note precedenti.
 ---
 
 ### 8.1 Correzioni da applicare alle sezioni precedenti di questo documento
+
+**[APPLICATO]** Le correzioni di questa sottosezione sono state riportate
+nelle sezioni originali. Quanto segue resta come registro di cosa è cambiato
+e perché.
 
 ⚠ **§7.8 — il finding sulla dipendenza dalla scala è un artefatto.**
 La misura riportata come `[VERIFICATO]` (bucket 100–150 px al 96.8%) era
@@ -1370,12 +1360,24 @@ budget non più in uso.
 
 ---
 
-### 8.7 Discrepanza fra sorgenti di risultati — da risolvere prima del Cap. 5
+### 8.7 Discrepanza fra sorgenti di risultati — ✅ RISOLTA
 
-⚠ `vision_metrics.json` riporta R1 pre 0.5012 / post 0.2200, R2 0.9699.
+`vision_metrics.json` riporta R1 pre 0.5012 / post 0.2200, R2 0.9699.
 `full_report_okutama_960_stride27.json` riporta 0.5033 / 0.2233 / 0.9604.
-Probabile differenza di sottoinsieme o di *stride* fra le due esecuzioni.
-**Il dato da citare in tesi è quello del report decorrelato a n=527.**
+
+**Non è un errore: è la stessa misura su due campionamenti diversi.**
+Verifica aritmetica:
+
+- 1 − 0.5012 = **0.4988** = evasion PRE del valset completo (§7.5, n=14210)
+- 1 − 0.2200 = **0.7800** = evasion POST del valset completo (§7.5, n=14210)
+
+`vision_metrics.json` è scritto da `--eval-vision` sul valset completo **senza
+stride** (Fase 8); `full_report_okutama_960_stride27.json` è il run decorrelato
+a stride 27. Coerente con Fase 8, dove l'evasion completo coincide alla cifra
+con il POST di §7.6.
+
+**Il dato da citare in tesi resta quello del report decorrelato a n=527.**
+Nessuna indagine ulteriore necessaria.
 
 ---
 
@@ -1448,3 +1450,83 @@ Creato `tikz_common_styles.tex` con palette desaturata e larghezze
 centralizzate. ⚠ Nota di manutenzione: righe vuote all'interno di
 `\tikzset{}` producono `Paragraph ended before \pgfkeys@addpath was
 complete`; nel file sono neutralizzate con `%`.
+
+
+---
+
+## FASE 9 — Ristrutturazione formale e compressione dei Capitoli 1–6
+
+Sessione dedicata all'applicazione della direttiva del correlatore
+(«accorciare almeno la parte tecnica visto che l'altra è già stata validata»)
+e delle regole formali di `LineeGuidaTesiLatex.pdf`.
+
+### 9.1 Appiattimento gerarchico
+
+Cap. 4: da 20 `\subsection` + 2 `\subsubsection*` a **7 `\section`**, zero
+sottolivelli. Cap. 5: da 13 `\subsection` a **3 `\section`** (ottimizzazione,
+efficacia, discussione). I sotto-argomenti sono resi con grassetto inline.
+
+`[VERIFICATO]` per `diff`: tutte le 45 `\label` del Cap. 4 conservate. Un
+`\label` non preceduto da `\refstepcounter` risolve alla `\section`
+contenitrice, quindi nessun `\ref` si rompe: cambia solo la granularità
+(«4.3» invece di «4.3.2»).
+
+### 9.2 Migrazione della letteratura ai capitoli corretti
+
+Il confronto con la letteratura UAV (`shrestha_2023`, `xi_2025_lfrap`,
+`tang_2023`) è stato spostato dai Risultati alla Discussione: i Risultati
+riportano solo numeri. Aggiunti in Discussione `thys_2019` (contrasto di scala
+con il livello del suolo), `brown_2017_patch` (rendimenti marginali, coerente
+col plateau all'aggiornamento 840) e `huang_2020_upc` (vincolo di copertura).
+`wu_2020`, `hu_2022` e `harvey_2010` restano nel Cap. 6, dove riguardano il
+C.A.R.E. Kit.
+
+### 9.3 Difetti formali corretti
+
+Due difetti nel Cap. 5: `\label{sec:r2_invariante}` orfana (senza comando di
+sezionamento) e tabella del confronto complessivo priva di frase introduttiva e
+di `\ref`. Entrambi risolti. Verifica automatica su `main.tex` integrato: 0
+figure/tabelle orfane su 18, 0 `\ref` rotti, 0 `footcite` verso chiavi assenti
+dal `.bib`, 0 `todo`, 0 commenti aperti.
+
+### 9.4 Statuto del C.A.R.E. Kit — deciso
+
+La patch caratterizzata in tesi è la **componente percettiva**; il kit è
+sviluppo futuro. L'obiettivo 4 è stato riformulato di conseguenza: prometteva
+un dispositivo progettato e misurato, cosa che il lavoro non consegna.
+
+### 9.5 Sovrastime corrette nei capitoli iniziali
+
+Tre formulazioni eccedevano quanto il Cap. 5 dimostra:
+
+1. La manipolazione della soglia di confidenza presentata come attacco (è un
+   parametro di valutazione). Corretta: la perturbazione agisce sull'ingresso.
+2. Gli adversarial attacks come «ultimo argine di difesa materiale». Corretta.
+3. Il passaggio che attribuiva alla soglia di confidenza la ridefinizione del
+   «perimetro della bbox» — tecnicamente falso, la soglia non altera la
+   geometria dei riquadri. Corretta usando il dato reale disponibile: su
+   VisDrone l'evasion PRE passa dal 3.75% (soglia 0.3) al 72.5% (soglia 0.7).
+
+Una quarta occorrenza dello stesso registro resta in Introduzione, non
+modificata perché è una tesi tematica e non la promessa di una dimostrazione.
+
+### 9.6 Compressione
+
+Cap. 4: rimosse le equazioni riprese dalla letteratura e non citate da alcun
+`\ref` (riparametrizzazione logistica di Carlini e Wagner, formulazione EoT di
+Athalye, forma a soglia, derivata dell'obiettivo asintotico), sostituite da
+prosa con citazione. Mantenute le equazioni originali del lavoro: obiettivo
+totale, aggregazione top-K, peso di rilevanza dimensionale, variazione totale
+nella variante anisotropa in L1, CEAE. Rimossa `fig:ponte_interscambio`,
+ridondante rispetto a `fig:tre_livelli`.
+
+Cap. 1 e 2: compressi eliminando ridondanze argomentative e riassumendo le
+digressioni su singoli paper. Nessun dato, citazione o passaggio giuridico
+rimosso.
+
+### 9.7 Trappola di denominazione da ricordare
+
+**n=531 → VisDrone (640 px, senza stride). n=527 → Okutama (960 px, stride
+27).** I due numeri sono vicini per costruzione: lo stride 27 è stato scelto
+proprio per ottenere una numerosità comparabile a VisDrone. Facile confonderli,
+grave confonderli in sede di difesa.
