@@ -974,6 +974,138 @@ misura della fragilità del presupposto di fatto su cui l'intera delega si regge
 \chapter{Stato dell'arte}
 \label{cap3}
 
+I capitoli precedenti hanno collocato i sistemi d'arma autonomi in un quadro
+normativo incompleto e in un contesto tecnico nel quale la catena di targeting
+poggia su inferenze probabilistiche non verificabili a posteriori. Il presente
+capitolo ricostruisce lo stato della ricerca sui due elementi tecnici che quella
+catena presuppone: il rilevatore di oggetti che alimenta la percezione, e le
+tecniche note per comprometterlo. L'esposizione è limitata a quanto necessario a
+collocare il contributo sperimentale; le formulazioni impiegate in questo lavoro
+sono descritte nel Capitolo \ref{cap4} e non anticipate qui.
+
+\section{Rilevamento di persone in prospettiva aerea}
+\label{sec:sota_detection}
+
+I rilevatori a singolo stadio si sono affermati come architettura di riferimento
+per l'inferenza a bordo di piattaforme con vincoli di potenza, peso e latenza. Il
+paradigma introdotto dalla famiglia YOLO riformula il rilevamento come un unico
+problema di regressione su una griglia, eliminando lo stadio separato di
+proposta delle regioni e ottenendo un tempo di inferenza compatibile con
+l'elaborazione in tempo reale \footcite{redmon_2016_yolo}. Le implementazioni
+successive hanno conservato questa impostazione, articolandola in varianti di
+capacità crescente che condividono la medesima struttura a tre scale di
+campionamento \footcite{jocher_2023_yolov8}. La variante di capacità minima è
+quella che i vincoli di piattaforma rendono la scelta obbligata per un velivolo
+senza pilota, e prestazioni e limiti di questa famiglia nel rilevamento di
+persone in ambienti esterni eterogenei sono stati caratterizzati sperimentalmente
+in letteratura \footcite{sodhro_2025}.
+
+La prospettiva aerea introduce una difficoltà che non dipende dall'architettura
+del rilevatore. Un soggetto ripreso da quota occupa una porzione di immagine di
+uno o due ordini di grandezza inferiore rispetto alla stessa persona ripresa a
+livello del suolo, e la sua impronta si avvicina al limite di risoluzione
+imposto dal passo di campionamento della rete. Gli insiemi di dati che
+documentano questo dominio riflettono la difficoltà nella propria composizione:
+le raccolte urbane acquisite da velivolo senza pilota sono dominate da soggetti
+di pochi pixel di altezza \footcite{zhu_2021_visdrone}, mentre le raccolte
+acquisite a quota inferiore, pensate per il riconoscimento di azioni, offrono
+soggetti meglio risolti a prezzo di una minore varietà di scena
+\footcite{barekatain_2017_okutama}. La scelta dell'insieme di dati determina
+quindi in misura sostanziale quale regime di scala venga effettivamente
+sottoposto a verifica.
+
+\section{Attacchi avversariali: dalla perturbazione a norma limitata alla patch fisica}
+\label{sec:sota_adversarial}
+
+La vulnerabilità dei classificatori profondi a perturbazioni costruite
+deliberatamente è documentata da una linea di ricerca consolidata, che ha
+formalizzato il problema come ricerca di una perturbazione di norma minima
+capace di alterare la predizione \footcite{carlini_2017}. Questa formulazione
+assume che l'avversario controlli l'intera immagine e possa distribuirvi una
+perturbazione di ampiezza arbitrariamente piccola: un'ipotesi adeguata a
+studiare la geometria del problema, ma inapplicabile a un avversario che opera
+nel mondo fisico.
+
+Il superamento di questo limite è il paradigma della patch avversariale, nel
+quale la perturbazione è confinata a una regione contigua dell'immagine mentre
+l'ampiezza al suo interno non è vincolata \footcite{brown_2017_patch}. Il
+cambio di ipotesi rende l'artefatto realizzabile come oggetto, e sposta la
+difficoltà dalla minimizzazione della norma alla sopravvivenza della
+perturbazione attraverso la catena di riproduzione e acquisizione. Due
+contributi definiscono gli strumenti oggi standard per affrontarla:
+l'ottimizzazione del valore atteso su una distribuzione di trasformazioni, che
+sostituisce l'efficacia sul caso singolo con l'efficacia media su una famiglia di
+condizioni di osservazione \footcite{athalye_2018_eot}, e la penalizzazione del
+contenuto in frequenza della superficie, introdotta insieme alla prima
+dimostrazione di elusione di un rilevatore di persone mediante un artefatto
+stampato \footcite{thys_2019}.
+
+Su questa base si è sviluppata la ricerca sulle contromisure indossabili. Il
+camuffamento asimmetrico contro il riconoscimento del volto ne costituisce il
+precedente non algoritmico, ottenuto per euristiche percettive anziché per
+ottimizzazione \footcite{harvey_2010}. I lavori successivi hanno ricondotto il
+problema all'ottimizzazione, affrontando la collocazione della perturbazione
+sulla superficie corporea in funzione della visibilità delle diverse regioni
+\footcite{huang_2020_upc}, la specializzazione dell'artefatto sul dominio di
+impiego \footcite{wu_2020} e la generazione di motivi visivamente plausibili
+applicabili a tessuti \footcite{hu_2022}. Tutti condividono una condizione
+sperimentale comune: il soggetto è ripreso a livello del suolo e occupa una
+frazione dell'immagine sufficiente perché la perturbazione disponga di una
+superficie utile.
+
+\section{Il dominio aereo e la scelta del bersaglio}
+\label{sec:sota_aereo}
+
+La trasposizione di queste tecniche alla prospettiva aerea è oggetto di una
+letteratura più recente e quantitativamente più contenuta. I primi lavori hanno
+affrontato il camuffamento contro il rilevamento da velivolo
+\footcite{adhikari_2020} e la realizzazione fisica di perturbazioni contro
+rilevatori operanti su immagini aeree \footcite{du_2022}, stabilendo che il
+problema è affrontabile ma che le condizioni di riuscita sono più stringenti che
+a livello del suolo.
+
+Il dato più significativo per il presente lavoro riguarda però la selezione del
+bersaglio. I contributi che riportano tassi di successo elevati su insiemi di
+dati aerei urbani attaccano la classe veicolo \footcite{shrestha_2023}; un lavoro
+di ottimizzazione multi-dimensionale delle caratteristiche dichiara
+esplicitamente di scartare la classe pedone per l'esiguità della sua estensione
+in pixel da vista zenitale \footcite{xi_2025_lfrap}; i risultati più solidi su
+immagini aeree si ottengono su bersagli di dimensione maggiore e operando sulle
+rappresentazioni intermedie della rete anziché sulla sua uscita
+\footcite{tang_2023}. La classe che il diritto internazionale umanitario impone
+di distinguere, la persona, è quindi precisamente quella che la letteratura
+tecnica evita, e il regime di scala corrispondente resta privo di una
+caratterizzazione quantitativa con protocollo statistico esplicito. È questa la
+lacuna che il contributo sperimentale di questa tesi affronta.
+
+\section{Integrità dei metadati e catena decisionale}
+\label{sec:sota_metadati}
+
+Il canale ottico non è l'unico ingresso di un sistema di targeting. Le
+architetture descritte nel Capitolo \ref{cap2} combinano la percezione con
+canali informativi derivati da fonti aperte, la cui raccolta e correlazione sono
+oggetto di piattaforme dedicate \footcite{gonzalez_2021_etip} e di modelli di
+valutazione del rischio che assegnano punteggi a soggetti terzi sulla base di
+tali fonti \footcite{asili_2025_gentprm}. La superficie di attacco corrispondente
+è documentata dalla letteratura sulla sicurezza dell'apprendimento automatico,
+che distingue fra la corruzione dei dati di addestramento a monte e la
+manipolazione dell'ingresso a inferenza già avvenuta \footcite{cina_2023_poisoning},
+e dagli studi sui rischi intrinseci dei sistemi autonomi esposti ad ambienti
+ostili \footcite{podar_2025}.
+
+La modellazione della decisione di ingaggio a valle della fusione richiede infine
+di specificare la composizione dello scenario. Il riferimento adottato per il
+rapporto fra bersagli ed entità civili nell'ambiente simulato è la trattazione
+del comportamento letale in robotica autonoma, che formalizza il principio di
+distinzione come vincolo di progetto anziché come valutazione a posteriori
+\footcite{arkin_2009}.
+
+La letteratura esaminata affronta separatamente i due piani: la robustezza del
+rilevatore da un lato, la sicurezza dei canali informativi dall'altro. Il
+framework descritto nel Capitolo \ref{cap4} li tratta come livelli di un unico
+sistema, con lo statuto epistemico differenziato che il Capitolo \ref{cap5}
+dichiara e mantiene.
+
 
 \chapter{Metodo}
 \label{cap4}
@@ -1579,22 +1711,12 @@ tattica è definita come frazione delle annotazioni valide che soddisfano anche
 tale soglia, e non è confrontabile fra insiemi di dati valutati a risoluzioni
 diverse.
 
-La metrica di ingaggio a costo pesato quantifica l'efficacia della decisione
-tenendo conto del costo dell'attacco che la produce,
-\begin{equation}
-    \mathit{CEAE} =
-    \frac{\mathit{TP}}
-    {\mathit{TP} + \mathit{FP}\,(1 + c_o) + \mathit{FN}\,(1 + c_v)}
-    \label{eq:ceae}
-\end{equation}
-dove $c_v$ è il costo dell'attacco al canale visivo, posto pari alla frazione
-dell'area del bersaglio coperta dalla perturbazione, e $c_o$ è il costo
-dell'attacco ai metadati, posto pari alla frazione dei campi del profilo
-informativo contaminati. Nello scenario combinato il costo è calcolato come
-probabilità dell'unione, $c = 1 - (1 - c_v)(1 - c_o)$. La formulazione penalizza
-i falsi positivi in proporzione al costo dell'attacco ai metadati e i falsi
-negativi in proporzione al costo dell'attacco visivo, e ammette confronto fra
-scenari a costo differente.
+Il simulatore calcola infine una metrica di ingaggio a costo pesato, che
+rapporta gli ingaggi corretti agli errori di entrambi i tipi ponderati per il
+costo dell'attacco che li produce. La sua formulazione e i valori che ne
+derivano non sono riportati fra i risultati, per le ragioni esposte nella
+Sezione~\ref{sec:esperimenti_sim}, e la metrica è ripresa fra gli sviluppi
+futuri.
 
 \section{Insiemi di dati}
 \label{sec:dataset}
@@ -1945,6 +2067,24 @@ $F_1$ (secondaria) & $0.825$ & $0.657$ & $-0.168$ [$-0.242$, $-0.100$] \\
 \label{fig:candele_visdrone}
 \end{figure}
 
+\textbf{Robustezza alla soglia di confidenza.}
+\label{sec:multisoglia}
+Le metriche primarie sono state ricalcolate su VisDrone alle soglie $0.30$ e
+$0.70$, oltre al valore di riferimento $0.50$. Evasion Rate, $R_1$,
+$\sqrt{R_1 R_2}$ e $F_1$ restano significativi a tutte e tre le soglie, con
+valori di probabilità compresi fra $0.0002$ e valori inferiori a $0.0001$. La
+specificità $R_2$ risulta identica fra condizione pre e post a ciascuna soglia,
+assumendo rispettivamente i valori $0.8248$, $0.9690$ e $1.0000$: l'invarianza
+discussa più avanti non è quindi un artefatto del particolare punto di taglio
+adottato.
+
+La condizione di controllo mostra una dipendenza dalla soglia di entità
+superiore all'effetto dell'attacco stesso. In assenza di qualunque
+perturbazione, l'Evasion Rate su VisDrone passa dal $3.75\%$ alla soglia $0.30$
+al $72.5\%$ alla soglia $0.70$. Il valore di riferimento $0.50$ adottato per
+tutte le misure riportate si colloca in posizione intermedia rispetto a questo
+intervallo.
+
 \textbf{Okutama-Action.}
 \label{sec:risultato_okutama}
 Tabella~\ref{tab:risultato_okutama} e Figura~\ref{fig:candele_okutama} riportano le stesse metriche su Okutama, sull'insieme decorrelato ($n = 527$, Sezione~\ref{sec:protocollo}).
@@ -2117,6 +2257,13 @@ I livelli di simulazione e di fusione dei metadati non producono risultati quant
 La prosecuzione naturale del lavoro è il passaggio al dominio fisico. La perturbazione caratterizzata in questa tesi è stata ottimizzata come valore atteso su una distribuzione di trasformazioni, che è precisamente la proprietà richiesta perché un artefatto stampato conservi efficacia sotto angolazioni, distanze e condizioni di luce variabili. La sua realizzazione come capo indossabile costituisce la componente percettiva di un dispositivo più ampio, denominato C.A.R.E. Kit (\textit{Camouflage Against Recognition and Engagement}), concepito come strumento di autotutela per popolazioni civili esposte a sorveglianza e targeting automatizzati in contesti privi di regolamentazione effettiva. La linea si inserisce in un filone consolidato, che comprende il camuffamento asimmetrico contro il riconoscimento del volto \footcite{harvey_2010} e i tessuti a motivo avversariale \footcite{wu_2020, hu_2022}. Le implicazioni etiche della diffusione di contromisure di questo tipo, e la tensione fra tutela individuale ed elusione dei sistemi di sicurezza legittimi, sono state discusse in letteratura \footcite{helkala_2023} e vanno affrontate prima di qualunque proposta operativa.
 
 Sul piano sperimentale restano aperte alcune verifiche a basso costo. La stratificazione per taglia della sola condizione di controllo discriminerebbe fra le due ipotesi formulate per la debolezza della linea di base sul secondo insieme di dati. L'estensione dell'obiettivo all'intera impronta geometrica del bersaglio, anziché al solo nucleo di celle a evidenza forte, richiede un nuovo ciclo di ottimizzazione ma è suggerita dalla divergenza fra i due criteri di selezione misurati. L'applicazione dell'obiettivo alle rappresentazioni intermedie della rete, anziché alla sua uscita, è la tecnica adottata dai lavori che riportano i risultati più solidi su immagini aeree. La correzione dei difetti accertati nei livelli di simulazione e fusione, infine, è definita nel suo perimetro e restituirebbe misura quantitativa alla propagazione del degrado lungo la catena decisionale, che allo stato attuale resta descritta e non misurata.
+La correzione dei livelli di simulazione e fusione consentirebbe inoltre di
+riportare la metrica di ingaggio a costo pesato introdotta nel disegno
+sperimentale, che rapporta gli ingaggi corretti agli errori di entrambi i tipi
+ponderati per il costo dell'attacco che li produce. La sua taratura richiede
+però di rendere commensurabili due costi oggi eterogenei, la frazione di
+superficie corporea coperta dalla perturbazione e la frazione di campi
+informativi contaminati, questione aperta e non affrontata in questo lavoro.
 
 % --- BIBLIOGRAFIA ---
 
