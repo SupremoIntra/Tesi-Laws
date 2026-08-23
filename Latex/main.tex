@@ -112,9 +112,9 @@ Il presente lavoro affronta sperimentalmente la sicurezza dei sistemi di percezi
 
 Nello specifico, per perseguire tale scopo, il lavoro si articola sui seguenti obiettivi specifici:
 \begin{itemize}
-    \item \textbf{Analisi geopolitica e normativa:} esaminare il divario tra l'approccio pragmatico-militare delle principali superpotenze e i tentativi di regolamentazione, evidenziando il fallimento della diplomazia internazionale (es. tavoli CCW) di fronte a necessità tattiche dettate dai moderni teatri di conflitto.
+    \item \textbf{Analisi geopolitica e normativa:} esaminare il divario tra l'approccio pragmatico-militare delle principali superpotenze e i tentativi di regolamentazione, evidenziando il fallimento della diplomazia internazionale (es. i tavoli della Convention on Certain Conventional Weapons, CCW) di fronte a necessità tattiche dettate dai moderni teatri di conflitto.
     \item \textbf{Valutazione della governance e della necro-etica dell'autonomia:} approfondire il concetto di tanatopolitica algoritmica, dimostrando come la disarticolazione tra l'umano e lo strumento di morte introduca problematiche di accountability e di ``bias'' insormontabili nel trattamento dei dati in zone di guerra.
-    \item \textbf{Quantificazione sperimentale delle vulnerabilità:} valutare empiricamente la robustezza dei modelli di Object Detection (nello specifico l'architettura YOLO) utilizzati nei sistemi di targeting, sfruttando tecniche di \textit{Adversarial Machine Learning} per dimostrare la facilità con cui la ``confidence'' algoritmica può essere compromessa. La valutazione è condotta su due dataset aerei indipendenti, per constatare se le vulnerabilità osservate siano caratteristica unica del dataset o si replichino su domini distinti. Si tiene inoltre conto di altri fattori che possono influenzare la decisione di ``engagement'', come l'OSINT, il comportamento del soggetto identificato da YOLO, tramite un simulatore (\textit{LAWS-SIM}).
+    \item \textbf{Quantificazione sperimentale delle vulnerabilità:} valutare empiricamente la robustezza dei modelli di Object Detection (nello specifico l'architettura YOLO, \textit{You Only Look Once}) utilizzati nei sistemi di targeting, sfruttando tecniche di \textit{Adversarial Machine Learning} per dimostrare la facilità con cui la ``confidence'' algoritmica può essere compromessa. La valutazione è condotta su due dataset aerei indipendenti, per constatare se le vulnerabilità osservate siano caratteristica unica del dataset o si replichino su domini distinti. Si tiene inoltre conto di altri fattori che possono influenzare la decisione di ``engagement'', come le fonti aperte (OSINT, \textit{Open Source Intelligence}), il comportamento del soggetto identificato da YOLO, tramite un simulatore (\textit{LAWS-SIM}).
     \item \textbf{Misurazione dei limiti di una contromisura passiva:} ottimizzare una perturbazione avversariale indossabile e misurarne statisticamente l'efficacia contro un rilevatore impiegato da piattaforma aerea, per fornire una stima di quanta protezione una contromisura di questo tipo possa realisticamente offrire. La perturbazione così caratterizzata costituisce la componente percettiva di un dispositivo indossabile completo, il ``C.A.R.E. Kit'', la cui realizzazione fisica è delineata fra gli sviluppi futuri.
 \end{itemize}
 \chapter{Dual-Use, contesto operativo e geopolitica}
@@ -273,7 +273,7 @@ Dal 2013, 97 Stati hanno elaborato la propria posizione sui LAWS in sede
 multilaterale \footcite{wareham_2020}, convergendo sul riconoscimento che la
 rimozione dell'intervento umano nell'uso della forza produce problemi etici,
 legali, operativi e tecnologici. Circa due terzi dei contribuenti fanno parte
-della Convention on Certain Conventional Weapons fin dall'inizio, mentre i
+della CCW fin dall'inizio, mentre i
 restanti hanno partecipato ai convegni tenutisi fra il 2014 e il 2019. Molti
 Stati si sono espressi a favore di accordi \textit{legally-binding}, con
 posizioni ambigue come quella della Cina, che ha bloccato l'utilizzo dei sistemi
@@ -467,6 +467,7 @@ Haftar.
 \includegraphics[width=0.9\textwidth]{img/infog-kargu.png}
 \caption{Reperti fotografici ed estratti analitici del sistema STM Kargu-2 nel teatro libico.}
 \label{fig:kargu}
+\caption{Reperti fotografici ed estratti analitici del sistema STM Kargu-2 nel teatro libico. Fonte: Annex 30 del rapporto finale del Panel of Experts on Libya \footcite{un_libya_2021}.}
 \end{figure}
 
 Come evidenziato in Figura \ref{fig:kargu} dall'Annex 30 del rapporto finale del
@@ -1697,7 +1698,7 @@ argomentata nella Sezione \ref{sec:laws_sim}.
 
 \textbf{Metriche accessorie.}
 \label{sec:metriche_accessorie}
-Il danno collaterale quantifica i rilevamenti fantasma indotti dalla
+Il conteggio di rilevamenti spuri quantifica le rilevazioni fantasma indotte dalla
 perturbazione: sui soli fotogrammi positivi, dove la patch è effettivamente
 presente nella scena, si contano i rilevamenti privi di corrispondenza per
 intersezione su unione con qualunque persona annotata. La quantità è un
@@ -2034,7 +2035,7 @@ Configurazione & Aggiornamenti & Scheduler & $F_1$ & Evasion Rate \\
 \label{fig:runs_comparison}
 \end{figure}
 
-Le sei configurazioni convergono in una banda compresa fra $38.7\%$ e $43.75\%$ di Evasion Rate. La norma del gradiente, misurata per fotogramma, risulta compresa fra $0.0007$ e $0.005$ in tutti i run, e la soglia di troncamento non è mai raggiunta. L'aumento del fattore di accumulo da $4$ a $16$, che distingue la configurazione 4 dalla configurazione 3, non produce un miglioramento del risultato.
+Le sei configurazioni convergono in una banda compresa fra $38.7\%$ e $43.75\%$ di Evasion Rate. La norma del gradiente, misurata per fotogramma, risulta compresa fra $0.0007$ e $0.005$ in tutte e sei le configurazioni, e la soglia di troncamento non è mai raggiunta in alcun run, compreso quello su Okutama riportato in Tabella~\ref{tab:budget_okutama}. L'aumento del fattore di accumulo da $4$ a $16$, che distingue la configurazione 4 dalla configurazione 3, non produce un miglioramento del risultato.
 
 \section{Efficacia dell'attacco avversariale}
 \label{sec:risultati_efficacia}
@@ -2138,7 +2139,7 @@ $\Delta$ Evasion rate [IC $95\%$] & $+0.2812$ [$+0.2712$, $+0.2909$] & $+0.2800$
 
 Le stime puntuali coincidono entro il terzo decimale; l'ampiezza dell'intervallo aumenta di un fattore prossimo a cinque. La significatività non cambia, con valore di probabilità inferiore a $0.0001$ in entrambi i casi: la correzione modifica la stima dell'incertezza e non la conclusione.
 
-\textbf{Danno collaterale.}
+\textbf{Rilevamenti spuri.}
 \label{sec:risultato_collaterale}
 Tabella~\ref{tab:collaterale} riporta il conteggio medio di rilevamenti privi di corrispondenza per fotogramma positivo (Sezione~\ref{sec:metriche}), alle tre soglie di confidenza.
 
@@ -2157,7 +2158,7 @@ Okutama & $0.5$ & $0.0967$ & $0.0433$ & $-0.053$ & $<0.0001$ \\
 Okutama & $0.7$ & $0.0000$ & $0.0000$ & $0.000$ & $1.000$ \\
 \bottomrule
 \end{tabular}
-\caption{Danno collaterale nelle condizioni pre e post attacco, per soglia di confidenza. Su VisDrone la differenza è significativa alla sola soglia $0.5$ e non sopravvive alla correzione di Bonferroni per sei confronti, che richiede $p < 0.0083$: il risultato è ritirato. Su Okutama la differenza è significativa alle soglie $0.3$ e $0.5$; alla soglia $0.7$ non è misurabile per assenza di eventi nel campione decorrelato ($n = 300$), mentre una controprova sul campione completo correlato ($n = 8095$) conferma la stessa direzione con $p = 0.0038$.}
+\caption{Conteggio di rilevamenti spuri nelle condizioni pre e post attacco, per soglia di confidenza. Su VisDrone la differenza è significativa alla sola soglia $0.5$ e non sopravvive alla correzione di Bonferroni per sei confronti, che richiede $p < 0.0083$: il risultato è ritirato. Su Okutama la differenza sopravvive alla medesima correzione alla soglia $0.5$ ($p < 0.0001$); alla soglia $0.3$ è significativa al livello convenzionale $0.05$ ($p = 0.0108$) ma non alla soglia corretta; alla soglia $0.7$ non è misurabile per assenza di eventi nel campione decorrelato ($n = 300$), mentre una controprova sul campione completo correlato ($n = 8095$) conferma la stessa direzione con $p = 0.0038$.}
 \label{tab:collaterale}
 \end{table}
 
@@ -2182,7 +2183,7 @@ $[150, \infty)$ px & -- & -- & -- & $0$ \\
 \label{tab:stratificazione}
 \end{table}
 
-L'effetto è concentrato nell'intervallo $[60, 100)$ pixel, che contiene il $97\%$ dei bersagli validi. L'intervallo $[100, 150)$ pixel è in saturazione: la condizione di controllo è già al $97.1\%$ e non resta margine misurabile. Il delta a livello di bersaglio, pari a $+27.0$ punti percentuali, coincide con il delta a livello di fotogramma misurato indipendentemente e riportato in Tabella~\ref{tab:risultato_okutama}, pari a $+28.0$ punti percentuali: due unità di analisi e due criteri di attribuzione distinti convergono sullo stesso valore.
+L'effetto è concentrato nell'intervallo $[60, 100)$ pixel, che contiene il $97\%$ dei bersagli validi. L'intervallo $[100, 150)$ pixel è in saturazione: la condizione di controllo è già al $97.1\%$ e non resta margine misurabile. Il delta a livello di bersaglio, pari a $+27.0$ punti percentuali, è in accordo con il delta a livello di fotogramma misurato indipendentemente e riportato in Tabella~\ref{tab:risultato_okutama}, pari a $+28.0$ punti percentuali: due unità di analisi e due criteri di attribuzione distinti convergono entro un punto percentuale.
 
 \textbf{Divario fra obiettivo di ottimizzazione e metrica di valutazione.}
 \label{sec:risultato_divario}
@@ -2205,7 +2206,7 @@ $R_1$ PRE $\to$ POST & $0.825 \to 0.575$ & $0.503 \to 0.223$ \\
 $R_2$ & $0.969$ (invariante) & $0.960$ (invariante) \\
 $\Delta \sqrt{R_1 R_2}$ & $-0.148$ & $-0.232$ \\
 $\Delta F_1$ & $-0.168$ & $-0.300$ \\
-Danno collaterale & ritirato & significativo a $0.3$ e $0.5$ \\
+Rilevamenti spuri & ritirato & significativo a $0.5$ \\
 Fotogrammi positivi & $15.1\%$ & $57.0\%$ \\
 Bersagli validi per fotogramma & $0.72$ & $1.45$ \\
 $K$ ottimo ($F_1$ / media geometrica) & $244$ / $37$ & $\sim 55$ / $\sim 10$ \\
@@ -2218,11 +2219,11 @@ $K$ ottimo ($F_1$ / media geometrica) & $244$ / $37$ & $\sim 55$ / $\sim 10$ \\
 \section{Discussione dei risultati}
 \label{sec:discussione}
 
-Il contributo marginale della perturbazione è quasi identico sui due domini, pari a $+25$ e $+28$ punti percentuali di Evasion Rate, a fronte di linee di base e distribuzioni di scala distinte (Tabella~\ref{tab:confronto_complessivo}). Ciò che cambia fra i due insiemi di dati è la condizione di partenza del rilevatore, non l'entità dell'effetto attribuibile all'attacco. Le sei configurazioni della Sezione~\ref{sec:risultati_ottimizzazione} variano formulazione della loss, criterio di aggregazione, fattore di accumulo e programma di decadimento del passo, e convergono in una banda di cinque punti percentuali. La norma del gradiente misurata, compresa fra $0.0007$ e $0.005$, e il mancato intervento del troncamento collocano il vincolo nel segnale disponibile e non nella capacità dell'ottimizzatore: un gradiente troppo elevato avrebbe attivato il troncamento, e un budget insufficiente sarebbe stato compensato dall'aumento del fattore di accumulo, che invece non produce guadagno.
+Il contributo marginale della perturbazione è quasi identico sui due domini, pari a $+25$ e $+28$ punti percentuali di Evasion Rate, a fronte di linee di base e distribuzioni di scala distinte (Tabella~\ref{tab:confronto_complessivo}). Ciò che cambia fra i due insiemi di dati è la condizione di partenza del rilevatore, non l'entità dell'effetto attribuibile all'attacco. Le sei configurazioni della Sezione~\ref{sec:risultati_ottimizzazione} variano formulazione della loss, criterio di aggregazione, fattore di accumulo e programma di decadimento del passo, e convergono in una banda di cinque punti percentuali. La norma del gradiente misurata sulle sei configurazioni, compresa fra $0.0007$ e $0.005$, e il mancato intervento del troncamento in alcun run collocano il vincolo nel segnale disponibile e non nella capacità dell'ottimizzatore: un gradiente troppo elevato avrebbe attivato il troncamento, e un budget insufficiente sarebbe stato compensato dall'aumento del fattore di accumulo, che invece non produce guadagno.
 
 La letteratura sugli attacchi avversariali in prospettiva aerea è coerente con questa lettura. I lavori che riportano tassi di successo elevati su VisDrone selezionano come bersaglio i veicoli \footcite{shrestha_2023}; l'ottimizzazione multi-dimensionale delle caratteristiche scarta esplicitamente la classe pedone per l'esiguità della sua estensione in pixel da vista zenitale \footcite{xi_2025_lfrap}; gli attacchi efficaci su immagini aeree operano su bersagli di dimensione maggiore e agiscono sulle rappresentazioni intermedie della rete anziché sull'uscita finale \footcite{tang_2023}. La formulazione per aggregazione delle celle a evidenza più elevata è ripresa dagli attacchi a rilevatori di persone a livello del suolo \footcite{thys_2019}, dove il soggetto occupa una frazione dell'immagine di due ordini di grandezza superiore. Il vincolo di copertura del $20\%$ dell'area del bersaglio, imposto dalla realizzabilità come capo di abbigliamento \footcite{huang_2020_upc}, agisce su una superficie che in prospettiva aerea misura poche decine di pixel per lato. L'andamento della media mobile della loss, piatta dall'aggiornamento $840$ su un budget di $1110$, è compatibile con i rendimenti marginali decrescenti osservati per le patch avversariali universali \footcite{brown_2017_patch}. Il limite osservato è quindi attribuibile alla dimensione in pixel del bersaglio in prospettiva aerea, e la sua replica su un secondo dominio indipendente lo qualifica come proprietà del compito.
 
-La misura riportata in Tabella~\ref{tab:stratificazione} colloca l'effetto nell'intervallo dimensionale dominante e chiude una questione lasciata aperta dalla stratificazione preliminare su VisDrone, condotta su undici soli casi nell'intervallo superiore. La coincidenza fra il delta per bersaglio e il delta per fotogramma, ottenuti con unità di analisi e criteri di attribuzione distinti, costituisce una verifica di coerenza interna fra due misure indipendenti. Il danno collaterale, ritirato su VisDrone per mancata robustezza multi-soglia, risulta significativo su Okutama alle soglie $0.3$ e $0.5$: è l'unica quantità per la quale il secondo dominio produce un risultato nuovo anziché una replica. Il suo segno negativo indica una perturbazione che sopprime il rilevamento del soggetto sul quale è applicata senza alterare il comportamento del rilevatore sul resto della scena.
+La misura riportata in Tabella~\ref{tab:stratificazione} colloca l'effetto nell'intervallo dimensionale dominante e chiude una questione lasciata aperta dalla stratificazione preliminare su VisDrone, condotta su undici soli casi nell'intervallo superiore. L'accordo entro un punto percentuale fra il delta per bersaglio e il delta per fotogramma, ottenuti con unità di analisi e criteri di attribuzione distinti, costituisce una verifica di coerenza interna fra due misure indipendenti. Il conteggio di rilevamenti spuri, ritirato su VisDrone per mancata robustezza multi-soglia, risulta significativo su Okutama alla soglia $0.5$, con un effetto della stessa direzione ma non significativo dopo correzione alla soglia $0.3$: è l'unica quantità per la quale il secondo dominio produce un risultato nuovo anziché una replica. Il suo segno negativo indica una perturbazione che sopprime il rilevamento del soggetto sul quale è applicata senza alterare il comportamento del rilevatore sul resto della scena.
 
 Due elementi circoscrivono la portata del confronto. La quadruplicazione dei fotogrammi positivi, dal $15.1\%$ al $57.0\%$, non corrisponde a una potenza statistica quadruplicata: una volta rimossa la correlazione temporale (Tabella~\ref{tab:decorrelazione}) il campione effettivo di Okutama, pari a $527$ unità, è comparabile ai $531$ fotogrammi di VisDrone. Il guadagno del secondo insieme di dati è nel dominio osservato e non nella numerosità campionaria. La condizione di partenza su Okutama è a sua volta più debole, con un Evasion Rate del $49.7\%$ in assenza di attacco contro il $17.5\%$ di VisDrone. Fra le spiegazioni possibili figurano uno scarto di dominio del rilevatore rispetto alle posture riprese dall'alto e la distorsione introdotta dal ridimensionamento a canvas quadrato; nessuna delle due è stata verificata in questo lavoro. La verifica richiederebbe la stratificazione per taglia della sola condizione di controllo, non eseguita, ed è riportata fra gli sviluppi futuri.
 
