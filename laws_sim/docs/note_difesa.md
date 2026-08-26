@@ -76,8 +76,9 @@ condizioni di ripresa diverse, e i due valori sono vicini.** `[V]` Tab. 5.3 e 5.
 - Stratificazione Okutama, bucket $[60,100)$ px: $70.0\% \to 97.0\%$, **$+27.0$ pp
   su $n = 19921$ bersagli**; bucket $[100,150)$: $+2.9$ pp su $n = 618$;
   bucket $[150,\infty)$: vuoto.
-- $\Delta\bar{c} = -1.5$ pp ($0.5465 \to 0.5312$) contro $\Delta$Evasion
-  $= +28.0$ pp. Rapporto $\approx 1{:}18$.
+- $\Delta\bar{c}$: $0.5465 \to 0.5312$ come entra nella loss, ma $0.1865 \to
+  0.1250$ sulla scala del rilevatore, cioe' $-6.2$ pp contro $\Delta$Evasion
+  $= +28.0$ pp. Rapporto $\approx 1{:}4.5$ (vedi G8).
 - $K$ ottimo: $244/37$ su VisDrone, $\sim55/\sim10$ su Okutama. Adottato $K=20$.
 - Evasion PRE su VisDrone: $3.75\%$ a soglia $0.30$, $72.5\%$ a soglia $0.70$.
 - Sei configurazioni: evasion fra $38.7\%$ e $43.75\%$.
@@ -370,9 +371,13 @@ formalizzate nella Sezione 4.3**:
 - la loss è una media su 16 trasformazioni aggressive; la valutazione avviene su
   una singola inquadratura, più favorevole all'attaccante.
 
+A queste tre si aggiunge una **quarta causa, di scala**: la doppia sigmoide
+descritta in G8, che comprime $\bar{c}$ dentro $[0.5,\ 0.731)$. Sulla scala del
+rilevatore il delta vero e' di $-6.2$ pp e il rapporto e' $1{:}4.5$.
+
 **Frase da dire:** l'efficacia non viene da un crollo della confidenza, viene dal
-fatto che molte predizioni erano già vicine alla soglia. Il rapporto $1{:}18$ è
-l'ordine di grandezza atteso da quelle tre trasformazioni, non una sorpresa.
+fatto che molte predizioni erano gia' vicine alla soglia. Il rapporto e' l'ordine
+di grandezza atteso da quelle trasformazioni, non una sorpresa.
 
 ### C2. «Su Okutama l'attacco è più efficace.»
 
@@ -686,17 +691,48 @@ dei fotogrammi privi di bersagli sopra i 60 px — da cui i 1110 aggiornamenti s
 2000 (A2). L'**accumulo su 4 fotogrammi** è vincolo di memoria: il batch fisico è
 uno.
 
-### G8. La nota che vale la domanda — da verificare nel codice
+### G8. La sigmoide applicata due volte
 
-La loss opera sulle **celle** della testa di YOLO, cioè sull'uscita grezza prima
-della soppressione dei non massimi. La valutazione opera sui **rilevamenti**,
-dopo NMS, a soglia $0.50$ e IoU $0.3$. Se il codice lo conferma, ottimizzazione e
-valutazione guardano due viste diverse della stessa rete, e questa è una
-**quarta** ragione strutturale del divario $1{:}18$ fra $\Delta\bar{c}$ e
-$\Delta$Evasion, che oggi la tesi spiega con tre (C1).
+**Verificato nel sorgente, non a memoria.** In `ultralytics` 8.0.0, file
+`nn/modules.py` riga 639, la classe `Detect` restituisce in modalita' di
+inferenza `y = torch.cat((dbox, cls.sigmoid()), 1)`: i canali di classe escono
+**gia'** passati per la sigmoide. Identico nella 8.4.126. `_get_model` chiama
+`.eval()`, quindi `raw[0]` e' proprio `y`, e `_asymptotic_loss` applica
+`torch.sigmoid` una seconda volta.
 
-**Non usarla finché non hai controllato `patch_optimizer.py`.** Se confermata è
-una risposta che nessun commissario si aspetta; se non lo è, è un'invenzione.
+*Attenzione a non confonderla con l'altra.* In `patch_optimizer.py` ci sono due
+sigmoidi. Quella su `patch_logits` e' la parametrizzazione di Carlini e Wagner:
+**corretta, voluta, pilastro dell'architettura** (G7). Quella dentro la loss e'
+ridondante. Sono due righe diverse.
+
+**Cosa comporta.** $\bar{c}$ come entra nella loss non e' la confidenza: e'
+$\sigma(\text{confidenza})$, confinata in $[0.5,\ 0.731)$. Invertendo, sulla
+scala del rilevatore i valori sono $0.1865 \to 0.1250$, cioe' $-6.2$ pp e non
+$-1.5$ pp, e il rapporto con $\Delta$Evasion e' $1{:}4.5$ e non $1{:}18$. La
+trasformazione attenua inoltre il gradiente di un fattore prossimo a $2.2$: e'
+la ragione per cui la soglia di troncamento a $1.0$ non e' mai stata raggiunta
+in alcun run.
+
+**Cosa NON comporta, e va detto per primo se la domanda arriva.** La sigmoide e'
+monotona, quindi l'ottimizzazione scende nella stessa direzione e la patch e'
+legittima. Evasion rate, $R_1$, $R_2$, $\sqrt{R_1R_2}$, $F_1$, bootstrap,
+stratificazione, Bonferroni e decorrelazione passano tutti dall'inferenza
+standard a soglia $0.50$ e **non toccano la loss**: nessuno di quei numeri
+cambia.
+
+**Se te lo chiedono:** «La quantita' aggregata entra nella barriera logaritmica
+attraverso una trasformazione logistica ridondante, dichiarata in nota nella
+Sezione 4.3. Comprime la scala e attenua il gradiente di circa un fattore due.
+Non altera la direzione dell'ottimizzazione ne' alcuna metrica riportata, e ha
+l'effetto di rendere le misure conservative rispetto all'obiettivo inteso —
+ipotesi non verificata, perche' l'ottimizzazione non e' stata rilanciata.»
+
+**Errore da non fare.** Il divario fra l'uscita grezza della testa e i
+rilevamenti dopo NMS **e' gia' nella tesi**: e' la prima delle tre
+trasformazioni non lineari elencate nella Sezione 4.3, dove $\bar{c}$ e'
+descritta come calcolata prima della soppressione dei non-massimi. Non
+presentarla come un'osservazione nuova. La quarta causa, quella davvero non
+documentata, e' la doppia sigmoide.
 
 ---
 
@@ -723,7 +759,7 @@ difenderli male. Sono già tutti scritti nel Capitolo 6.
 # 5. Piano di studio, tre categorie
 
 **Alla cifra (una decina di numeri).** La tabella 1.1 per intero. Il $55.5\%$ e i
-1110 aggiornamenti. Il $+27.0$ pp su $n=19921$. Il $-1.5$ contro $+28.0$. Le
+1110 aggiornamenti. Il $+27.0$ pp su $n=19921$. Il $-6.2$ contro $+28.0$. Le
 soglie $0.0083$ e $0.0136$.
 
 **Da ricostruire, non memorizzare.** Tutto il paragrafo 1.2. Le tre non
@@ -748,9 +784,12 @@ B6 e B7, infine il resto.
 - [x] ~~Verificare che la motivazione di YOLOv8n sia scritta~~ — **non lo è**.
       «YOLOv8 nano» compare una sola volta, fra parentesi, nella Sezione 4.1.
       Risposta orale predisposta in D5.
-- [ ] Verificare in `patch_optimizer.py` se la loss agisce prima della
-      soppressione dei non massimi mentre la valutazione agisce dopo (vedi G8).
-      Se confermato, va aggiunto a C1 come quarta non linearità.
+- [x] ~~Verificare il divario NMS~~ — confermato, **ma era gia' nel testo**:
+      e' la prima delle tre non linearita' della Sezione 4.3.
+- [ ] Applicare le tre patch LaTeX sulla doppia sigmoide (nota in Sezione 4.3,
+      limite superiore della penalizzazione, numeri corretti in Sezione 5.3).
+- [ ] Decidere se aggiungere fra gli sviluppi futuri la rimozione della
+      trasformazione logistica ridondante.
 - [ ] Tempo di wall-clock di un run completo, per la slide sui vincoli di
       piattaforma. Non presente in `thesis_notes.md`.
 - [ ] Decidere se inserire la figura prima/dopo anche in tesi, oltre che nelle

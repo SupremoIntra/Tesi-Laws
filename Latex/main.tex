@@ -1487,8 +1487,17 @@ La funzione obiettivo si compone di due termini,
     + \lambda_{TV} \, \mathcal{L}_{TV}(\mathrm{P})
     \label{eq:loss_totale}
 \end{equation}
-dove $\bar{c} \in [0,1]$ è una stima aggregata della confidenza attribuita dal
-rilevatore alla classe bersaglio nella regione del soggetto, $\varepsilon =
+dove $\bar{c}$ è una stima aggregata della confidenza attribuita dal
+rilevatore alla classe bersaglio nella regione del soggetto\footnote{Nel codice
+di ottimizzazione la quantità aggregata è ottenuta applicando una
+trasformazione logistica al punteggio di classe restituito dalla testa di
+rilevamento, che in \textit{Ultralytics} è già normalizzato nell'intervallo
+unitario. La composizione delle due trasformazioni restringe il codominio
+effettivo di $\bar{c}$ a $[0.5,\,\sigma(1))$ e comprime la scala rispetto al
+punteggio del rilevatore. Poiché la trasformazione è monotona crescente, la
+direzione del gradiente e l'ordinamento fra configurazioni restano invariati; i
+valori riportati nella Sezione~\ref{sec:risultato_divario} sono espressi anche
+sulla scala del rilevatore, ottenuta per inversione.}, $\varepsilon =
 10^{-6}$ è una costante che previene la divergenza del logaritmo,
 $\mathcal{L}_{TV}$ è il termine di variazione totale dell'Equazione \ref{eq:tv}
 e $\lambda_{TV} = 0.1$ è il suo peso. Il valore di $\lambda_{TV}$ è stato
@@ -1516,11 +1525,14 @@ proprietà. Il gradiente non si annulla in alcun punto del dominio:
 l'ottimizzazione esercita pressione anche quando la confidenza è già sotto la
 soglia di rilevamento, e la spinge asintoticamente verso lo zero costruendo un
 margine rispetto alle variazioni delle condizioni di osservazione. La
-penalizzazione cresce inoltre senza limite superiore al crescere della
+penalizzazione cresce inoltre in modo più che proporzionale al crescere della
 confidenza residua, quindi i casi in cui il rilevatore mantiene evidenza forte
 pesano in modo sproporzionato e lo sforzo di ottimizzazione si concentra dove il
 rilevamento è più solido: è la proprietà richiesta da una perturbazione
-universale, il cui requisito è l'efficacia sul caso avverso.
+universale, il cui requisito è l'efficacia sul caso avverso. La forma analitica
+è priva di limite superiore; nell'implementazione il codominio ristretto
+richiamato in nota limita la penalizzazione a un valore finito, senza alterare
+l'ordinamento fra livelli di confidenza residua.
 
 L'assenza di una soglia esplicita nell'obiettivo comporta che essa non figuri
 fra gli iperparametri dell'ottimizzazione. La soglia resta definita in fase di
@@ -2187,7 +2199,7 @@ L'effetto è concentrato nell'intervallo $[60, 100)$ pixel, che contiene il $97\
 
 \textbf{Divario fra obiettivo di ottimizzazione e metrica di valutazione.}
 \label{sec:risultato_divario}
-La quantità $\bar{c}$, ricavata per inversione dell'Equazione~\ref{eq:loss_totale}, varia da $0.5465$ a $0.5312$ su Okutama, per un delta di $-1.5$ punti percentuali. Il delta di Evasion Rate sullo stesso dominio è di $+28.0$ punti percentuali, con un rapporto approssimativo di $1{:}18$ fra le due variazioni. L'ordine di grandezza è quello atteso dalle tre trasformazioni non lineari formalizzate nella Sezione~\ref{sec:loss}.
+La quantità $\bar{c}$, ricavata per inversione dell'Equazione~\ref{eq:loss_totale}, varia da $0.5465$ a $0.5312$ su Okutama. Riportata sulla scala del punteggio del rilevatore, per inversione della trasformazione logistica richiamata nella Sezione~\ref{sec:loss}, la medesima variazione corrisponde a un passaggio da $0.187$ a $0.125$, pari a un delta di $-6.2$ punti percentuali. Il delta di Evasion Rate sullo stesso dominio è di $+28.0$ punti percentuali, con un rapporto approssimativo di $1{:}4.5$ fra le due variazioni. L'ordine di grandezza è quello atteso dalle tre trasformazioni non lineari formalizzate nella Sezione~\ref{sec:divario}. La medesima compressione di scala rende conto dell'intervallo entro cui si colloca la norma del gradiente riportata in Tabella~\ref{tab:budget_okutama}, e della circostanza che la soglia di troncamento non sia mai stata raggiunta in alcun run.
 
 \textbf{Confronto fra i due domini.}
 \label{sec:confronto_complessivo}
